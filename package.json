@@ -1,0 +1,46 @@
+{
+  "name": "template-analysis",
+  "version": "1.0.0",
+  "author": "Tago LLC",
+  "license": "Copyright",
+  "private": true,
+  "scripts": {
+    "test": "jest .",
+    "test:watch": "jest . --watch",
+    "test:coverage": "jest . --coverage",
+    "linter": "eslint .",
+    "build": "analysis-builder src/analysisHandler.ts ./build/handler.tago.js",
+    "start": "ts-node-dev --inspect --",
+    "inspect": "node --inspect ./node_modules/.bin/ts-node --files ./src/start.ts"
+  },
+  "jest": {
+    "preset": "ts-jest"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run test",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "devDependencies": {
+    "@types/jest": "26.0.0",
+    "@typescript-eslint/eslint-plugin": "4.8.2",
+    "@typescript-eslint/parser": "4.8.2",
+    "commitlint": "11.0.0",
+    "eslint": "7.2.0",
+    "eslint-config-prettier": "6.11.0",
+    "eslint-import-resolver-typescript": "2.0.0",
+    "eslint-plugin-import": "2.22.1",
+    "eslint-plugin-prettier": "3.1.4",
+    "husky": "4.2.5",
+    "jest": "26.0.1",
+    "prettier": "2.0.5",
+    "ts-jest": "26.1.0",
+    "ts-node": "9.0.0",
+    "typescript": "4.0.2"
+  },
+  "dependencies": {
+    "@tago-io/builder": "2.4.6",
+    "@tago-io/sdk": "10.0.7"
+  }
+}

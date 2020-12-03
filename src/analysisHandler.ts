@@ -2,7 +2,9 @@ import { Utils, Services, Account, Device, Types, Analysis } from "@tago-io/sdk"
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { ServiceParams, TagoContext, ServicesAnalysis } from "./types";
 
-const servicesCollection = Promise.all([import("./services/customer"), import("./services/device")]) as Promise<ServicesAnalysis[]>;
+const servicesCollection = Promise.all([import("./services/customer"), import("./services/device"), import("./services/organization")]) as Promise<
+  ServicesAnalysis[]
+>;
 
 async function handler(context: TagoContext, scope: Data[]): Promise<void> {
   context.log(JSON.stringify(scope));
@@ -41,4 +43,4 @@ async function startAnalysis(context: TagoContext, scope: any) {
   }
 }
 
-export default new Analysis(startAnalysis, { token: "token" });
+export default new Analysis(startAnalysis, { token: "94f78b11-587d-432d-a6b0-52e8ce4821a7" });

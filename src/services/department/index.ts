@@ -4,6 +4,7 @@ import { ServiceParams } from "../../types";
 import add from "./register";
 import remove from "./remove";
 import editUser from "./edit";
+import getDevice from "../../lib/getDevice";
 
 /**
  * Check each variable sent in the scope of the analysis.
@@ -11,9 +12,9 @@ import editUser from "./edit";
  * Actions like delete and edit does send the internal environment variable _widget_exec when the user take this kind of action.
  */
 function checkType(scope: Data[], environment: AnalysisEnvironment) {
-  if (scope.find((x) => x.variable === "new_user_name")) return "add";
-  else if (scope.find((x) => x.variable === "user_name") && environment._widget_exec === "delete") return "remove";
-  else if (scope.find((x) => x.variable === "user_name" || x.variable === "user_email") && environment._widget_exec === "edit") return "edit";
+  if (scope.find((x) => x.variable === "new_dept_name")) return "add";
+  else if (scope.find((x) => x.variable === "dept_name") && environment._widget_exec === "delete") return "remove";
+  else if (scope.find((x) => x.variable === "dept_name" || x.variable === "dept_address") && environment._widget_exec === "edit") return "edit";
 }
 
 /**
@@ -21,9 +22,12 @@ function checkType(scope: Data[], environment: AnalysisEnvironment) {
  */
 async function controller(params: ServiceParams) {
   const type = checkType(params.scope, params.environment);
-  if (type === "add") await add(params);
-  else if (type === "remove") await remove(params);
-  else if (type === "edit") await editUser(params);
+  console.log(params.scope);
+  //getting the parent device
+  const org_dev = await getDevice(params.account, params.scope[0].origin);
+  if (type === "add") await add(params, org_dev);
+  else if (type === "remove") await remove(params, org_dev);
+  else if (type === "edit") await editUser(params, org_dev);
 }
 
 export { checkType, controller };

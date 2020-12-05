@@ -2,9 +2,12 @@ import { Utils, Services, Account, Device, Types, Analysis } from "@tago-io/sdk"
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { ServiceParams, TagoContext, ServicesAnalysis } from "./types";
 
-const servicesCollection = Promise.all([import("./services/customer"), import("./services/device"), import("./services/organization")]) as Promise<
-  ServicesAnalysis[]
->;
+const servicesCollection = Promise.all([
+  import("./services/customer"),
+  import("./services/device"),
+  import("./services/organization"),
+  import("./services/department"),
+]) as Promise<ServicesAnalysis[]>;
 
 async function handler(context: TagoContext, scope: Data[]): Promise<void> {
   context.log(JSON.stringify(scope));

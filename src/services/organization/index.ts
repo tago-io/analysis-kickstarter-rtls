@@ -13,7 +13,7 @@ import editUser from "./edit";
 function checkType(scope: Data[], environment: AnalysisEnvironment) {
   if (scope.find((x) => x.variable === "new_org_name")) return "add";
   else if (scope.find((x) => x.variable === "org_name") && environment._widget_exec === "delete") return "remove";
-  else if (scope.find((x) => x.variable === "myvariable3") && environment._widget_exec === "edit") return "edit";
+  else if (scope.find((x) => x.variable === "org_name" || x.variable === "org_address") && environment._widget_exec === "edit") return "edit";
 }
 
 /**

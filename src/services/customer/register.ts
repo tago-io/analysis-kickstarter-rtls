@@ -19,6 +19,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   //Collecting data
   const new_user_name = scope.find((x) => x.variable === "new_user_name");
   const new_user_email = scope.find((x) => x.variable === "new_user_email");
+  const new_user_access = scope.find((x) => x.variable === "new_user_access");
 
   //validation
   const validate = validation("user_validation", config_dev);
@@ -29,9 +30,9 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   const [user_exists] = await account.run.listUsers({ page: 1, amount: 1, filter: { name: new_user_name.value as string } });
 
-  if (user_exists) throw validate("User already exists", "danger");
+  if (user_exists) throw validate("User already exists!", "danger");
 
-  //creating user
+  /*******CREATING USER*********/
   const org_id = scope[0].origin; //
   const { timezone } = await account.info();
 
@@ -44,20 +45,29 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
         key: "organization_id",
         value: org_id,
       },
+      {
+        key: "access",
+        value: new_user_access.value as string,
+      },
     ],
   };
 
-  const new_user_id = await registerUser(context, account, new_user_data, "https://tago.io/");
+  const new_user_id = await registerUser(context, account, new_user_data, "https://guilhermeco.co/");
 
   const user_data = parseTagoObject(
     {
       user_name: new_user_name.value as string,
       user_email: new_user_email.value as string,
+      user_access: new_user_access.value as string,
       timezone: timezone,
       tags: [
         {
           key: "organization_id",
           value: org_id,
+        },
+        {
+          key: "access",
+          value: new_user_access.value,
         },
       ],
     },
@@ -71,5 +81,5 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   //sending to admin device (settings_device)
   config_dev.sendData(user_data);
 
-  return;
+  return validate("User successfully created!", "success");
 };

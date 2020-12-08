@@ -12,8 +12,9 @@ import editUser from "./edit";
  */
 function checkType(scope: Data[], environment: EnvironmentItemObject) {
   if (scope.find((x) => x.variable === "new_dev_name")) return "add";
-  else if (scope.find((x) => x.variable === "myvariable2") && environment._widget_exec === "delete") return "remove";
+  else if (scope.find((x) => x.variable === "dev_name") && environment._widget_exec === "delete") return "remove";
   else if (scope.find((x) => x.variable === "myvariable3") && environment._widget_exec === "edit") return "edit";
+  console.log(environment._widget_exec);
 }
 
 /**
@@ -21,12 +22,13 @@ function checkType(scope: Data[], environment: EnvironmentItemObject) {
  * Service controller to find the function for given variables.
  */
 async function controller(params: ServiceParams) {
+  console.log("test");
   const type = checkType(params.scope, params.environment);
-  const customer_dev = await getDevice(params.account, params.scope[0].origin);
+  const org_dev = await getDevice(params.account, params.scope[0].origin);
 
-  if (type === "add") await add(params, customer_dev);
-  else if (type === "remove") await remove(params, customer_dev);
-  else if (type === "edit") await editUser(params, customer_dev);
+  if (type === "add") await add(params, org_dev);
+  else if (type === "remove") await remove(params, org_dev);
+  else if (type === "edit") await editUser(params, org_dev);
 }
 
 export { checkType, controller };

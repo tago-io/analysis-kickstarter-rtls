@@ -86,7 +86,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
       dev_name: { value: new_dev_name.value, metadata: { url: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?settings_device=` } }, //dept_name.value widget?
       dev_code: new_dev_code.value,
       dev_eui: new_dev_eui.value,
-      dev_dept: new_dev_dept.metadata,
+      dev_dept: new_dev_dept.metadata.label,
     },
     dev_id
   );

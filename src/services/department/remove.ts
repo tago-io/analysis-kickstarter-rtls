@@ -9,7 +9,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   //delete from org_dev
   await org_dev.deleteData({ serie: dept_id, qty: 9999 });
 
-  //deleting device's users (department's user)
+  //deleting users (department's user)
   const user_accounts = await account.run.listUsers({ filter: { tags: [{ key: "department_id", value: dept_id }] } });
   if (user_accounts) {
     user_accounts.forEach(async (user) => {
@@ -28,9 +28,11 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   });
 
   if (devices) {
-    devices.forEach((x) => {
+    devices.forEach(async (x) => {
       account.devices.delete(x.id); /*passing the device id*/
       account.buckets.delete(x.bucket); /*passing the bucket id*/
+      await org_dev.deleteData({ serie: x.id, qty: 9999 }).then((msg) => msg); //deleting org_dev and config_dev data
+      await config_dev.deleteData({ serie: x.id, qty: 9999 });
     });
   }
 

@@ -45,7 +45,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const validate = validation("org_validation", config_dev);
 
   if (!new_org_name.value) throw validate("Name field is empty", "danger");
-  if ((new_org_name.value as string).length < 3) throw validate("Name field is smaller than 3 char.", "danger");
+  if ((new_org_name.value as string).length < 3) throw validate("Name field is smaller than 3 character", "danger");
   if (!new_org_address.value) throw validate("Address field is empty", "danger");
 
   const [org_exists] = await config_dev.getData({ variable: "org_name", value: new_org_name.value, qty: 1 }); /** */

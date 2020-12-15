@@ -3,7 +3,7 @@ import { Data } from "@tago-io/sdk/out/common/common.types";
 import { ServiceParams, TagoContext, ServicesAnalysis } from "./types";
 
 const servicesCollection = Promise.all([
-  import("./services/customer"),
+  import("./services/user"),
   import("./services/device"),
   import("./services/organization"),
   import("./services/department"),

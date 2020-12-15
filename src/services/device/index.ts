@@ -22,7 +22,6 @@ function checkType(scope: Data[], environment: EnvironmentItemObject) {
  * Service controller to find the function for given variables.
  */
 async function controller(params: ServiceParams) {
-  console.log("test");
   const type = checkType(params.scope, params.environment);
   const org_dev = await getDevice(params.account, params.scope[0].origin);
 

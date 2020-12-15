@@ -9,16 +9,16 @@ import getDevice from "../../lib/getDevice";
 interface installDeviceParam {
   account: Account;
   new_dev_name: string;
-  new_dev_code: string;
+  new_dev_idcode: string;
   org_id: string;
   dept_id: string;
 }
 
-async function installDevice({ account, new_dev_name, new_dev_code, org_id, dept_id }: installDeviceParam) {
+async function installDevice({ account, new_dev_name, new_dev_idcode, org_id, dept_id }: installDeviceParam) {
   //structuring data
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
-    serie_number: new_dev_code,
+    serie_number: new_dev_idcode,
     network: "5bbd120d4051a50034cd1a05",
     connector: "5f5a8f3351d4db99c40deecf",
   };
@@ -47,8 +47,9 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   console.log("Registering...");
   //Collecting data
   const new_dev_name = scope.find((x) => x.variable === "new_dev_name");
-  const new_dev_code = scope.find((x) => x.variable === "new_dev_code");
   const new_dev_eui = scope.find((x) => x.variable === "new_dev_eui");
+  const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
+  const new_dev_idcode = scope.find((x) => x.variable === "new_dev_idcode");
   // const new_dev_org = scope.find((x) => x.variable === "new_dev_org");
   const new_dev_dept = scope.find((x) => x.variable === "new_dev_dept");
 
@@ -59,7 +60,8 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   if (!new_dev_name.value) throw validate("Name field is empty", "danger");
   if ((new_dev_name.value as string).length < 3) throw validate("Name field is smaller than 3 char.", "danger");
-  if (!new_dev_code.value) throw validate("Code field is empty", "danger");
+  if (!new_dev_idcode.value) throw validate("ID Code field is empty", "danger");
+  if (!new_dev_type.value) throw validate("Type field is empty", "danger");
   if (!new_dev_eui.value) throw validate("EUI field is empty", "danger");
 
   const [dev_exists] = await org_dev.getData({
@@ -75,7 +77,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const { device_id: dev_id, device } = await installDevice({
     account,
     new_dev_name: new_dev_name.value as string,
-    new_dev_code: new_dev_code.value as string,
+    new_dev_idcode: new_dev_idcode.value as string,
     org_id,
     dept_id: new_dev_dept.value as string,
   });
@@ -83,9 +85,13 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const dev_data = parseTagoObject(
     {
       dev_id: dev_id,
-      dev_name: { value: new_dev_name.value, metadata: { url: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?settings_device=` } }, //dept_name.value widget?
-      dev_code: new_dev_code.value,
+      dev_name: {
+        value: new_dev_name.value,
+        metadata: { url: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?org_dev=${org_dev}&dept_dev=${new_dev_dept.value}` },
+      },
       dev_eui: new_dev_eui.value,
+      dev_type: new_dev_type.value,
+      dev_idcode: new_dev_idcode.value,
       dev_dept: new_dev_dept.metadata.label,
     },
     dev_id
@@ -101,5 +107,5 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const dept_dev = await getDevice(account, new_dev_dept.value as string);
   dept_dev.sendData(dev_data);
 
-  return validate("Department created", "success");
+  return validate("Device created", "success");
 };

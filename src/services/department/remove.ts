@@ -6,14 +6,20 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   //delete from settings_device
   await config_dev.deleteData({ serie: dept_id, qty: 9999 });
+  //delete from org_dev
+  await org_dev.deleteData({ serie: dept_id, qty: 9999 });
 
   //deleting device's users (department's user)
   const user_accounts = await account.run.listUsers({ filter: { tags: [{ key: "department_id", value: dept_id }] } });
   if (user_accounts) {
-    user_accounts.forEach((user) => account.run.userDelete(user.id));
+    user_accounts.forEach(async (user) => {
+      await account.run.userDelete(user.id);
+      await org_dev.deleteData({ serie: user.id, qty: 9999 }).then((msg) => console.log(msg));
+      await config_dev.deleteData({ serie: user.id, qty: 9999 });
+    });
   }
 
-  //deleting organization's device
+  //deleting department's device
   const devices = await account.devices.list({
     amount: 9999,
     page: 1,

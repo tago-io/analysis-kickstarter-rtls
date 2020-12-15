@@ -1,10 +1,10 @@
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { AnalysisEnvironment } from "@tago-io/sdk/out/modules/Analysis/analysis.types";
+import getDevice from "../../lib/getDevice";
 import { ServiceParams } from "../../types";
 import add from "./register";
 import remove from "./remove";
 import editUser from "./edit";
-import getDevice from "../../lib/getDevice";
 
 /**
  * Check each variable sent in the scope of the analysis.

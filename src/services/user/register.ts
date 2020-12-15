@@ -16,7 +16,7 @@ interface UserData {
   dept: string;
 }
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams) => {
+export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
   //Collecting data
   const new_user_name = scope.find((x) => x.variable === "new_user_name");
   const new_user_email = scope.find((x) => x.variable === "new_user_email");
@@ -26,7 +26,6 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   //validation
   const org_id = scope[0].origin;
-  const org_dev = await getDevice(account, org_id);
   const validate = validation("user_validation", org_dev);
 
   if (!new_user_name.value) throw validate("Name field is empty", "danger");
@@ -74,6 +73,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   const user_data = parseTagoObject(
     {
+      user_id: new_user_id as string,
       user_name: new_user_name.value as string,
       user_email: new_user_email.value as string,
       user_phone: new_user_phone.value as string,

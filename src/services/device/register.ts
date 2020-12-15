@@ -9,16 +9,14 @@ import getDevice from "../../lib/getDevice";
 interface installDeviceParam {
   account: Account;
   new_dev_name: string;
-  new_dev_idcode: string;
   org_id: string;
   dept_id: string;
 }
 
-async function installDevice({ account, new_dev_name, new_dev_idcode, org_id, dept_id }: installDeviceParam) {
+async function installDevice({ account, new_dev_name, org_id, dept_id }: installDeviceParam) {
   //structuring data
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
-    serie_number: new_dev_idcode,
     network: "5bbd120d4051a50034cd1a05",
     connector: "5f5a8f3351d4db99c40deecf",
   };
@@ -49,7 +47,6 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const new_dev_name = scope.find((x) => x.variable === "new_dev_name");
   const new_dev_eui = scope.find((x) => x.variable === "new_dev_eui");
   const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
-  const new_dev_idcode = scope.find((x) => x.variable === "new_dev_idcode");
   // const new_dev_org = scope.find((x) => x.variable === "new_dev_org");
   const new_dev_dept = scope.find((x) => x.variable === "new_dev_dept");
 
@@ -60,7 +57,6 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   if (!new_dev_name.value) throw validate("Name field is empty", "danger");
   if ((new_dev_name.value as string).length < 3) throw validate("Name field is smaller than 3 char.", "danger");
-  if (!new_dev_idcode.value) throw validate("ID Code field is empty", "danger");
   if (!new_dev_type.value) throw validate("Type field is empty", "danger");
   if (!new_dev_eui.value) throw validate("EUI field is empty", "danger");
 
@@ -77,7 +73,6 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const { device_id: dev_id, device } = await installDevice({
     account,
     new_dev_name: new_dev_name.value as string,
-    new_dev_idcode: new_dev_idcode.value as string,
     org_id,
     dept_id: new_dev_dept.value as string,
   });
@@ -91,7 +86,6 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
       },
       dev_eui: new_dev_eui.value,
       dev_type: new_dev_type.value,
-      dev_idcode: new_dev_idcode.value,
       dev_dept: new_dev_dept.metadata.label,
     },
     dev_id

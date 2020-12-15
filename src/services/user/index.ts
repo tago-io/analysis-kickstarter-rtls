@@ -1,5 +1,6 @@
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { AnalysisEnvironment } from "@tago-io/sdk/out/modules/Analysis/analysis.types";
+import getDevice from "../../lib/getDevice";
 import { ServiceParams } from "../../types";
 import add from "./register";
 import remove from "./remove";
@@ -13,7 +14,8 @@ import editUser from "./edit";
 function checkType(scope: Data[], environment: AnalysisEnvironment) {
   if (scope.find((x) => x.variable === "new_user_name")) return "add";
   else if (scope.find((x) => x.variable === "user_name") && environment._widget_exec === "delete") return "remove";
-  else if (scope.find((x) => x.variable === "user_name" || x.variable === "user_email") && environment._widget_exec === "edit") return "edit";
+  else if (scope.find((x) => x.variable === "user_name" || x.variable === "user_email" || x.variable === "user_phone") && environment._widget_exec === "edit")
+    return "edit";
 }
 
 /**
@@ -21,9 +23,10 @@ function checkType(scope: Data[], environment: AnalysisEnvironment) {
  */
 async function controller(params: ServiceParams) {
   const type = checkType(params.scope, params.environment);
-  if (type === "add") await add(params);
-  else if (type === "remove") await remove(params);
-  else if (type === "edit") await editUser(params);
+  const org_dev = await getDevice(params.account, params.scope[0].origin);
+  if (type === "add") await add(params, org_dev);
+  else if (type === "remove") await remove(params, org_dev);
+  else if (type === "edit") await editUser(params, org_dev);
 }
 
 export { checkType, controller };

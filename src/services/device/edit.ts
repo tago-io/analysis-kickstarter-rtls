@@ -19,7 +19,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   //getting previous id data
   const [dev_data] = await org_dev.getData({ variable: "dev_id", qty: 1, serie: dev_id });
-  const [dev_data_site] = await org_dev.getData({ variable: "dev_site", qty: 1, serie: dev_id });
+  const dev_data_site = await org_dev.getData({ variables: ["dev_site", "dev_type", "dev_eui", "dev_name", "dev_id"], qty: 1, serie: dev_id });
 
   if (dev_name) {
     //deleting prev data in settings_device
@@ -42,15 +42,17 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   }
 
   if (new_site_id_data) {
+    const new_site_dev = await getDevice(account, new_site_id_data.value as string);
     //deleting prev info
-    await config_dev.deleteData({ id: dev_data.id, variable: "dev_site" });
-    await org_dev.deleteData({ id: dev_data.id, variable: "dev_site" });
-    await site_dev.deleteData({ id: dev_data.id, variable: "dev_site" }); //prev site
+    // await config_dev.deleteData({ serie: dev_data.id });
+    // await org_dev.deleteData({ serie: dev_data.id });
+    await site_dev.deleteData({ serie: dev_data.id }); //prev site
 
     //updating data
-    await config_dev.sendData({ ...dev_data_site, value: new_site_id_data.metadata.label as string });
-    await org_dev.sendData({ ...dev_data_site, value: new_site_id_data.metadata.label as string });
-    await site_dev.sendData({ ...dev_data_site, value: new_site_id_data.metadata.label as string });
+    // await config_dev.sendData({ ...dev_data_site, value: new_site_id_data.metadata.label as string });
+    // await org_dev.sendData({ ...dev_data_site, value: new_site_id_data.metadata.label as string });
+    // await site_dev.sendData({ ...dev_data_site, value: new_site_id_data.metadata.label as string });
+    await new_site_dev.sendData(dev_data_site);
 
     //updating tags array
     tags = tags.filter((x) => !["site_id"].includes(x.key));

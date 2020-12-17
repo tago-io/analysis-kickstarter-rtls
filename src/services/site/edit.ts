@@ -1,10 +1,8 @@
 import { Device, Account } from "@tago-io/sdk";
-import getDevice from "../../lib/getDevice";
 import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
 
 export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
   const site_id = scope[0].serie;
-  const site_dev = await getDevice(account, site_id);
 
   const site_name = scope.find((x) => x.variable === "site_name");
   const site_address = scope.find((x) => x.variable === "site_address");

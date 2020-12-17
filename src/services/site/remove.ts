@@ -2,15 +2,15 @@ import { Device, Account } from "@tago-io/sdk";
 import { ServiceParams } from "../../types";
 
 export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  const dept_id = scope[0].serie;
+  const site_id = scope[0].serie;
 
   //delete from settings_device
-  await config_dev.deleteData({ serie: dept_id, qty: 9999 });
+  await config_dev.deleteData({ serie: site_id, qty: 9999 });
   //delete from org_dev
-  await org_dev.deleteData({ serie: dept_id, qty: 9999 });
+  await org_dev.deleteData({ serie: site_id, qty: 9999 });
 
-  //deleting users (department's user)
-  const user_accounts = await account.run.listUsers({ filter: { tags: [{ key: "department_id", value: dept_id }] } });
+  //deleting users (site's user)
+  const user_accounts = await account.run.listUsers({ filter: { tags: [{ key: "site_id", value: site_id }] } });
   if (user_accounts) {
     user_accounts.forEach(async (user) => {
       await account.run.userDelete(user.id);
@@ -19,11 +19,11 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     });
   }
 
-  //deleting department's device
+  //deleting site's device
   const devices = await account.devices.list({
     amount: 9999,
     page: 1,
-    filter: { tags: [{ key: "department_id", value: dept_id }] },
+    filter: { tags: [{ key: "site_id", value: site_id }] },
     fields: ["id", "bucket", "tags", "name"],
   });
 

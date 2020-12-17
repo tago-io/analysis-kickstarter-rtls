@@ -7,15 +7,15 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const dev_id = scope[0].serie;
 
   const device_to_delete = await (await getDevice(account, dev_id)).info();
-  const dept_id = device_to_delete.tags.find((tag) => tag.key === "department_id").value;
+  const site_id = device_to_delete.tags.find((tag) => tag.key === "site_id").value;
   const org_id = device_to_delete.tags.find((tag) => tag.key === "organization_id").value;
 
   if (org_id) {
     await org_dev.deleteData({ serie: dev_id, qty: 9999 });
   }
-  if (dept_id) {
-    const dept_dev = await getDevice(account, dept_id as string);
-    dept_dev.deleteData({ serie: dev_id, qty: 9999 });
+  if (site_id) {
+    const site_dev = await getDevice(account, site_id as string);
+    site_dev.deleteData({ serie: dev_id, qty: 9999 });
   }
 
   await config_dev.deleteData({ serie: dev_id, qty: 99999 });

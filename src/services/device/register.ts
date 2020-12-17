@@ -10,15 +10,16 @@ interface installDeviceParam {
   account: Account;
   new_dev_name: string;
   org_id: string;
-  dept_id: string;
+  site_id: string;
+  connector: string;
 }
 
-async function installDevice({ account, new_dev_name, org_id, dept_id }: installDeviceParam) {
+async function installDevice({ account, new_dev_name, org_id, site_id, connector }: installDeviceParam) {
   //structuring data
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
-    network: "5bbd120d4051a50034cd1a05",
-    connector: "5f5a8f3351d4db99c40deecf",
+    network: "5ed7ccd5427104001cf00183",
+    connector,
   };
 
   //creating new device
@@ -28,7 +29,7 @@ async function installDevice({ account, new_dev_name, org_id, dept_id }: install
   await account.devices.edit(new_dev.device_id, {
     tags: [
       { key: "device_id", value: new_dev.device_id },
-      { key: "department_id", value: dept_id },
+      { key: "site_id", value: site_id },
       { key: "organization_id", value: org_id },
       { key: "device_type", value: "device" },
     ],
@@ -47,8 +48,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const new_dev_name = scope.find((x) => x.variable === "new_dev_name");
   const new_dev_eui = scope.find((x) => x.variable === "new_dev_eui");
   const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
-  // const new_dev_org = scope.find((x) => x.variable === "new_dev_org");
-  const new_dev_dept = scope.find((x) => x.variable === "new_dev_dept");
+  const new_dev_site = scope.find((x) => x.variable === "new_dev_site");
 
   const org_id = scope[0].origin as string;
 
@@ -60,6 +60,8 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   if (!new_dev_type.value) throw validate("Type field is empty", "danger");
   if (!new_dev_eui.value) throw validate("EUI field is empty", "danger");
 
+  console.log(new_dev_type);
+
   const [dev_exists] = await org_dev.getData({
     variables: ["dev_eui", "dev_name"],
     values: [new_dev_eui.value, new_dev_name.value],
@@ -68,13 +70,19 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   if (dev_exists) throw validate("Device already exists", "danger");
 
+  let connector = null;
+
+  if (new_dev_type.value === "Industrial GPS Asset Tracker") connector = "5f5a8f3351d4db99c40deed1";
+  if (new_dev_type.value === "BLE Asset Tracker") connector = "5f5a8f3351d4db99c40deecf";
+
   //need device id to configure serie in parseTagoObject
   //creating new device
   const { device_id: dev_id, device } = await installDevice({
     account,
     new_dev_name: new_dev_name.value as string,
     org_id,
-    dept_id: new_dev_dept.value as string,
+    site_id: new_dev_site.value as string,
+    connector,
   });
 
   const dev_data = parseTagoObject(
@@ -82,11 +90,11 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
       dev_id: dev_id,
       dev_name: {
         value: new_dev_name.value,
-        metadata: { url: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?org_dev=${org_dev}&dept_dev=${new_dev_dept.value}` },
+        metadata: { url: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?org_dev=${org_dev}&site_dev=${new_dev_site.value}` },
       },
       dev_eui: new_dev_eui.value,
       dev_type: new_dev_type.value,
-      dev_dept: new_dev_dept.metadata.label,
+      dev_site: new_dev_site.metadata.label,
     },
     dev_id
   );
@@ -97,9 +105,9 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   //send to organization device
   await org_dev.sendData(dev_data);
 
-  //getting the department device
-  const dept_dev = await getDevice(account, new_dev_dept.value as string);
-  dept_dev.sendData(dev_data);
+  //getting the site device
+  const site_dev = await getDevice(account, new_dev_site.value as string);
+  site_dev.sendData(dev_data);
 
-  return validate("Device created", "success");
+  return validate("Device created successfully!", "success");
 };

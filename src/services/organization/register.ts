@@ -49,6 +49,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   if (!new_org_address.value) throw validate("Address field is empty", "danger");
 
   const [org_exists] = await config_dev.getData({ variable: "org_name", value: new_org_name.value, qty: 1 }); /** */
+  const { id: config_dev_id } = await config_dev.info();
 
   if (org_exists) throw validate("User already exists", "danger");
 
@@ -58,7 +59,10 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   const org_data = {
     org_id: device_id,
-    org_name: { value: new_org_name.value, metadata: { url: `https://admin.tago.io/dashboards/info/5fca818da0e14a00267c419e?settings_device=${device_id}` } }, //org_name.value widget?
+    org_name: {
+      value: new_org_name.value,
+      metadata: { url: `https://admin.tago.io/dashboards/info/5fca818da0e14a00267c419e?settings_device=${config_dev_id}&org_dev=${device_id}` },
+    }, //org_name.value widget?
     org_address: { value: new_org_address.value, location: new_org_address.location },
   };
 

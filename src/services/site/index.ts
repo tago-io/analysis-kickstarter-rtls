@@ -12,9 +12,9 @@ import editUser from "./edit";
  * Actions like delete and edit does send the internal environment variable _widget_exec when the user take this kind of action.
  */
 function checkType(scope: Data[], environment: AnalysisEnvironment) {
-  if (scope.find((x) => x.variable === "new_dept_name")) return "add";
-  else if (scope.find((x) => x.variable === "dept_name") && environment._widget_exec === "delete") return "remove";
-  else if (scope.find((x) => x.variable === "dept_name" || x.variable === "dept_address") && environment._widget_exec === "edit") return "edit";
+  if (scope.find((x) => x.variable === "new_site_name")) return "add";
+  else if (scope.find((x) => x.variable === "site_name") && environment._widget_exec === "delete") return "remove";
+  else if (scope.find((x) => x.variable === "site_name" || x.variable === "site_address") && environment._widget_exec === "edit") return "edit";
 }
 
 /**

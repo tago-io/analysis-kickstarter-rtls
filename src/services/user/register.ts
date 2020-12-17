@@ -13,14 +13,14 @@ interface UserData {
   tags?: Types.Common.TagsObj[];
   password?: string;
   id?: string;
-  dept: string;
+  site: string;
 }
 
 export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
   //Collecting data
   const new_user_name = scope.find((x) => x.variable === "new_user_name");
   const new_user_email = scope.find((x) => x.variable === "new_user_email");
-  const new_user_dept = scope.find((x) => x.variable === "new_user_dept");
+  const new_user_site = scope.find((x) => x.variable === "new_user_site");
   const new_user_access = scope.find((x) => x.variable === "new_user_access");
   const new_user_phone = scope.find((x) => x.variable === "new_user_phone");
 
@@ -31,7 +31,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   if (!new_user_name.value) throw validate("Name field is empty", "danger");
   if ((new_user_name.value as string).length < 3) throw validate("Name field is smaller than 3 character", "danger");
   if (!new_user_email.value) throw validate("Email field is empty", "danger");
-  if (!new_user_dept.value) throw validate("Department field is empty", "danger");
+  if (!new_user_site?.value && new_user_access.value === "user") throw validate("Department field is empty", "danger");
   if (!new_user_access.value) throw validate("Access field is empty", "danger");
   if (!new_user_phone.value) throw validate("Phone field is empty", "danger");
 
@@ -50,7 +50,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     name: new_user_name.value as string,
     email: new_user_email.value as string,
     phone: new_user_phone.value as string,
-    dept: new_user_dept.metadata.label as string,
+    site: new_user_site === undefined ? "" : (new_user_site?.metadata.label as string),
     timezone: timezone,
     tags: [
       {
@@ -59,7 +59,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
       },
       {
         key: "department_id",
-        value: new_user_dept.value,
+        value: new_user_site === undefined ? "" : (new_user_site?.value as string),
       },
       {
         key: "access",
@@ -77,7 +77,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
       user_name: new_user_name.value as string,
       user_email: new_user_email.value as string,
       user_phone: new_user_phone.value as string,
-      user_dept: new_user_dept.metadata.label as string,
+      user_site: new_user_site === undefined ? "" : (new_user_site?.metadata.label as string),
       user_access: new_user_access.value as string,
       timezone: timezone,
       tags: [
@@ -87,7 +87,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
         },
         {
           key: "department_id",
-          value: new_user_dept.value,
+          value: new_user_site === undefined ? "" : (new_user_site?.value as string),
         },
         {
           key: "access",
@@ -104,5 +104,5 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   //sending to admin device (settings_device)
   config_dev.sendData(user_data);
 
-  return validate("User successfully created!", "success");
+  return validate("User successfully invited! An email will be sent with the credentials to the new user.", "success");
 };

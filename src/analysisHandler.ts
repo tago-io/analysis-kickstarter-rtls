@@ -7,6 +7,7 @@ const servicesCollection = Promise.all([
   import("./services/device"),
   import("./services/organization"),
   import("./services/site"),
+  import("./services/assetTracker"),
 ]) as Promise<ServicesAnalysis[]>;
 
 async function handler(context: TagoContext, scope: Data[]): Promise<void> {

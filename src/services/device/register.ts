@@ -11,13 +11,15 @@ interface installDeviceParam {
   org_id: string;
   site_id: string;
   connector: string;
+  new_device_eui: string;
 }
 
-async function installDevice({ account, new_dev_name, org_id, site_id, connector }: installDeviceParam) {
+async function installDevice({ account, new_dev_name, org_id, site_id, connector, new_device_eui }: installDeviceParam) {
   //structuring data
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
     network: "5ed7ccd5427104001cf00183",
+    serie_number: new_device_eui,
     connector,
   };
 
@@ -77,6 +79,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     org_id,
     site_id: new_dev_site.value as string,
     connector: new_dev_type.value as string,
+    new_device_eui: new_dev_eui.value as string,
   });
 
   const device_type_name = (await account.integration.connectors.info(new_dev_type.value as string)).name;
@@ -103,6 +106,8 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   //getting the site device
   const site_dev = await getDevice(account, new_dev_site.value as string);
   site_dev.sendData(dev_data);
+
+  //Setting dev token as EUI
 
   return validate("Device created successfully!", "success");
 };

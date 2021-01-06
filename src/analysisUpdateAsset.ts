@@ -24,7 +24,17 @@ interface AssetPayload {
   variable: string;
 }
 
-async function getIndoorPos(site_dev: Device, scope: Data[], device_id: string, site_id: string, dev_name: string) {
+async function getIndoorPos(
+  site_dev: Device,
+  scope: Data[],
+  device_id: string,
+  site_id: string,
+  dev_name: string,
+  site_name: string,
+  org_name: string,
+  org_dev: Device,
+  org_id: string
+) {
   //fetching existing layers
   const layers_list = await site_dev.getData({ variable: "layers", qty: 9999 });
 
@@ -36,9 +46,8 @@ async function getIndoorPos(site_dev: Device, scope: Data[], device_id: string, 
   //sort the array and get the first position of resultant array
   const [strongest_beacon] = beacon_active_list.sort((a, b) => (b.value as number) - (a.value as number));
 
-  //getting beacon info (x,y)
-
-  const strongest_beacon_serie = beacon_list.find((x) => x.value === strongest_beacon.variable).serie;
+  //getting the serie of the beacon pin manually placed (image marker widget concatanation site_id+pin_serie)
+  const strongest_beacon_serie = beacon_list.find((x) => x.value === strongest_beacon?.variable)?.serie;
   const fixed_position_key = `${site_id}${strongest_beacon_serie}`;
 
   const layer = layers_list.find((x) => {
@@ -46,11 +55,13 @@ async function getIndoorPos(site_dev: Device, scope: Data[], device_id: string, 
     return metadata.fixed_position[fixed_position_key];
   });
 
-  if (!layer) return console.log("No beacon created!");
+  if (!layer) return console.log("No beacon found!");
 
   const strongest_beacon_info = (layer.metadata as any).fixed_position[fixed_position_key];
 
-  const assetLocation = parseTagoObject(
+  const [asset_room] = await site_dev.getData({ variable: "beacon_room", qty: 1, serie: strongest_beacon_serie });
+
+  const assetInfo = parseTagoObject(
     {
       asset_location: {
         variable: "asset_location",
@@ -62,22 +73,32 @@ async function getIndoorPos(site_dev: Device, scope: Data[], device_id: string, 
           color: "#" + ((Math.random() * 0xffffff) << 0).toString(16),
         },
       },
+      asset_active_info: {
+        variable: "asset_active_info",
+        value: dev_name,
+        metadata: {
+          asset_site: org_name,
+          asset_building: site_name,
+          asset_floor: layer?.value,
+          asset_room: asset_room?.value,
+          asset_link: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?tab=2&edit=yes&asset=5ff5e718d0fff4001e9053a9&org_dev=${org_id}&site_dev=${site_id}`,
+        },
+      },
     },
     device_id //device id
-  ); //we put the serie as the second param in parseTagoObject function
-
-  const assetInfo = parseTagoObject(
-    {
-      asset_name: dev_name,
-      asset_closest_beacon: strongest_beacon_info.value,
-      asset_strongest_rssi: strongest_beacon.value,
-    },
-    null
   );
 
-  await site_dev.deleteData({ variable: "asset_location", serie: device_id }).then((msg) => console.log(msg));
-  await site_dev.sendData(assetLocation);
+  const assetHistory = parseTagoObject({
+    asset_name: dev_name,
+    asset_closest_beacon: strongest_beacon_info.value,
+    asset_strongest_rssi: strongest_beacon.value,
+  });
+
+  await site_dev.deleteData({ variables: ["asset_location", "asset_active_info"], serie: device_id });
+  await org_dev.deleteData({ variables: ["asset_location", "asset_active_info"], serie: device_id });
   await site_dev.sendData(assetInfo);
+  await org_dev.sendData(assetInfo);
+  await site_dev.sendData(assetHistory);
 
   return console.log("Position processed!");
 }
@@ -95,48 +116,66 @@ async function handler(context: TagoContext, scope: Data[]) {
     throw "Missing account_token environment var";
   }
 
-  const config_dev = new Device({ token: environment.config_token });
   const account = new Account({ token: environment.account_token });
 
+  //asset device info
   const device_id = scope[0].origin;
-  const dev_name = await (await account.devices.info(device_id)).name;
+  const dev_name = (await account.devices.info(device_id)).name;
 
   //getting the site_dev through the tag
   const site_id = (await account.devices.info(device_id)).tags.find((x) => x.key === "site_id").value as string;
   const site_dev = await getDevice(account, site_id);
+  const site_name = (await site_dev.info()).name;
+
+  const org_id = (await account.devices.info(site_id)).tags.find((x) => x.key === "organization_id").value as string;
+  const org_dev = await getDevice(account, org_id);
+  const org_name = (await org_dev.info()).name;
 
   const outdoor_data = scope.find((x) => x?.location) as any; //as any tagoIO issue -> location coordinates/lat,lng
 
   if (outdoor_data) {
-    const assetLocation = parseTagoObject(
+    const assetInfo = parseTagoObject(
       {
         asset_location: {
           variable: "asset_location",
-          value: outdoor_data.value,
+          value: dev_name,
           location: {
             lat: outdoor_data.location.coordinates[0],
             lng: outdoor_data.location.coordinates[1],
+          },
+        },
+        asset_active_info: {
+          variable: "asset_active_info",
+          value: dev_name,
+          metadata: {
+            asset_site: org_name,
+            asset_building: site_name,
+            asset_floor: "Asset is outdoor",
+            asset_room: "Asset is outdoor",
+            asset_link: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?tab=2&edit=yes&asset=5ff5e718d0fff4001e9053a9&org_dev=${org_id}&site_dev=${site_id}`,
           },
         },
       },
       device_id
     );
 
-    const assetInfo = parseTagoObject({
+    const assetHistory = parseTagoObject({
       asset_name: dev_name,
       asset_closest_beacon: "Asset is outdoor",
       asset_strongest_rssi: "Asset is outdoor",
     });
 
-    await site_dev.deleteData({ variable: "asset_location", serie: device_id }).then((msg) => console.log(msg));
-    await site_dev.sendData(assetLocation);
+    await site_dev.deleteData({ variables: ["asset_location", "asset_active_info"], serie: device_id });
+    await org_dev.deleteData({ variables: ["asset_location", "asset_active_info"], serie: device_id });
     await site_dev.sendData(assetInfo);
+    await org_dev.sendData(assetInfo);
+    await site_dev.sendData(assetHistory);
 
     return console.log("Position processed!");
   }
 
-  //if theres no outdoor position than we will have a indoor position
-  await getIndoorPos(site_dev, scope, device_id, site_id, dev_name);
+  //if theres no outdoor position than we will have an indoor position
+  await getIndoorPos(site_dev, scope, device_id, site_id, dev_name, site_name, org_name, org_dev, org_id);
 }
 
 async function startAnalysis(context: TagoContext, scope: any) {

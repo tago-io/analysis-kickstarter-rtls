@@ -152,7 +152,7 @@ async function handler(context: TagoContext, scope: Data[]) {
             asset_building: site_name,
             asset_floor: "Asset is outdoor",
             asset_room: "Asset is outdoor",
-            asset_link: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?tab=2&edit=yes&asset=5ff5e718d0fff4001e9053a9&org_dev=${org_id}&site_dev=${site_id}`,
+            asset_link: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?tab=0&edit=yes&asset=5ff5e718d0fff4001e9053a9&org_dev=${org_id}&site_dev=${site_id}`,
           },
         },
       },

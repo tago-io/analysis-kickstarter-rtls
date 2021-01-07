@@ -15,6 +15,8 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     .deleteData({ variables: ["asset_name", "asset_site", "asset_building", "asset_floor", "asset_room", "asset_link"], qty: 999 })
     .then((msg) => console.log(msg));
 
+  await account.dashboards.edit("5fc91ac2a0e14a002654fe99", {});
+
   //Collecting data
   const find_asset = scope.find((x) => x.variable === "find_asset");
 

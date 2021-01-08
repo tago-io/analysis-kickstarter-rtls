@@ -3,8 +3,9 @@ import getDevice from "../../lib/getDevice";
 import { ServiceParams } from "../../types";
 
 export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  console.log(scope);
   const dev_id = scope[0].serie;
+
+  const dev_name = scope.find((x) => x.variable === "dev_name");
 
   const device_to_delete = await (await getDevice(account, dev_id)).info();
   const site_id = device_to_delete.tags.find((tag) => tag.key === "site_id").value;
@@ -22,6 +23,9 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   //we must collect device_info before delete it
   const device_info = await account.devices.info(dev_id);
+
+  await org_dev.deleteData({ variable: "asset_list", value: dev_name.value });
+  await account.dashboards.edit("5fca818da0e14a00267c419e", {});
 
   await account.devices.delete(dev_id);
   await account.buckets.delete(device_info.bucket.id);

@@ -95,7 +95,6 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     },
     dev_id
   );
-  console.log(dev_data);
 
   // send to admin device (settings_device) which will send to bucket
   await config_dev.sendData(dev_data);
@@ -107,7 +106,8 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const site_dev = await getDevice(account, new_dev_site.value as string);
   site_dev.sendData(dev_data);
 
-  //Setting dev token as EUI
+  //Setting available asset list
+  await org_dev.sendData(parseTagoObject({ asset_list: new_dev_name.value }, dev_id));
 
   return validate("Device created successfully!", "success");
 };

@@ -61,6 +61,14 @@ async function getIndoorPos(
 
   const [asset_room] = await site_dev.getData({ variable: "beacon_room", qty: 1, serie: strongest_beacon_serie });
 
+  const equip_list = await org_dev.getData({ variable: "equip_asset" });
+
+  const equip_serie = equip_list.find((x) => x.value === dev_name)?.serie;
+
+  const equip_info = await org_dev.getData({ variables: ["equip_img", "equip_serie", "equip_name"], serie: equip_serie });
+  const equip_name = equip_info.find((x) => x.variable === "equip_name")?.value;
+  const equip_img_url = equip_info.find((x) => x.variable === "equip_img")?.value;
+
   const assetInfo = parseTagoObject(
     {
       asset_location: {
@@ -71,8 +79,9 @@ async function getIndoorPos(
           x: strongest_beacon_info.x,
           y: strongest_beacon_info.y,
           color: "#" + ((Math.random() * 0xffffff) << 0).toString(16),
+          img_pin: equip_img_url,
         },
-      },
+      }, //pin
       asset_active_info: {
         variable: "asset_active_info",
         value: dev_name,
@@ -83,19 +92,28 @@ async function getIndoorPos(
           asset_room: asset_room?.value,
           asset_link: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?tab=2&edit=yes&asset=5ff5e718d0fff4001e9053a9&org_dev=${org_id}&site_dev=${site_id}`,
         },
+      }, //asset search table
+      asset_equip_name: {
+        variable: "asset_equip_name",
+        value: equip_name,
+      },
+      asset_equip_img: {
+        variable: "asset_equip_img",
+        value: equip_img_url,
       },
     },
     device_id //device id
   );
 
   const assetHistory = parseTagoObject({
+    asset_equip_paired: equip_name || "Not found",
     asset_name: dev_name,
     asset_closest_beacon: strongest_beacon_info.value,
     asset_strongest_rssi: strongest_beacon.value,
   });
 
-  await site_dev.deleteData({ variables: ["asset_location", "asset_active_info"], serie: device_id });
-  await org_dev.deleteData({ variables: ["asset_location", "asset_active_info"], serie: device_id });
+  await site_dev.deleteData({ variables: ["asset_location", "asset_active_info", "asset_equip_name", "asset_equip_img"], serie: device_id });
+  await org_dev.deleteData({ variables: ["asset_location", "asset_active_info", "asset_equip_name", "asset_equip_img"], serie: device_id });
   await site_dev.sendData(assetInfo);
   await org_dev.sendData(assetInfo);
   await site_dev.sendData(assetHistory);
@@ -133,15 +151,18 @@ async function handler(context: TagoContext, scope: Data[]) {
 
   const outdoor_data = scope.find((x) => x?.location) as any; //as any tagoIO issue -> location coordinates/lat,lng
 
-  if (outdoor_data) {
+  const outdoor_data_tektelic_lat = scope.find((x) => x.variable === "latitude")?.value;
+  const outdoor_data_tektelic_lng = scope.find((x) => x.variable === "longitude")?.value;
+
+  if (outdoor_data || outdoor_data_tektelic_lat) {
     const assetInfo = parseTagoObject(
       {
         asset_location: {
           variable: "asset_location",
           value: dev_name,
           location: {
-            lat: outdoor_data.location.coordinates[0],
-            lng: outdoor_data.location.coordinates[1],
+            lat: outdoor_data?.location?.coordinates[0] || outdoor_data_tektelic_lat,
+            lng: outdoor_data?.location?.coordinates[1] || outdoor_data_tektelic_lng,
           },
         },
         asset_active_info: {
@@ -239,3 +260,36 @@ export default new Analysis(startAnalysis, { token: "b5e413b3-cf53-4d36-afac-c09
 //   { "variable": "payload", "value": "0aac233f5b8ce8af51a1c7f5c109d14461fa70292cccac233f5b8cf4cbac233f5b8cf1df7b95a9308e42bc51dd64f0398cba40163bf03241ac" },
 //   { "variable": "port", "value": 25 }
 //  ]
+
+// [
+//   { "variable": "payload", "value": "0aac233f5b8ce8af51a1c7f5c109d14461fa70292cccac233f5b8cf4cbac233f5b8cf1af7b95a9308e42bc51dd64f0398cba40163bf03241af" },
+//   { "variable": "port", "value": 25 }
+//  ]
+
+// [
+//   { "variable": "payload", "value": "0aac233f5b8ce8af51a1c7f5c109d14461fa70292cccac233f5b8cf4cbac233f5b8cf1ea7b95a9308e42bc51dd64f0398cba40163bf03241af" },
+//   { "variable": "port", "value": 25 }
+//  ]
+
+// [
+//   {
+//     "variable": "latitude",
+//     "value": "35.770575"
+//   },
+//   {
+//     "variable": "longitude",
+//     "value": "-78.67815999999999"
+//   },
+//   {
+//     "variable": "payload",
+//     "value": "0xIJOAJSDJIO"
+//   },
+//   {
+//     "variable": "payload",
+//     "value": "0xIJOAJSDJIO"
+//   },
+//   {
+//     "variable": "port",
+//     "value": "25"
+//   }
+// ]

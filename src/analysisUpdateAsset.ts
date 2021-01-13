@@ -147,7 +147,7 @@ async function getIndoorPos(
     equip_img_url = equip_info.find((x) => x.variable === "equip_img")?.value;
   }
 
-  grbAPI(layer, active_beacon_list);
+  //grbAPI(layer, active_beacon_list);
 
   const assetInfo = parseTagoObject(
     {
@@ -272,6 +272,7 @@ async function handler(context: TagoContext, scope: Data[]) {
     await org_dev.sendData(assetInfo);
     await site_dev.sendData(assetHistory);
 
+    context.log("Position processed!");
     return console.log("Position processed!");
   }
 

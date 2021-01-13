@@ -1,13 +1,21 @@
 import { Analysis, Utils, Device, Account } from "@tago-io/sdk";
+import axios from "axios";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DeviceListItem } from "@tago-io/sdk/out/modules/Account/devices.types";
 import { parseTagoObject } from "./lib/data.logic";
 import getDevice from "./lib/getDevice";
 import { TagoContext } from "./types";
 
-interface BeaconLocationList {
-  [key: string]: BeaconLocationData;
-}
+// interface LayerData {
+//   id?: string;
+//   metadata?: any;
+//   origin: string;
+//   serie?: string;
+//   time?: Date;
+//   value: string;
+//   variable: string;
+// }
+
 interface BeaconLocationData {
   device?: string;
   embed?: string;
@@ -19,9 +27,67 @@ interface BeaconLocationData {
   y: string;
 }
 
-interface AssetPayload {
-  value: string | number;
-  variable: string;
+function mean(array: Array<number>) {
+  array = array.sort();
+  const result = (Number(array[0]) + Number(array[array.length - 1])) / 2;
+  return result;
+}
+
+function grbAPI(layer: Data, active_beacon_list: Data[]) {
+  const meas_bundles = [];
+  const x_pos = [],
+    y_pos = [];
+
+  const R = 6371000;
+
+  const beacon_array = (layer.metadata as any).fixed_position;
+
+  const beacon_key_array = Object.keys(beacon_array);
+
+  for (let i = 0; i < beacon_key_array.length; i++) {
+    x_pos.push(beacon_array[beacon_key_array[i]].x);
+    y_pos.push(beacon_array[beacon_key_array[i]].y);
+  }
+
+  const mx = mean(x_pos);
+  const my = mean(y_pos);
+
+  for (let i = 0; i < Object.keys(beacon_array).length; i++) {
+    (active_beacon_list[i] as any).lat_n = (beacon_array[beacon_key_array[i]].y * 100 - my) / R; //*100 to get rid of decimals
+    (active_beacon_list[i] as any).lon_n = (beacon_array[beacon_key_array[i]].x * 100 - mx) / R; //*100 to get rid of decimals
+    (active_beacon_list[i] as any).alt_n = 0;
+  }
+
+  const arr = [];
+
+  for (let i = 0; i < Object.keys(beacon_array).length; i++) {
+    // const current_beacon = active_beacon_list.find((x) => Object.keys(beacon_array[i])[0].includes(x.serie));
+    arr.push({
+      rssi: active_beacon_list[i].value,
+      gw_id: active_beacon_list[i].variable,
+      ant_lat: (active_beacon_list[i] as any).lat_n,
+      ant_long: (active_beacon_list[i] as any).lon_n,
+      ant_alt: (active_beacon_list[i] as any).alt_n,
+    });
+  }
+
+  meas_bundles.push(arr);
+
+  axios({
+    method: "post",
+    url: "https://lorawan-grs-dev.tektelic.com/api/geo/localization/rssi",
+    data: {
+      meas_bundles,
+    },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Basic dGFnbzp0YWdvZGV2MTQ=",
+    },
+  })
+    .then((msg) => console.log(msg))
+    .catch((e) => console.log(e));
+
+  //return the response
 }
 
 async function getIndoorPos(
@@ -42,6 +108,12 @@ async function getIndoorPos(
 
   //device payload will contain beacons signals
   const beacon_active_list = scope.filter((x) => beacon_list.find((y) => y.value == x.variable));
+
+  //need to change -> used only in grbAPI() -> need to change with beacon_active_list variables below
+  const active_beacon_list = beacon_active_list.map((x) => {
+    const serie = beacon_list.find((y) => y.value === x?.variable)?.serie;
+    return { ...x, serie: serie };
+  });
 
   //sort the array and get the first position of resultant array
   const [strongest_beacon] = beacon_active_list.sort((a, b) => (b.value as number) - (a.value as number));
@@ -65,9 +137,17 @@ async function getIndoorPos(
 
   const equip_serie = equip_list.find((x) => x.value === dev_name)?.serie;
 
-  const equip_info = await org_dev.getData({ variables: ["equip_img", "equip_serie", "equip_name"], serie: equip_serie });
-  const equip_name = equip_info.find((x) => x.variable === "equip_name")?.value;
-  const equip_img_url = equip_info.find((x) => x.variable === "equip_img")?.value;
+  let equip_info = null;
+  let equip_name = null;
+  let equip_img_url = null;
+
+  if (equip_serie) {
+    equip_info = await org_dev.getData({ variables: ["equip_img", "equip_serie", "equip_name"], serie: equip_serie });
+    equip_name = equip_info.find((x) => x.variable === "equip_name")?.value;
+    equip_img_url = equip_info.find((x) => x.variable === "equip_img")?.value;
+  }
+
+  grbAPI(layer, active_beacon_list);
 
   const assetInfo = parseTagoObject(
     {
@@ -106,7 +186,7 @@ async function getIndoorPos(
   );
 
   const assetHistory = parseTagoObject({
-    asset_equip_paired: equip_name || "Not found",
+    asset_equip_paired: equip_name || "No equipment paired yet.",
     asset_name: dev_name,
     asset_closest_beacon: strongest_beacon_info.value,
     asset_strongest_rssi: strongest_beacon.value,

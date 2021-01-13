@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "@tago-io/builder": "2.4.6",
-    "@tago-io/sdk": "10.0.7"
+    "@tago-io/sdk": "10.0.7",
+    "dayjs": "1.10.3"
   }
 }

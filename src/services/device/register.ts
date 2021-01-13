@@ -107,7 +107,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   site_dev.sendData(dev_data);
 
   //Setting available asset list
-  await org_dev.sendData(parseTagoObject({ asset_list: new_dev_name.value }, dev_id));
+  await org_dev.sendData(parseTagoObject({ asset_list: new_dev_name.value }, dev_id)); //need to change
 
   return validate("Device created successfully!", "success");
 };

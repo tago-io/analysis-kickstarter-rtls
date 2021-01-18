@@ -147,7 +147,7 @@ async function getIndoorPos(
     equip_img_url = equip_info.find((x) => x.variable === "equip_img")?.value;
   }
 
-  //grbAPI(layer, active_beacon_list);
+  grbAPI(layer, active_beacon_list);
 
   const assetInfo = parseTagoObject(
     {

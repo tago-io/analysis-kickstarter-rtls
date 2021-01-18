@@ -84,8 +84,5 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   //send to organization device
   await org_dev.sendData(parseTagoObject(site_data, site_id));
 
-  const site_device = await getDevice(account, site_id);
-  console.log(site_device);
-
   return validate("Site successfully created!", "success");
 };

@@ -9,9 +9,6 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   //getting previous id data
   const [site_data] = await org_dev.getData({ variable: "site_id", qty: 1, serie: site_id });
-  // const [dev_site_data] = await org_dev.getData({ variable: "dev_site", qty: 1, serie: site_id });
-  // console.log("dev_site_data");
-  // console.log(dev_site_data);??
 
   if (site_name) {
     //deleting prev data in settings_device
@@ -21,9 +18,9 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     await config_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name.value }, time: null });
     await org_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name.value }, time: null });
     console.log(await config_dev.getData({ variable: "site_id", qty: 1, serie: site_id }));
+
     //updating device name
     await account.devices.edit(site_id, { name: site_name.value as string });
-
     //editing bucket name
     const bucket_id = (await account.devices.info(site_id)).bucket.id;
     await account.buckets.edit(bucket_id, { name: site_name.value as string });

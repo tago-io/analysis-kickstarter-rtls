@@ -1,14 +1,10 @@
 import { Analysis, Utils, Device, Account } from "@tago-io/sdk";
-import axios from "axios";
 import { Data } from "@tago-io/sdk/out/common/common.types";
-import { DeviceListItem } from "@tago-io/sdk/out/modules/Account/devices.types";
 import { parseTagoObject } from "./lib/data.logic";
 import getDevice from "./lib/getDevice";
 import { TagoContext } from "./types";
 
 async function handler(context: TagoContext, scope: Data[]) {
-  //data must come through Device test 1
-
   context.log("Running Analysis");
   const environment = Utils.envToJson(context.environment);
   if (!environment) {

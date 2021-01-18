@@ -19,7 +19,6 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     //updating device name
     // await config_dev.sendData({ ...st_org_data, metadata: { ...st_org_data.metadata, label: org_name.value }, time: null });
     console.log("after");
-    console.log(await config_dev.getData({ variable: "org_id", qty: 1, serie: org_id }));
     await account.devices.edit(org_id, { name: org_name.value as string });
 
     //editting bucket name

@@ -52,7 +52,7 @@ function grbAPI(layer: Data, active_beacon_list: Data[]) {
   const mx = mean(x_pos);
   const my = mean(y_pos);
 
-  for (let i = 0; i < Object.keys(beacon_array).length; i++) {
+  for (let i = 0; i < active_beacon_list.length; i++) {
     (active_beacon_list[i] as any).lat_n = (beacon_array[beacon_key_array[i]].y * 100 - my) / R; //*100 to get rid of decimals
     (active_beacon_list[i] as any).lon_n = (beacon_array[beacon_key_array[i]].x * 100 - mx) / R; //*100 to get rid of decimals
     (active_beacon_list[i] as any).alt_n = 0;
@@ -60,8 +60,7 @@ function grbAPI(layer: Data, active_beacon_list: Data[]) {
 
   const arr = [];
 
-  for (let i = 0; i < Object.keys(beacon_array).length; i++) {
-    // const current_beacon = active_beacon_list.find((x) => Object.keys(beacon_array[i])[0].includes(x.serie));
+  for (let i = 0; i < active_beacon_list.length; i++) {
     arr.push({
       rssi: active_beacon_list[i].value,
       gw_id: active_beacon_list[i].variable,

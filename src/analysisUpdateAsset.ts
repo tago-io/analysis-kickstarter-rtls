@@ -33,7 +33,7 @@ function mean(array: Array<number>) {
   return result;
 }
 
-function grbAPI(layer: Data, active_beacon_list: Data[]) {
+async function grbAPI(layer: Data, active_beacon_list: Data[]) {
   const meas_bundles = [];
   const x_pos = [],
     y_pos = [];
@@ -53,8 +53,8 @@ function grbAPI(layer: Data, active_beacon_list: Data[]) {
   const my = mean(y_pos);
 
   for (let i = 0; i < active_beacon_list.length; i++) {
-    (active_beacon_list[i] as any).lat_n = (beacon_array[beacon_key_array[i]].y * 100 - my) / R; //*100 to get rid of decimals
-    (active_beacon_list[i] as any).lon_n = (beacon_array[beacon_key_array[i]].x * 100 - mx) / R; //*100 to get rid of decimals
+    (active_beacon_list[i] as any).lat_n = (beacon_array[beacon_key_array[i]].y * 1000000 - my) / R; //*1000000 to get rid of decimals
+    (active_beacon_list[i] as any).lon_n = (beacon_array[beacon_key_array[i]].x * 1000000 - mx) / R; //*1000000 to get rid of decimals
     (active_beacon_list[i] as any).alt_n = 0;
   }
 
@@ -65,28 +65,41 @@ function grbAPI(layer: Data, active_beacon_list: Data[]) {
       rssi: active_beacon_list[i].value,
       gw_id: active_beacon_list[i].variable,
       ant_lat: (active_beacon_list[i] as any).lat_n,
-      ant_long: (active_beacon_list[i] as any).lon_n,
+      ant_lon: (active_beacon_list[i] as any).lon_n,
       ant_alt: (active_beacon_list[i] as any).alt_n,
     });
   }
 
   meas_bundles.push(arr);
 
-  axios({
-    method: "post",
-    url: "https://lorawan-grs-dev.tektelic.com/api/geo/localization/rssi",
+  let result_pos: any;
+
+  await axios({
+    method: "POST",
+    url: "https://lorawan-grs-tago-io.tektelic-dev.com/api/geo/localization/rssi",
     data: {
       meas_bundles,
     },
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Basic dGFnbzp0YWdvZGV2MTQ=",
+    },
+    auth: {
+      username: "tagoio1",
+      password: "12345",
     },
   })
-    .then((msg) => console.log(msg))
+    .then((data) => (result_pos = data?.data))
     .catch((e) => console.log(e));
 
-  //return the response
+  // console.log(JSON.stringify(meas_bundles, null, 4));
+
+  if ("errors" in result_pos) throw result_pos.errors[0]; //if key in object
+
+  console.log(result_pos);
+  const x = (R * result_pos?.loc_est?.lon + mx) / 1000000;
+  const y = (R * result_pos?.loc_est?.lat + my) / 1000000;
+
+  return { x, y };
 }
 
 async function getIndoorPos(
@@ -146,7 +159,9 @@ async function getIndoorPos(
     equip_img_url = equip_info.find((x) => x.variable === "equip_img")?.value;
   }
 
-  grbAPI(layer, active_beacon_list);
+  const asset_pos = await grbAPI(layer, active_beacon_list).catch((e) => console.log(e));
+
+  if (!asset_pos) return;
 
   const assetInfo = parseTagoObject(
     {
@@ -155,8 +170,8 @@ async function getIndoorPos(
         value: dev_name,
         metadata: {
           layer: layer.serie,
-          x: strongest_beacon_info.x,
-          y: strongest_beacon_info.y,
+          x: asset_pos.x, //
+          y: asset_pos.y, //
           color: "#" + ((Math.random() * 0xffffff) << 0).toString(16),
           img_pin: equip_img_url,
         },
@@ -197,7 +212,7 @@ async function getIndoorPos(
   await org_dev.sendData(assetInfo);
   await site_dev.sendData(assetHistory);
 
-  return console.log("Position processed!");
+  return console.log("Indoor position processed!");
 }
 
 async function handler(context: TagoContext, scope: Data[]) {
@@ -271,8 +286,7 @@ async function handler(context: TagoContext, scope: Data[]) {
     await org_dev.sendData(assetInfo);
     await site_dev.sendData(assetHistory);
 
-    context.log("Position processed!");
-    return console.log("Position processed!");
+    return console.log("Outdoor position processed!");
   }
 
   //if theres no outdoor position than we will have an indoor position
@@ -373,3 +387,8 @@ export default new Analysis(startAnalysis, { token: "b5e413b3-cf53-4d36-afac-c09
 //     "value": "25"
 //   }
 // ]
+
+// [
+//   { "variable": "payload", "value": "0aac233f5b8ce800ac233f5b8cf400ac233f5b8cf100" },
+//   { "variable": "port", "value": 25 }
+//  ]

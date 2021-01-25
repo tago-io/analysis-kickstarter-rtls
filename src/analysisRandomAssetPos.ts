@@ -37,7 +37,7 @@ async function handler(context: TagoContext, scope: Data[]) {
       parseTagoObject({
         payload: {
           variable: "payload",
-          value: `0aac233f5b8cf1${rand_array[Math.floor(Math.random() * 10)]}ac233f5b8cf4${rand_array[Math.floor(Math.random() * 10)]}ac233f5b8ce8${
+          value: `0a5b8cf1${rand_array[Math.floor(Math.random() * 10)]}5b8cf4${rand_array[Math.floor(Math.random() * 10)]}5b8ce8${
             rand_array[Math.floor(Math.random() * 10)]
           }`,
         },
@@ -49,7 +49,7 @@ async function handler(context: TagoContext, scope: Data[]) {
       parseTagoObject({
         payload: {
           variable: "payload",
-          value: `0aac233f5b8cf1${rand_array[Math.floor(Math.random() * 10)]}ac233f5b8cf4${rand_array[Math.floor(Math.random() * 10)]}ac233f5b8ce8${
+          value: `0a5b8cf1${rand_array[Math.floor(Math.random() * 10)]}5b8cf4${rand_array[Math.floor(Math.random() * 10)]}5b8ce8${
             rand_array[Math.floor(Math.random() * 10)]
           }`,
         },

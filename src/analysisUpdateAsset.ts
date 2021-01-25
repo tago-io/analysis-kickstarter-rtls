@@ -6,16 +6,6 @@ import { parseTagoObject } from "./lib/data.logic";
 import getDevice from "./lib/getDevice";
 import { TagoContext } from "./types";
 
-// interface LayerData {
-//   id?: string;
-//   metadata?: any;
-//   origin: string;
-//   serie?: string;
-//   time?: Date;
-//   value: string;
-//   variable: string;
-// }
-
 interface BeaconLocationData {
   device?: string;
   embed?: string;
@@ -33,10 +23,14 @@ function mean(array: Array<number>) {
   return result;
 }
 
-async function grbAPI(layer: Data, active_beacon_list: Data[]) {
+async function grbAPI(layer: Data, active_beacon_list: Data[], scale_x: number, scale_y: number, scale_latlon: number) {
   const meas_bundles = [];
   const x_pos = [],
     y_pos = [];
+
+  if (scale_x < 1 || Number.isNaN(scale_x)) scale_x = 1; //if scale is not set or NaN
+  if (scale_y < 1 || Number.isNaN(scale_y)) scale_y = 1; //if scale is not set or NaN
+  if (scale_latlon < 1 || Number.isNaN(scale_latlon)) scale_latlon = 1; //if scale is not set or NaN
 
   const R = 6371000;
 
@@ -45,6 +39,8 @@ async function grbAPI(layer: Data, active_beacon_list: Data[]) {
   const beacon_key_array = Object.keys(beacon_array);
 
   for (let i = 0; i < beacon_key_array.length; i++) {
+    beacon_array[beacon_key_array[i]].x = beacon_array[beacon_key_array[i]].x * scale_x;
+    beacon_array[beacon_key_array[i]].y = beacon_array[beacon_key_array[i]].y * scale_y;
     x_pos.push(beacon_array[beacon_key_array[i]].x);
     y_pos.push(beacon_array[beacon_key_array[i]].y);
   }
@@ -53,8 +49,8 @@ async function grbAPI(layer: Data, active_beacon_list: Data[]) {
   const my = mean(y_pos);
 
   for (let i = 0; i < active_beacon_list.length; i++) {
-    (active_beacon_list[i] as any).lat_n = (beacon_array[beacon_key_array[i]].y * 1000000 - my) / R; //*1000000 to get rid of decimals
-    (active_beacon_list[i] as any).lon_n = (beacon_array[beacon_key_array[i]].x * 1000000 - mx) / R; //*1000000 to get rid of decimals
+    (active_beacon_list[i] as any).lat_n = (beacon_array[beacon_key_array[i]].y - my) / R;
+    (active_beacon_list[i] as any).lon_n = (beacon_array[beacon_key_array[i]].x - mx) / R;
     (active_beacon_list[i] as any).alt_n = 0;
   }
 
@@ -67,6 +63,8 @@ async function grbAPI(layer: Data, active_beacon_list: Data[]) {
       ant_lat: (active_beacon_list[i] as any).lat_n,
       ant_lon: (active_beacon_list[i] as any).lon_n,
       ant_alt: (active_beacon_list[i] as any).alt_n,
+      snr: 100,
+      ant_ind: 0,
     });
   }
 
@@ -91,13 +89,13 @@ async function grbAPI(layer: Data, active_beacon_list: Data[]) {
     .then((data) => (result_pos = data?.data))
     .catch((e) => console.log(e));
 
-  // console.log(JSON.stringify(meas_bundles, null, 4));
+  console.log(JSON.stringify(meas_bundles, null, 4));
 
   if ("errors" in result_pos) throw result_pos.errors[0]; //if key in object
 
   console.log(result_pos);
-  const x = (R * result_pos?.loc_est?.lon + mx) / 1000000;
-  const y = (R * result_pos?.loc_est?.lat + my) / 1000000;
+  const y = (R * result_pos?.loc_est?.lat + my) / scale_y;
+  const x = (R * result_pos?.loc_est?.lon + mx) / scale_x;
 
   return { x, y };
 }
@@ -141,6 +139,10 @@ async function getIndoorPos(
 
   if (!layer) return console.log("No beacon found!");
 
+  const [scale_x] = await site_dev.getData({ variable: "layers_scale_x", qty: 1, serie: layer.serie });
+  const [scale_y] = await site_dev.getData({ variable: "layers_scale_y", qty: 1, serie: layer.serie });
+  const [scale_latlon] = await site_dev.getData({ variable: "layers_scale_latlon", qty: 1, serie: layer.serie });
+
   const strongest_beacon_info = (layer.metadata as any).fixed_position[fixed_position_key];
 
   const [asset_room] = await site_dev.getData({ variable: "beacon_room", qty: 1, serie: strongest_beacon_serie });
@@ -159,7 +161,9 @@ async function getIndoorPos(
     equip_img_url = equip_info.find((x) => x.variable === "equip_img")?.value;
   }
 
-  const asset_pos = await grbAPI(layer, active_beacon_list).catch((e) => console.log(e));
+  const asset_pos = await grbAPI(layer, active_beacon_list, Number(scale_x?.value), Number(scale_y?.value), Number(scale_latlon?.value)).catch((e) =>
+    console.log(e)
+  );
 
   if (!asset_pos) return;
 
@@ -389,6 +393,6 @@ export default new Analysis(startAnalysis, { token: "b5e413b3-cf53-4d36-afac-c09
 // ]
 
 // [
-//   { "variable": "payload", "value": "0aac233f5b8ce800ac233f5b8cf400ac233f5b8cf100" },
-//   { "variable": "port", "value": 25 }
+//   { "variable": "payload", "value": "b05b8cf1c95b8cf4be5b8ce8b9" },
+// { "variable": "port", "value": 25 }
 //  ]

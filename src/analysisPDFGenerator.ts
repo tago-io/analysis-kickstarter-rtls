@@ -22,13 +22,13 @@ async function handler(context: TagoContext, scope: Data[]) {
 
   const account = new Account({ token: environment.account_token });
 
-  const dev_id = scope[0].origin;
+  // const dev_id = scope[0].origin;
 
-  const site_dev = await getDevice(account, dev_id);
+  // const site_dev = await getDevice(account, dev_id);
 
-  const table_data = await site_dev.getData({ variables: ["asset_name", "asset_equip_paired", "asset_closest_beacon", "asset_strongest_rssi"], qty: 10 });
+  // const table_data = await site_dev.getData({ variables: ["asset_name", "asset_equip_paired", "asset_closest_beacon", "asset_strongest_rssi"], qty: 10 });
 
-  const dev_register_qty = (await site_dev.getData({ variable: "dev_id", qty: 9999 })).length;
+  // const dev_register_qty = (await site_dev.getData({ variable: "dev_id", qty: 9999 })).length;
 
   const html = `<html>
   <link
@@ -322,9 +322,9 @@ async function handler(context: TagoContext, scope: Data[]) {
     message: "Please find attcahed the RTLS System - Asset Location History ",
     attachment: {
       archive: pdf,
-      // type: "base64",
+      type: "base64",
       filename: "Asset Location History.pdf",
-    },
+    } as any,
   });
 
   return context.log("PDF Generated!");

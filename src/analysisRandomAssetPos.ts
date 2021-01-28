@@ -21,15 +21,12 @@ async function handler(context: TagoContext, scope: Data[]) {
   const asset_0128 = await getDevice(account, environment.asset_0128_id);
   const asset_0026 = await getDevice(account, environment.asset_0026_id);
 
-  const rand_array = ["00", "f4", "f6", "de", "9e", "d6", "b2", "f8", "e6", "a0"];
+  const payload_array = ["b05b8cf1c95b8cf4be5b8ce8b9", "b05b8cf1c95b8cf4be5b8ce8BF", "b05b8cf1c95b8cf4be5b8ce8C9"];
 
-  const rand_pos = [
-    [35.7705745, -78.6794943],
-    [-23.634459, -46.669921],
-    [-34.610435, -58.543507],
-    [-34.012697, 18.828928],
-    [51.524286, -0.109501],
-    [-28.085785, 153.44981],
+  const coord_pos = [
+    [35.7796, -78.6382],
+    [35.975493, -78.910795],
+    [36.020212, -78.474089],
   ];
 
   if (Math.floor(Math.random() * 2) >= 1) {
@@ -37,9 +34,7 @@ async function handler(context: TagoContext, scope: Data[]) {
       parseTagoObject({
         payload: {
           variable: "payload",
-          value: `0a5b8cf1${rand_array[Math.floor(Math.random() * 10)]}5b8cf4${rand_array[Math.floor(Math.random() * 10)]}5b8ce8${
-            rand_array[Math.floor(Math.random() * 10)]
-          }`,
+          value: payload_array[Math.floor(Math.random() * (2 - 0 + 1)) + 0],
         },
         port: { variable: "port", value: 25 },
       })
@@ -49,9 +44,7 @@ async function handler(context: TagoContext, scope: Data[]) {
       parseTagoObject({
         payload: {
           variable: "payload",
-          value: `0a5b8cf1${rand_array[Math.floor(Math.random() * 10)]}5b8cf4${rand_array[Math.floor(Math.random() * 10)]}5b8ce8${
-            rand_array[Math.floor(Math.random() * 10)]
-          }`,
+          value: payload_array[Math.floor(Math.random() * (2 - 0 + 1)) + 0],
         },
         port: { variable: "port", value: 25 },
       })
@@ -63,7 +56,7 @@ async function handler(context: TagoContext, scope: Data[]) {
         variable: "asset_location",
         value: "Random Position Generated",
         location: {
-          coordinates: rand_pos[Math.floor(Math.random() * 6)],
+          coordinates: coord_pos[Math.floor(Math.random() * (2 - 0 + 1)) + 0],
         },
       },
       port: { variable: "port", value: 25 },
@@ -83,3 +76,18 @@ async function startAnalysis(context: TagoContext, scope: any) {
 }
 
 export default new Analysis(startAnalysis, { token: "665002f9-3a72-4cab-8a8e-43f2a70a41d3" });
+
+// [
+//   { "variable": "payload", "value": "b05b8cf1c95b8cf4be5b8ce8b9" },
+// { "variable": "port", "value": 25 }
+//  ]
+
+// [
+//   { "variable": "payload", "value": "b05b8cf1c95b8cf4be5b8ce8BF" },
+// { "variable": "port", "value": 25 }
+//  ]
+
+// [
+//   { "variable": "payload", "value": "b05b8cf1c95b8cf4be5b8ce8C9" },
+// { "variable": "port", "value": 25 }
+//  ]

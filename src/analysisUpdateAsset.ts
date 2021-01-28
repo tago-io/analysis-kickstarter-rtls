@@ -40,10 +40,12 @@ async function grbAPI(layer: Data, active_beacon_list: Data[], scale_x: number, 
 
   for (let i = 0; i < beacon_key_array.length; i++) {
     beacon_array[beacon_key_array[i]].x = beacon_array[beacon_key_array[i]].x * scale_x;
-    beacon_array[beacon_key_array[i]].y = beacon_array[beacon_key_array[i]].y * scale_y;
+    beacon_array[beacon_key_array[i]].y = (1 - beacon_array[beacon_key_array[i]].y) * scale_y;
     x_pos.push(beacon_array[beacon_key_array[i]].x);
     y_pos.push(beacon_array[beacon_key_array[i]].y);
   }
+
+  console.log(beacon_array);
 
   const mx = mean(x_pos);
   const my = mean(y_pos);
@@ -94,7 +96,7 @@ async function grbAPI(layer: Data, active_beacon_list: Data[], scale_x: number, 
   if ("errors" in result_pos) throw result_pos.errors[0]; //if key in object
 
   console.log(result_pos);
-  const y = (R * result_pos?.loc_est?.lat + my) / scale_y;
+  const y = 1 - (R * result_pos?.loc_est?.lat + my) / scale_y;
   const x = (R * result_pos?.loc_est?.lon + mx) / scale_x;
 
   return { x, y };
@@ -176,7 +178,6 @@ async function getIndoorPos(
           layer: layer.serie,
           x: asset_pos.x, //
           y: asset_pos.y, //
-          color: "#" + ((Math.random() * 0xffffff) << 0).toString(16),
           img_pin: equip_img_url,
         },
       }, //pin

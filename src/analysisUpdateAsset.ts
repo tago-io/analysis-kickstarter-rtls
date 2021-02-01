@@ -111,7 +111,9 @@ async function getIndoorPos(
   site_name: string,
   org_name: string,
   org_dev: Device,
-  org_id: string
+  org_id: string,
+  equip_name: string,
+  equip_img_url: string
 ) {
   //fetching existing layers
   const layers_list = await site_dev.getData({ variable: "layers", qty: 9999 });
@@ -149,19 +151,19 @@ async function getIndoorPos(
 
   const [asset_room] = await site_dev.getData({ variable: "beacon_room", qty: 1, serie: strongest_beacon_serie });
 
-  const equip_list = await org_dev.getData({ variable: "equip_asset" });
+  // const equip_list = await org_dev.getData({ variable: "equip_asset" });
 
-  const equip_serie = equip_list.find((x) => x.value === dev_name)?.serie;
+  // const equip_serie = equip_list.find((x) => x.value === dev_name)?.serie;
 
-  let equip_info = null;
-  let equip_name = null;
-  let equip_img_url = null;
+  // let equip_info = null;
+  // let equip_name = null;
+  // let equip_img_url = null;
 
-  if (equip_serie) {
-    equip_info = await org_dev.getData({ variables: ["equip_img", "equip_serie", "equip_name"], serie: equip_serie });
-    equip_name = equip_info.find((x) => x.variable === "equip_name")?.value;
-    equip_img_url = equip_info.find((x) => x.variable === "equip_img")?.value;
-  }
+  // if (equip_serie) {
+  //   equip_info = await org_dev.getData({ variables: ["equip_img", "equip_serie", "equip_name"], serie: equip_serie });
+  //   equip_name = equip_info.find((x) => x.variable === "equip_name")?.value;
+  //   equip_img_url = equip_info.find((x) => x.variable === "equip_img")?.value;
+  // }
 
   const asset_pos = await grbAPI(layer, active_beacon_list, Number(scale_x?.value), Number(scale_y?.value), Number(scale_latlon?.value)).catch((e) =>
     console.log(e)
@@ -253,6 +255,20 @@ async function handler(context: TagoContext, scope: Data[]) {
   const outdoor_data_tektelic_lat = scope.find((x) => x.variable === "latitude")?.value;
   const outdoor_data_tektelic_lng = scope.find((x) => x.variable === "longitude")?.value;
 
+  const equip_list = await org_dev.getData({ variable: "equip_asset" });
+
+  const equip_serie = equip_list.find((x) => x.value === dev_name)?.serie;
+
+  let equip_info = null;
+  let equip_name = null;
+  let equip_img = null;
+
+  if (equip_serie) {
+    equip_info = await org_dev.getData({ variables: ["equip_img", "equip_serie", "equip_name"], serie: equip_serie });
+    equip_name = equip_info.find((x) => x.variable === "equip_name")?.value as string;
+    equip_img = equip_info.find((x) => x.variable === "equip_img")?.value as string;
+  }
+
   if (outdoor_data || outdoor_data_tektelic_lat) {
     const assetInfo = parseTagoObject(
       {
@@ -275,11 +291,13 @@ async function handler(context: TagoContext, scope: Data[]) {
             asset_link: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?tab=0&edit=yes&asset=5ff5e718d0fff4001e9053a9&org_dev=${org_id}&site_dev=${site_id}`,
           },
         },
+        //asset_equip_name ....
       },
       device_id
     );
 
     const assetHistory = parseTagoObject({
+      asset_equip_paired: equip_name || "No equipment paired yet.",
       asset_name: dev_name,
       asset_closest_beacon: "Asset is outdoor",
       asset_strongest_rssi: "Asset is outdoor",
@@ -295,7 +313,7 @@ async function handler(context: TagoContext, scope: Data[]) {
   }
 
   //if theres no outdoor position than we will have an indoor position
-  await getIndoorPos(site_dev, scope, device_id, site_id, dev_name, site_name, org_name, org_dev, org_id);
+  await getIndoorPos(site_dev, scope, device_id, site_id, dev_name, site_name, org_name, org_dev, org_id, equip_name, equip_img);
 }
 
 async function startAnalysis(context: TagoContext, scope: any) {

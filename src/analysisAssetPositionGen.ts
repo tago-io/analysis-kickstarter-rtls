@@ -16,10 +16,10 @@ async function handler(context: TagoContext, scope: Data[]) {
   }
 
   const account = new Account({ token: environment.account_token });
+  const config_dev = new Device({ token: environment.config_token });
 
-  const asset_0008 = await getDevice(account, environment.asset_0008_id);
-  const asset_0128 = await getDevice(account, environment.asset_0128_id);
-  const asset_0026 = await getDevice(account, environment.asset_0026_id);
+  const asset_indoor = await getDevice(account, environment.asset_indoor_id);
+  const asset_outdoor = await getDevice(account, environment.asset_outdoor_id);
 
   const payload_array = ["b05b8cf1c95b8cf4be5b8ce8b9", "b05b8cf1c95b8cf4be5b8ce8BF", "b05b8cf1c95b8cf4be5b8ce8C9"];
 
@@ -29,39 +29,38 @@ async function handler(context: TagoContext, scope: Data[]) {
     [36.020212, -78.474089],
   ];
 
-  if (Math.floor(Math.random() * 2) >= 1) {
-    await asset_0008.sendData(
-      parseTagoObject({
-        payload: {
-          variable: "payload",
-          value: payload_array[Math.floor(Math.random() * (2 - 0 + 1)) + 0],
-        },
-        port: { variable: "port", value: 25 },
-      })
-    );
-  } else {
-    await asset_0128.sendData(
-      parseTagoObject({
-        payload: {
-          variable: "payload",
-          value: payload_array[Math.floor(Math.random() * (2 - 0 + 1)) + 0],
-        },
-        port: { variable: "port", value: 25 },
-      })
-    );
-  }
-  await asset_0026.sendData(
+  const [asset_gen_count] = await config_dev.getData({ variable: "asset_gen_count" });
+  await config_dev.deleteData({ variable: "asset_gen_count" });
+
+  let count = asset_gen_count.value as number;
+
+  await asset_indoor.sendData(
+    parseTagoObject({
+      payload: {
+        variable: "payload",
+        value: payload_array[count],
+      },
+      port: { variable: "port", value: 25 },
+    })
+  );
+
+  await asset_outdoor.sendData(
     parseTagoObject({
       payload: {
         variable: "asset_location",
         value: "Random Position Generated",
         location: {
-          coordinates: coord_pos[Math.floor(Math.random() * (2 - 0 + 1)) + 0],
+          coordinates: coord_pos[count],
         },
       },
       port: { variable: "port", value: 25 },
     })
   );
+
+  if (count !== 2) {
+    count = count + 1;
+    await config_dev.sendData(parseTagoObject({ asset_gen_count: { variable: "asset_gen_count", value: count } }));
+  } else await config_dev.sendData(parseTagoObject({ asset_gen_count: { variable: "asset_gen_count", value: 0 } }));
 
   return context.log("Random data sent");
 }

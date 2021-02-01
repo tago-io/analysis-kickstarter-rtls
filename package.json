@@ -9,7 +9,7 @@
     "test:watch": "jest . --watch",
     "test:coverage": "jest . --coverage",
     "linter": "eslint .",
-    "build": "analysis-builder src/analysisHandler.ts ./build/handler.tago.js && analysis-builder src/analysisUpdateAsset.ts ./build/analysisUpdateAsset.tago.js && analysis-builder src/analysisRandomAssetPos.ts ./build/analysisRandomAssetPos.tago.js ",
+    "build": "analysis-builder src/analysisHandler.ts ./build/handler.tago.js && analysis-builder src/analysisUpdateAsset.ts ./build/analysisUpdateAsset.tago.js && analysis-builder src/analysisAssetPositionGen.ts ./build/analysisAssetPositionGen.tago.js && analysis-builder src/analysisPDFGenerator.ts ./build/analysisPDFGenerator.tago.js",
     "start": "ts-node-dev --inspect --",
     "inspect": "node --inspect ./node_modules/.bin/ts-node --files ./src/start.ts"
   },

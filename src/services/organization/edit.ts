@@ -43,16 +43,14 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   }
   if (org_address) {
     //updating data
-    await config_dev.sendData(org_address); //?
-    const [org_data2] = await config_dev.getData({ variable: "org_address", qty: 1, serie: org_id });
-    console.log(org_data2);
+    // await config_dev.sendData(org_address); //?
 
     //getting previous data
-    const [org_data] = await config_dev.getData({ variable: "org_id", qty: 1, serie: org_id });
+    const [org_id_data] = await config_dev.getData({ variable: "org_id", qty: 1, serie: org_id });
     //deleting prev data in settings_device
-    await config_dev.deleteData({ id: org_data.id });
+    await config_dev.deleteData({ id: org_id_data.id });
     //updating data
-    await config_dev.sendData({ ...org_data, metadata: { ...org_data.metadata, label: org_address.value }, time: null });
+    await config_dev.sendData({ ...org_id_data, metadata: { ...org_id_data.metadata, label: org_address.value }, time: null });
   }
   return console.log("edited!");
 };

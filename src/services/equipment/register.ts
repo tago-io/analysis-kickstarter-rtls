@@ -10,12 +10,40 @@ interface installDeviceParam {
   new_dev_name: string;
   org_id: string;
   site_id: string;
-  connector: string;
-  new_device_eui: string;
+  asset_id: string;
+}
+
+async function installDevice({ account, new_dev_name, org_id, site_id, asset_id }: installDeviceParam) {
+  //structuring data
+  const device_data: DeviceCreateInfo = {
+    name: new_dev_name,
+  };
+
+  //creating new device
+  const new_dev = await account.devices.create(device_data);
+
+  //inserting device id -> so we can reference this later
+  await account.devices.edit(new_dev.device_id, {
+    tags: [
+      { key: "device_id", value: new_dev.device_id },
+      { key: "asset_id", value: asset_id },
+      { key: "site_id", value: site_id },
+      { key: "organization_id", value: org_id },
+      { key: "device_type", value: "equipment" },
+    ],
+  });
+
+  //instantiating new device
+  const new_org_dev = new Device({ token: new_dev.token });
+
+  //token, device_id, bucket_id
+  return { ...new_dev, device: new_org_dev } as DeviceCreated;
 }
 
 export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
   console.log("Registering...");
+  const validate = validation("equip_validation", org_dev);
+  validate("Registering...", "warning");
   //Collecting data
   const new_equip_name = scope.find((x) => x.variable === "new_equip_name");
   const new_equip_serie = scope.find((x) => x.variable === "new_equip_serie");
@@ -24,25 +52,46 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   const org_id = scope[0].origin as string;
 
-  // const asset_list = await org_dev.getData({ variable: "asset_list" });
-  // const index = asset_list.indexOf(asset_list.find((x) => x.value === new_equip_asset.value));
-  // asset_list.splice(index, 1);
-
   //deleteData
   await org_dev.deleteData({ variable: "asset_list", value: new_equip_asset.value }).then((msg) => console.log(msg));
   await account.dashboards.edit("5fca818da0e14a00267c419e", {});
 
-  //validation
-  const validate = validation("equip_validation", org_dev);
+  const [asset_name] = await org_dev.getData({ variable: "dev_name", value: new_equip_asset.value, qty: 1 });
+  const asset_id = asset_name.serie;
 
-  const equip_data = parseTagoObject({
-    equip_name: new_equip_name.value,
-    equip_serie: new_equip_serie.value,
-    equip_img: `https://api.tago.io/file/5fc13907cf4e170027440a96/${(new_equip_img?.metadata as any)?.file?.path}`,
-    equip_asset: new_equip_asset.value,
+  const site_id = (await account.devices.info(asset_id)).tags.find((x) => x.key === "site_id").value as string;
+  const site_dev = await getDevice(account, site_id);
+
+  const { device_id: equip_id, device: equip_dev } = await installDevice({
+    account,
+    new_dev_name: new_equip_name.value as string,
+    org_id,
+    site_id: site_id,
+    asset_id,
   });
 
+  const equip_data = parseTagoObject(
+    {
+      equip_name: new_equip_name.value,
+      // equip_serie: new_equip_serie.value,
+      equip_img: `https://api.tago.io/file/5fc13907cf4e170027440a96/${(new_equip_img?.metadata as any)?.file?.path}`,
+      equip_asset: new_equip_asset.value,
+      equip_serie: {
+        value: new_equip_serie.value,
+        metadata: {
+          label: new_equip_name.value,
+        },
+      },
+    },
+    equip_id
+  );
+
+  const asset_dev_tags = (await account.devices.info(asset_id)).tags;
+
+  await account.devices.edit(asset_id, { tags: [...asset_dev_tags, { key: "equipment_id", value: equip_id }] });
+
   await org_dev.sendData(equip_data);
+  await site_dev.sendData(equip_data);
 
   return validate("Device created successfully!", "success");
 };

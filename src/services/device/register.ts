@@ -15,7 +15,6 @@ interface installDeviceParam {
 }
 
 async function installDevice({ account, new_dev_name, org_id, site_id, connector, new_device_eui }: installDeviceParam) {
-  //structuring data
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
     network: "5ed7ccd5427104001cf00183",
@@ -44,7 +43,8 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
 }
 
 export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  console.log("Registering...");
+  const validate = validation("dev_validation", org_dev);
+  validate("Registering...", "warning");
   //Collecting data
   const new_dev_name = scope.find((x) => x.variable === "new_dev_name");
   const new_dev_eui = scope.find((x) => x.variable === "new_dev_eui");
@@ -54,14 +54,13 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const org_id = scope[0].origin as string;
 
   //validation
-  const validate = validation("dev_validation", org_dev);
 
   if (!new_dev_name.value) throw validate("Name field is empty", "danger");
   if ((new_dev_name.value as string).length < 3) throw validate("Name field is smaller than 3 char.", "danger");
   if (!new_dev_type.value) throw validate("Type field is empty", "danger");
   if (!new_dev_eui.value) throw validate("EUI field is empty", "danger");
 
-  console.log(new_dev_type);
+  new_dev_eui.value = (new_dev_eui.value as string).toUpperCase();
 
   const [dev_exists] = await org_dev.getData({
     variables: ["dev_eui", "dev_name"],

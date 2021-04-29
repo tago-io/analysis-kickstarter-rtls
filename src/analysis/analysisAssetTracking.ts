@@ -21,7 +21,6 @@ interface BeaconLocationData {
 interface Beacon {
   id: string;
   rssi: number;
-  bldg_id: string;
   x?: number;
   y?: number;
   layer_id?: string;
@@ -32,7 +31,7 @@ interface DataWithSlice extends Data {
   sliced?: string;
 }
 
-async function getIndoorPos(account: Account, org_dev: Device, site_dev: Device, site_id: string, scope: Data[], equipment: Data) {
+async function getIndoorPos(account: Account, scope: Data[], org_dev: Device, site_dev: Device, site_id: string, equipment: Data) {
   let beacon_list = (await site_dev.getData({ variables: "beacon_id", qty: 9999 })) as DataWithSlice[];
   beacon_list = beacon_list.map((x) => ({
     ...x,
@@ -45,7 +44,7 @@ async function getIndoorPos(account: Account, org_dev: Device, site_dev: Device,
     const beacon_data = beacon_list.find((y) => y.value == data.variable || data.variable == y.sliced);
     if (!beacon_data) return final;
 
-    final.push({ id: beacon_data.value as string, rssi: data.value as number, bldg_id: beacon_data.metadata?.bldg_id, serie: beacon_data.serie });
+    final.push({ id: beacon_data.value as string, rssi: data.value as number, serie: beacon_data.serie });
     return final;
   }, []);
 
@@ -89,11 +88,11 @@ async function getIndoorPos(account: Account, org_dev: Device, site_dev: Device,
           site_id,
           layer_id: layer.id,
           icon: equip_icon ? equip_icon.value : null,
-          // url: `https://admin.tago.io/dashboards/info/6009d435525d0b002fdf6aff?site_dev=${site_id}&asset_dev=${scope[0].origin}`,
+          url: `https://admin.tago.io/dashboards/info/6061d65c060a6b00185359a8?site_dev=${site_id}&asset_dev=${scope[0].origin}`,
           img_pin: equip_img?.value,
         },
       },
-      equipment_site: site_id,
+      // equipment_site: site_id,
     },
     equipment.serie
   );
@@ -113,6 +112,25 @@ async function getIndoorPos(account: Account, org_dev: Device, site_dev: Device,
     },
   });
 
+  const plotBasicImageMarker = parseTagoObject(
+    {
+      layers: {
+        ...layer,
+        metadata: {
+          ...layer.metadata,
+          fixed_position: {
+            [`${scope[0].origin}`]: {
+              value: "Offset",
+              x: "0.00",
+              y: "0.00",
+            },
+          },
+        },
+      },
+    },
+    layer.serie
+  );
+
   await site_dev.deleteData({ variables: ["equipment_location", "equipment_outside_location"], series: equipment.serie, qty: 9999 });
   await site_dev.sendData(assetInfo.concat(assetHistory));
   // await site_dev.sendData(assetHistory);
@@ -122,8 +140,12 @@ async function getIndoorPos(account: Account, org_dev: Device, site_dev: Device,
 
   const device = await getDevice(account, scope[0].origin);
 
+  // const [device_marker] = await device.getData({ variables: "layers" });
+  // if (device_marker?.value) {
+  //   await device.sendData(assetInfo.concat(assetHistory, plotBasicImageMarker));
+  // }
   await device.deleteData({ variables: "layers" });
-  await device.sendData(assetHistory);
+  await device.sendData(assetInfo.concat(assetHistory, plotBasicImageMarker));
 
   console.log(strongest_beacon);
 
@@ -204,7 +226,7 @@ async function updateAsset(context: TagoContext, scope: Data[]) {
 
   if (await outdoorData(scope, site_dev, equipment)) return;
 
-  await getIndoorPos(account, org_dev, site_dev, site_id, scope, equipment);
+  await getIndoorPos(account, scope, org_dev, site_dev, site_id, equipment);
 
   context.log("Analysis Finished");
 }

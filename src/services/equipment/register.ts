@@ -54,6 +54,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   //deleteData
   await org_dev.deleteData({ variable: "asset_list", value: new_equip_asset.value }).then((msg) => console.log(msg));
+  // await account.dashboards.edit("608aaa44e49d32001116715e", {});
   await account.dashboards.edit("5fca818da0e14a00267c419e", {});
 
   const [asset_name] = await org_dev.getData({ variable: "dev_name", value: new_equip_asset.value, qty: 1 });
@@ -74,6 +75,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     {
       equip_name: new_equip_name.value,
       // equip_serie: new_equip_serie.value,
+      // equip_img: `https://api.tago.io/file/608aa9bd050d8f0012e20a8a/${(new_equip_img?.metadata as any)?.file?.path}`,
       equip_img: `https://api.tago.io/file/5fc13907cf4e170027440a96/${(new_equip_img?.metadata as any)?.file?.path}`,
       equip_asset: new_equip_asset.value,
       equip_serie: {
@@ -94,4 +96,5 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   await site_dev.sendData(equip_data);
 
   return validate("Device created successfully!", "success");
+  //DELTE ALSO THE IMAGE, ITS BEING KEPT!
 };

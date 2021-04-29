@@ -9,7 +9,7 @@
     "test:watch": "jest . --watch",
     "test:coverage": "jest . --coverage",
     "linter": "eslint .",
-    "build": "analysis-builder src/analysisHandler.ts ./build/handler.tago.js && analysis-builder src/analysisAssetTracking.ts ./build/analysisAssetTracking.tago.js",
+    "build": "analysis-builder src/analysisHandler.ts ./build/handler.tago.js && analysis-builder src/analysisAssetTracking.ts ./build/analysisAssetTracking.tago.js  && analysis-builder src/analysisPDFGenerator.ts ./build/analysisPDFGenerator.tago.js && analysis-builder src/analysisSimulator.ts ./build/analysisSimulator.tago.js",
     "start": "ts-node-dev --inspect --",
     "inspect": "node --inspect ./node_modules/.bin/ts-node --files ./src/start.ts"
   },
@@ -44,6 +44,7 @@
     "@tago-io/builder": "2.4.6",
     "@tago-io/sdk": "10.0.7",
     "dayjs": "1.10.3",
-    "moment-timezone": "0.5.33"
+    "moment-timezone": "0.5.33",
+    "puppeteer": "8.0.0"
   }
 }

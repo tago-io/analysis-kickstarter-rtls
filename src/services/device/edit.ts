@@ -4,7 +4,6 @@ import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
 
 export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
   const dev_id = scope[0].serie;
-  console.log(dev_id);
 
   //getting site device
   let { tags } = await account.devices.info(dev_id);
@@ -36,6 +35,10 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     //editing bucket name
     const bucket_id = (await account.devices.info(dev_id)).bucket.id;
     await account.buckets.edit(bucket_id, { name: dev_name.value as string });
+
+    //updating asset list
+    await org_dev.deleteData({ variables: "asset_list", series: dev_id });
+    await org_dev.sendData({ ...dev_name, serie: dev_id });
   }
 
   if (new_site_id_data) {
@@ -57,5 +60,5 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
     await account.devices.edit(dev_id, { tags });
   }
-  return console.log(await org_dev.getData({ variables: ["dev_id", "dev_type", "dev_site"], qty: 1, serie: dev_id }));
+  return;
 };

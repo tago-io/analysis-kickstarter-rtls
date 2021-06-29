@@ -79,21 +79,6 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
       user_phone: new_user_phone.value as string,
       user_site: new_user_site === undefined ? "" : (new_user_site?.metadata.label as string),
       user_access: new_user_access.value as string,
-      timezone: timezone,
-      tags: [
-        {
-          key: "organization_id",
-          value: org_id,
-        },
-        {
-          key: "department_id",
-          value: new_user_site === undefined ? "" : (new_user_site?.value as string),
-        },
-        {
-          key: "access",
-          value: new_user_access.value,
-        },
-      ],
     },
     new_user_id
   );

@@ -7,9 +7,9 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   const dev_name = scope.find((x) => x.variable === "dev_name");
 
-  const device_to_delete = await (await getDevice(account, dev_id)).info();
-  const site_id = device_to_delete.tags.find((tag) => tag.key === "site_id").value;
-  const org_id = device_to_delete.tags.find((tag) => tag.key === "organization_id").value;
+  const device_info = await (await getDevice(account, dev_id)).info();
+  const site_id = device_info.tags.find((tag) => tag.key === "site_id").value;
+  const org_id = device_info.tags.find((tag) => tag.key === "organization_id").value;
 
   if (org_id) {
     await org_dev.deleteData({ serie: dev_id, qty: 9999 });
@@ -20,9 +20,6 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   }
 
   await config_dev.deleteData({ serie: dev_id, qty: 99999 });
-
-  //we must collect device_info before delete it
-  const device_info = await account.devices.info(dev_id);
 
   await org_dev.deleteData({ variable: "asset_list", value: dev_name.value });
   await account.dashboards.edit("5fca818da0e14a00267c419e", {});

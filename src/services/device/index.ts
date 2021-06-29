@@ -15,7 +15,6 @@ function checkType(scope: Data[], environment: EnvironmentItemObject) {
   else if (scope.find((x) => x.variable === "dev_name") && environment._widget_exec === "delete") return "remove";
   else if (scope.find((x) => x.variable === "dev_name" || x.variable === "dev_type" || x.variable === "dev_site") && environment._widget_exec === "edit")
     return "edit";
-  console.log(environment._widget_exec);
 }
 
 /**

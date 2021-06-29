@@ -88,7 +88,7 @@ async function getIndoorPos(account: Account, scope: Data[], org_dev: Device, si
           site_id,
           layer_id: layer.id,
           icon: equip_icon ? equip_icon.value : null,
-          url: `https://admin.tago.io/dashboards/info/6061d65c060a6b00185359a8?site_dev=${site_id}&asset_dev=${scope[0].origin}`,
+          url: `https://admin.tago.io/dashboards/info/60bfac0bf5cda3001ad408a1?site_dev=${site_id}&asset_dev=${scope[0].origin}`,
           img_pin: equip_img?.value,
         },
       },

@@ -61,7 +61,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     org_id: device_id,
     org_name: {
       value: new_org_name.value,
-      metadata: { url: `https://admin.tago.io/dashboards/info/5fca818da0e14a00267c419e?settings=${config_dev_id}&org_dev=${device_id}` },
+      metadata: { url: `https://admin.tago.io/dashboards/info/${environment.dash_org}?settings=${config_dev_id}&org_dev=${device_id}` },
     }, //org_name.value widget?
     org_address: { value: new_org_address.value, location: new_org_address.location },
   };

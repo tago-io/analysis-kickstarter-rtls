@@ -71,7 +71,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     site_name: {
       value: new_site_name.value,
       metadata: {
-        url: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?site_dev=${site_id}&org_dev=${org_id}`,
+        url: `https://admin.tago.io/dashboards/info/${environment.dash_site}?site_dev=${site_id}&org_dev=${org_id}`,
       },
     },
     site_address: { value: new_site_address.value, location: new_site_address.location },

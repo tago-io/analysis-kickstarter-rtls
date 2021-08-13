@@ -22,7 +22,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   await config_dev.deleteData({ serie: dev_id, qty: 99999 });
 
   await org_dev.deleteData({ variable: "asset_list", value: dev_name.value });
-  await account.dashboards.edit("5fca818da0e14a00267c419e", {});
+  await account.dashboards.edit(environment.dash_org, {});
 
   await account.devices.delete(dev_id);
   await account.buckets.delete(device_info.bucket.id);

@@ -31,7 +31,7 @@ interface DataWithSlice extends Data {
   sliced?: string;
 }
 
-async function getIndoorPos(account: Account, scope: Data[], org_dev: Device, site_dev: Device, site_id: string, equipment: Data) {
+async function getIndoorPos(account: Account, scope: Data[], enviroment: any, org_dev: Device, site_dev: Device, site_id: string, equipment: Data) {
   let beacon_list = (await site_dev.getData({ variables: "beacon_id", qty: 9999 })) as DataWithSlice[];
   beacon_list = beacon_list.map((x) => ({
     ...x,
@@ -88,7 +88,7 @@ async function getIndoorPos(account: Account, scope: Data[], org_dev: Device, si
           site_id,
           layer_id: layer.id,
           icon: equip_icon ? equip_icon.value : null,
-          url: `https://admin.tago.io/dashboards/info/60bfac0bf5cda3001ad408a1?site_dev=${site_id}&asset_dev=${scope[0].origin}`,
+          url: `https://admin.tago.io/dashboards/info/${enviroment.dash_site}?site_dev=${site_id}&asset_dev=${scope[0].origin}`,
           img_pin: equip_img?.value,
         },
       },
@@ -226,7 +226,7 @@ async function updateAsset(context: TagoContext, scope: Data[]) {
 
   if (await outdoorData(scope, site_dev, equipment)) return;
 
-  await getIndoorPos(account, scope, org_dev, site_dev, site_id, equipment);
+  await getIndoorPos(account, scope, environment, org_dev, site_dev, site_id, equipment);
 
   context.log("Analysis Finished");
 }

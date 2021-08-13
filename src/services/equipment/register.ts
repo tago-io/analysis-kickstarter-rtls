@@ -55,7 +55,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   //deleteData
   await org_dev.deleteData({ variable: "asset_list", value: new_equip_asset.value }).then((msg) => console.log(msg));
   // await account.dashboards.edit("608aaa44e49d32001116715e", {});
-  await account.dashboards.edit("5fca818da0e14a00267c419e", {});
+  await account.dashboards.edit(environment.dash_org, {});
 
   const [asset_name] = await org_dev.getData({ variable: "dev_name", value: new_equip_asset.value, qty: 1 });
   const asset_id = asset_name.serie;

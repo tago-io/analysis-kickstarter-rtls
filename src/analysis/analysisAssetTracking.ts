@@ -48,7 +48,27 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
     return final;
   }, []);
 
+  //=========================DRAGINO ADDAPTATION=========================
+  const beacon_dragino = scope.find((x) => x.variable === "ADDR");
+
+  if (beacon_dragino) {
+    const rssi_dragino = scope.find((x) => x.variable === "RSSI");
+
+    const beacon_match = beacon_list.find((x) => x.value === beacon_dragino.value);
+
+    beacons_received = [
+      {
+        id: beacon_dragino.value as string,
+        rssi: Number(rssi_dragino.value),
+        serie: beacon_match.serie,
+      },
+    ];
+  }
+
+  //=======================================================================
+
   const [strongest_beacon] = beacons_received.sort((a, b) => b.rssi - a.rssi);
+
   if (!strongest_beacon) return console.log("No beacon found in the data sent by the device!");
 
   const layers_list = await site_dev.getData({ variables: "layers", qty: 9999 });

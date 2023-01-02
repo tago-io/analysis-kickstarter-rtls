@@ -17,6 +17,9 @@ async function installDevice({ account, new_dev_name, org_id, site_id, asset_id 
   //structuring data
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
+    network: "5bbd0d144051a50034cd19fb",
+    connector: "5f5a8f3351d4db99c40dece5",
+    type: "mutable",
   };
 
   //creating new device

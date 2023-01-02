@@ -20,6 +20,9 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
     network: "5ed7ccd5427104001cf00183",
     serie_number: new_device_eui,
     connector,
+    type: "immutable",
+    chunk_period: "month",
+    chunk_retention: 1,
   };
 
   //creating new device

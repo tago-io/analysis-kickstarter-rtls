@@ -54,7 +54,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
   const new_dev_site = scope.find((x) => x.variable === "new_dev_site");
 
-  const org_id = scope[0].origin as string;
+  const org_id = scope[0].device as string;
 
   //validation
 

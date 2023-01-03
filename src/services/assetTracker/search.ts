@@ -24,7 +24,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   const sentValues = metadata.sentValues.map((x: sentValue) => x.value);
 
-  const active_asset_list = (await org_dev.getData({ variable: "asset_active_info" })).filter((x) => sentValues.includes(x.value));
+  const active_asset_list = (await org_dev.getData({ variables: "asset_active_info" })).filter((x) => sentValues.includes(x.value));
 
   for (let i = 0; i < sentValues.length; i++) {
     const asset_info = active_asset_list.find((x) => x.value === sentValues[i]);

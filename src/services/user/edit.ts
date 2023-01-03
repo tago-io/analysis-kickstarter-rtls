@@ -14,11 +14,11 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   if (user_name) {
     //fetching prev data
-    const [user_name_config_dev] = await config_dev.getData({ variable: "user_name", qty: 1, serie: user_id });
-    const [user_name_org_dev] = await config_dev.getData({ variable: "user_name", qty: 1, serie: user_id });
+    const [user_name_config_dev] = await config_dev.getData({ variables: "user_name", qty: 1, groups: user_id });
+    const [user_name_org_dev] = await config_dev.getData({ variables: "user_name", qty: 1, groups: user_id });
     //deleting prev data
-    await config_dev.deleteData({ id: user_name_config_dev.id });
-    await org_dev.deleteData({ id: user_name_org_dev.id });
+    await config_dev.deleteData({ groups: user_name_config_dev.id });
+    await org_dev.deleteData({ groups: user_name_org_dev.id });
 
     //modifying json object
     delete user_name_config_dev.time;
@@ -37,11 +37,11 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   }
   if (user_phone) {
     //fetching prev data
-    const [user_phone_config_dev] = await config_dev.getData({ variable: "user_phone", qty: 1, serie: user_id });
-    const [user_phone_org_dev] = await config_dev.getData({ variable: "user_phone", qty: 1, serie: user_id });
+    const [user_phone_config_dev] = await config_dev.getData({ variables: "user_phone", qty: 1, groups: user_id });
+    const [user_phone_org_dev] = await config_dev.getData({ variables: "user_phone", qty: 1, groups: user_id });
     //deleting prev data
-    await config_dev.deleteData({ id: user_phone_config_dev.id });
-    await org_dev.deleteData({ id: user_phone_org_dev.id });
+    await config_dev.deleteData({ groups: user_phone_config_dev.id });
+    await org_dev.deleteData({ groups: user_phone_org_dev.id });
 
     //modifying json object
     delete user_phone_config_dev.time;

@@ -51,7 +51,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   if ((new_org_name.value as string).length < 3) throw validate("Name field is smaller than 3 character", "danger");
   if (!new_org_address.value) throw validate("Address field is empty", "danger");
 
-  const [org_exists] = await config_dev.getData({ variable: "org_name", value: new_org_name.value, qty: 1 }); /** */
+  const [org_exists] = await config_dev.getData({ variables: "org_name", values: new_org_name.value, qty: 1 }); /** */
   const { id: config_dev_id } = await config_dev.info();
 
   if (org_exists) throw validate("User already exists", "danger");

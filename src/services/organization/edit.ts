@@ -10,7 +10,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   if (org_name) {
     //getting previous id data
-    const [st_org_data] = await config_dev.getData({ variable: "org_id", qty: 1, serie: org_id });
+    const [st_org_data] = await config_dev.getData({ variables: "org_id", qty: 1, groups: org_id });
     console.log("before");
     console.log(st_org_data);
     //deleting prev data in settings_device
@@ -39,18 +39,18 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
       })
     );
     console.log("======");
-    console.log(await config_dev.getData({ variable: "org_name", serie: org_id }));
+    console.log(await config_dev.getData({ variables: "org_name", groups: org_id }));
   }
   if (org_address) {
     //updating data
     // await config_dev.sendData(org_address); //?
 
     //getting previous data
-    const [org_id_data] = await config_dev.getData({ variable: "org_id", qty: 1, serie: org_id });
+    const [org_id_data] = await config_dev.getData({ variables: "org_id", qty: 1, groups: org_id });
     //deleting prev data in settings_device
-    await config_dev.deleteData({ id: org_id_data.id });
+    await config_dev.deleteData({ groups: org_id_data.id });
     //updating data
-    await config_dev.sendData({ ...org_id_data, metadata: { ...org_id_data.metadata, label: org_address.value }, time: null });
+    await config_dev.sendData({ ...org_id_data, metadata: { ...org_id_data.metadata, label: org_address.value as string }, time: null });
   }
   return console.log("edited!");
 };

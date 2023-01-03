@@ -47,7 +47,9 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const new_site_name = scope.find((x) => x.variable === "new_site_name");
   const new_site_address = scope.find((x) => x.variable === "new_site_address");
 
-  const org_id = scope[0].origin as string;
+  const org_id = scope[0].device as string;
+  context.log(org_id);
+
 
   //validation
   const validate = validation("site_validation", org_dev);
@@ -56,7 +58,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   if ((new_site_name.value as string).length < 3) throw validate("Name field is smaller than 3 char.", "danger");
   if (!new_site_address.value) throw validate("Address field is empty", "danger");
 
-  const [site_exists] = await org_dev.getData({ variable: "site_name", value: new_site_name.value, qty: 1 }); /** */
+  const [site_exists] = await org_dev.getData({ variables: "site_name", values: new_site_name.value, qty: 1 }); /** */
 
   if (site_exists) throw validate("site already exists", "danger");
 

@@ -3,10 +3,10 @@ import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
 
 export default async ({ config_dev, context, scope, account, environment }: ServiceParams) => {
   //id of the org device
-  const org_id = scope[0].serie;
+  const org_id = scope[0].group;
 
   //delete from settings_device
-  const deleted = await config_dev.deleteData({ serie: org_id, qty: 99999 });
+  const deleted = await config_dev.deleteData({ groups: org_id, qty: 99999 });
   console.log(deleted);
 
   //deleting users (organization's user)

@@ -18,11 +18,11 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const org_id = equip_info.tags.find((tag) => tag.key === "organization_id").value;
 
   if (org_id) {
-    await org_dev.deleteData({ serie: equip_id, qty: 9999 });
+    await org_dev.deleteData({ groups: equip_id, qty: 9999 });
   }
   if (site_id) {
     const site_dev = await getDevice(account, site_id as string);
-    site_dev.deleteData({ serie: equip_id, qty: 9999 });
+    site_dev.deleteData({ groups: equip_id, qty: 9999 });
   }
 
   //deleting device

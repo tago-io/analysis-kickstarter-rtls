@@ -53,15 +53,15 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const new_equip_img = scope.find((x) => x.variable === "new_equip_img");
   const new_equip_asset = scope.find((x) => x.variable === "new_equip_asset");
 
-  const org_id = scope[0].origin as string;
+  const org_id = scope[0].device as string;
 
   //deleteData
-  await org_dev.deleteData({ variable: "asset_list", value: new_equip_asset.value }).then((msg) => console.log(msg));
+  await org_dev.deleteData({ variables: "asset_list", values: new_equip_asset.value }).then((msg) => console.log(msg));
   // await account.dashboards.edit("608aaa44e49d32001116715e", {});
   await account.dashboards.edit(environment.dash_org, {});
 
-  const [asset_name] = await org_dev.getData({ variable: "dev_name", value: new_equip_asset.value, qty: 1 });
-  const asset_id = asset_name.serie;
+  const [asset_name] = await org_dev.getData({ variables: "dev_name", values: new_equip_asset.value, qty: 1 });
+  const asset_id = asset_name.group;
 
   const site_id = (await account.devices.info(asset_id)).tags.find((x) => x.key === "site_id").value as string;
   const site_dev = await getDevice(account, site_id);

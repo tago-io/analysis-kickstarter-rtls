@@ -15,19 +15,19 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const new_site_id_data = scope.find((x) => x.variable === "dev_site");
 
   //getting previous id data
-  const [dev_data] = await org_dev.getData({ variable: "dev_id", qty: 1, serie: dev_id });
-  const dev_data_site = await org_dev.getData({ variables: ["dev_site", "dev_type", "dev_eui", "dev_name", "dev_id"], qty: 1, serie: dev_id });
+  const [dev_data] = await org_dev.getData({ variables: "dev_id", qty: 1, groups: dev_id });
+  const dev_data_site = await org_dev.getData({ variables: ["dev_site", "dev_type", "dev_eui", "dev_name", "dev_id"], qty: 1, groups: dev_id });
 
   if (dev_name) {
     //deleting prev data in settings_device
-    await config_dev.deleteData({ id: dev_data.id, variable: "dev_name" });
-    await org_dev.deleteData({ id: dev_data.id, variable: "dev_name" });
-    await site_dev.deleteData({ id: dev_data.id, variable: "dev_name" });
+    await config_dev.deleteData({ groups: dev_data.id, variables: "dev_name" });
+    await org_dev.deleteData({ groups: dev_data.id, variables: "dev_name" });
+    await site_dev.deleteData({ groups: dev_data.id, variables: "dev_name" });
 
     //sending to settings new info
-    await config_dev.sendData({ ...dev_data, metadata: { ...dev_data.metadata, label: dev_name.value }, time: null });
-    await org_dev.sendData({ ...dev_data, metadata: { ...dev_data.metadata, label: dev_name.value }, time: null });
-    await site_dev.sendData({ ...dev_name, metadata: { ...dev_data.metadata, label: dev_name.value }, time: null });
+    await config_dev.sendData({ ...dev_data, metadata: { ...dev_data.metadata, label: String(dev_name.value) }, time: null });
+    await org_dev.sendData({ ...dev_data, metadata: { ...dev_data.metadata, label: String(dev_name.value) }, time: null });
+    await site_dev.sendData({ ...dev_name, metadata: { ...dev_data.metadata, label: String(dev_name.value) }, time: null });
 
     //updating device name
     await account.devices.edit(dev_id, { name: dev_name.value as string });
@@ -46,7 +46,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     //deleting prev info
     // await config_dev.deleteData({ serie: dev_data.id });
     // await org_dev.deleteData({ serie: dev_data.id });
-    await site_dev.deleteData({ serie: dev_data.id }); //prev site
+    await site_dev.deleteData({ groups: dev_data.id }); //prev site
 
     //updating data
     // await config_dev.sendData({ ...dev_data_site, value: new_site_id_data.metadata.label as string });

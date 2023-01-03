@@ -8,16 +8,16 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const site_address = scope.find((x) => x.variable === "site_address");
 
   //getting previous id data
-  const [site_data] = await org_dev.getData({ variable: "site_id", qty: 1, serie: site_id });
+  const [site_data] = await org_dev.getData({ variables: "site_id", qty: 1, groups: site_id });
 
   if (site_name) {
     //deleting prev data in settings_device
-    await config_dev.deleteData({ id: site_data.id });
-    await org_dev.deleteData({ id: site_data.id });
+    await config_dev.deleteData({ groups: site_data.id });
+    await org_dev.deleteData({ groups: site_data.id });
     //sending to settings new info
-    await config_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name.value }, time: null });
-    await org_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name.value }, time: null });
-    console.log(await config_dev.getData({ variable: "site_id", qty: 1, serie: site_id }));
+    await config_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name.value as string }, time: null });
+    await org_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name.value as string }, time: null });
+    console.log(await config_dev.getData({ variables: "site_id", qty: 1, groups: site_id }));
 
     //updating device name
     await account.devices.edit(site_id, { name: site_name.value as string });
@@ -39,12 +39,12 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     await Promise.all(
       device_list.map(async (device) => {
         //fetching dev_site data
-        const [data_to_edit] = await org_dev.getData({ serie: device.id, variable: "dev_site" });
+        const [data_to_edit] = await org_dev.getData({ groups: device.id, variables: "dev_site" });
         //deleting prev data and updating the data to new dev_site name
-        await org_dev.deleteData({ id: data_to_edit.id });
+        await org_dev.deleteData({ groups: data_to_edit.id });
         await org_dev.sendData({ ...data_to_edit, value: site_name.value as string });
 
-        const x = await org_dev.getData({ serie: device.id, variable: "dev_site" });
+        const x = await org_dev.getData({ groups: device.id, variables: "dev_site" });
       })
     );
 
@@ -56,8 +56,8 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   }
 
   if (site_address) {
-    await config_dev.deleteData({ id: site_data.id });
-    await org_dev.deleteData({ id: site_data.id });
+    await config_dev.deleteData({ groups: site_data.id });
+    await org_dev.deleteData({ groups: site_data.id });
 
     await config_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, address: site_address.value }, time: null });
     await org_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, address: site_address.value }, time: null });

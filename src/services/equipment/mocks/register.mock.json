@@ -1,0 +1,30 @@
+[
+  {
+    "variable": "new_equip_name",
+    "value": "hammer",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.472Z"
+  },
+  {
+    "variable": "new_equip_serie",
+    "value": "1CD23DW2",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.472Z"
+  },
+  {
+    "variable": "new_equip_img",
+    "value": "imagelink",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.472Z"
+  },
+  {
+    "variable": "new_equip_asset",
+    "value": "123123123",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.472Z"
+  }
+]

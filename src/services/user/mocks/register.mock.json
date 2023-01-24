@@ -1,0 +1,37 @@
+[
+  {
+    "variable": "new_user_name",
+    "value": "test",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.473Z"
+  },
+  {
+    "variable": "new_user_email",
+    "value": "test@gmail.com",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.473Z"
+  },
+  {
+    "variable": "new_user_site",
+    "value": "test.com",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.473Z"
+  },
+  {
+    "variable": "new_user_access",
+    "value": "testingenvironment",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.473Z"
+  },
+  {
+    "variable": "new_user_phone",
+    "value": "48990308596",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.473Z"
+  }
+]

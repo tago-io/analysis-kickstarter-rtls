@@ -1,0 +1,30 @@
+[
+  {
+    "variable": "new_dev_name",
+    "value": "test1",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.472Z"
+  },
+  {
+    "variable": "new_dev_eui",
+    "value": "2B123ER2",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.472Z"
+  },
+  {
+    "variable": "new_dev_type",
+    "value": "Type2",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.472Z"
+  },
+  {
+    "variable": "new_dev_site",
+    "value": "DevEnv",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.472Z"
+  }
+]

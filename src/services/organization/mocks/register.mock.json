@@ -1,0 +1,16 @@
+[
+  {
+    "variable": "new_org_name",
+    "value": "johnnyappleseed",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.472Z"
+  },
+  {
+    "variable": "new_org_address",
+    "value": "johnnyappleseed.com",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.472Z"
+  }
+]

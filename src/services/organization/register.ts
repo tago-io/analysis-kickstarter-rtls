@@ -11,6 +11,30 @@ interface installDeviceParam {
   new_org_name: string;
 }
 
+function getFormVariables(scope: Types.Common.Data[], config_dev: Device) {
+  if (!Array.isArray(scope)) {
+    throw "Scope is missing";
+  }
+
+  //validation
+  const validate = validation("org_validation", config_dev);
+
+  const new_org_name = scope.find((x) => x.variable === "new_org_name");
+  const new_org_address = scope.find((x) => x.variable === "new_org_address");
+
+  if (!new_org_name.value) {
+    throw validate("Name field is empty", "danger");
+  }
+  if ((new_org_name.value as string).length < 3) {
+    throw validate("Name field is smaller than 3 character", "danger");
+  }
+  if (!new_org_address.value) {
+    throw validate("Address field is empty", "danger");
+  }
+
+  return { new_org_name, new_org_address, validate };
+}
+
 async function installDevice({ account, new_org_name }: installDeviceParam) {
   //structuring data
   const device_data: DeviceCreateInfo = {
@@ -38,15 +62,7 @@ async function installDevice({ account, new_org_name }: installDeviceParam) {
 export default async ({ config_dev, context, scope, account, environment }: ServiceParams) => {
   console.log("Registering...");
   //Collecting data
-  const new_org_name = scope.find((x) => x.variable === "new_org_name");
-  const new_org_address = scope.find((x) => x.variable === "new_org_address");
-
-  //validation
-  const validate = validation("org_validation", config_dev);
-
-  if (!new_org_name.value) throw validate("Name field is empty", "danger");
-  if ((new_org_name.value as string).length < 3) throw validate("Name field is smaller than 3 character", "danger");
-  if (!new_org_address.value) throw validate("Address field is empty", "danger");
+  const { new_org_name, new_org_address, validate } = getFormVariables(scope, config_dev);
 
   const [org_exists] = await config_dev.getData({ variable: "org_name", value: new_org_name.value, qty: 1 }); /** */
   const { id: config_dev_id } = await config_dev.info();
@@ -74,3 +90,5 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   return validate("Organization created", "success");
 };
+
+export { getFormVariables };

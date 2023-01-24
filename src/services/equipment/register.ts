@@ -13,6 +13,35 @@ interface installDeviceParam {
   asset_id: string;
 }
 
+function getFormVariables(scope: Types.Common.Data[], config_dev: Device) {
+  if (!Array.isArray(scope)) {
+    throw "Scope is missing";
+  }
+
+  //validation
+  const validate = validation("org_validation", config_dev);
+
+  const new_equip_name = scope.find((x) => x.variable === "new_equip_name");
+  const new_equip_serie = scope.find((x) => x.variable === "new_equip_serie");
+  const new_equip_img = scope.find((x) => x.variable === "new_equip_img");
+  const new_equip_asset = scope.find((x) => x.variable === "new_equip_asset");
+
+  if (!new_equip_name.value) {
+    throw validate("Name field is empty", "danger");
+  }
+  if (!new_equip_serie.value) {
+    throw validate("Serie field is empty", "danger");
+  }
+  if (!new_equip_img.value) {
+    throw validate("Image field is empty", "danger");
+  }
+  if (!new_equip_asset.value) {
+    throw validate("Asset field is empty", "danger");
+  }
+
+  return { new_equip_asset, new_equip_name, new_equip_img, new_equip_serie };
+}
+
 async function installDevice({ account, new_dev_name, org_id, site_id, asset_id }: installDeviceParam) {
   //structuring data
   const device_data: DeviceCreateInfo = {
@@ -45,10 +74,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   const validate = validation("equip_validation", org_dev);
   validate("Registering...", "warning");
   //Collecting data
-  const new_equip_name = scope.find((x) => x.variable === "new_equip_name");
-  const new_equip_serie = scope.find((x) => x.variable === "new_equip_serie");
-  const new_equip_img = scope.find((x) => x.variable === "new_equip_img");
-  const new_equip_asset = scope.find((x) => x.variable === "new_equip_asset");
+  const { new_equip_asset, new_equip_name, new_equip_img, new_equip_serie } = getFormVariables(scope, org_dev);
 
   const org_id = scope[0].origin as string;
 
@@ -98,3 +124,5 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   return validate("Device created successfully!", "success");
   //DELTE ALSO THE IMAGE, ITS BEING KEPT!
 };
+
+export { getFormVariables };

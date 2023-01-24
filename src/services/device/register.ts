@@ -14,6 +14,40 @@ interface installDeviceParam {
   new_device_eui: string;
 }
 
+function getFormVariables(scope: Types.Common.Data[], org_dev: Device) {
+  if (!Array.isArray(scope)) {
+    throw "Scope is missing";
+  }
+
+  const org_id = scope[0].origin as string;
+  const validate = validation("dev_validation", org_dev);
+  validate("Registering...", "warning");
+
+  const new_dev_name = scope.find((x) => x.variable === "new_dev_name");
+  const new_dev_eui = scope.find((x) => x.variable === "new_dev_eui");
+  const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
+  const new_dev_site = scope.find((x) => x.variable === "new_dev_site");
+
+  //validation
+  if (!new_dev_name.value) {
+    throw validate("Name field is empty", "danger");
+  }
+  if ((new_dev_name.value as string).length < 3) {
+    throw validate("Name field is smaller than 3 character.", "danger");
+  }
+  if (!new_dev_type.value) {
+    throw validate("Type field is empty", "danger");
+  }
+  if (!new_dev_site.value) {
+    throw validate("Site field is empty", "danger");
+  }
+  if (!new_dev_eui.value) {
+    throw validate("EUI field is empty", "danger");
+  }
+
+  return { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, validate, org_id };
+}
+
 async function installDevice({ account, new_dev_name, org_id, site_id, connector, new_device_eui }: installDeviceParam) {
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
@@ -43,22 +77,8 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
 }
 
 export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  const validate = validation("dev_validation", org_dev);
-  validate("Registering...", "warning");
   //Collecting data
-  const new_dev_name = scope.find((x) => x.variable === "new_dev_name");
-  const new_dev_eui = scope.find((x) => x.variable === "new_dev_eui");
-  const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
-  const new_dev_site = scope.find((x) => x.variable === "new_dev_site");
-
-  const org_id = scope[0].origin as string;
-
-  //validation
-
-  if (!new_dev_name.value) throw validate("Name field is empty", "danger");
-  if ((new_dev_name.value as string).length < 3) throw validate("Name field is smaller than 3 char.", "danger");
-  if (!new_dev_type.value) throw validate("Type field is empty", "danger");
-  if (!new_dev_eui.value) throw validate("EUI field is empty", "danger");
+  const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, validate, org_id } = getFormVariables(scope, org_dev);
 
   new_dev_eui.value = (new_dev_eui.value as string).toUpperCase();
 
@@ -110,3 +130,5 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   return validate("Device created successfully!", "success");
 };
+
+export { getFormVariables };

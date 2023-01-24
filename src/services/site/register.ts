@@ -1,4 +1,5 @@
 import { Device, Account, Types } from "@tago-io/sdk";
+import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import validation from "../../lib/validation";
 import registerUser from "../../lib/registerUser";
@@ -10,6 +11,35 @@ interface installDeviceParam {
   account: Account;
   new_site_name: string;
   org_id: string;
+}
+
+function getFormVariables(scope: Data[], org_dev: Device) {
+  if (!Array.isArray(scope)) {
+    throw "Scope is missing";
+  }
+
+  const org_id = scope[0].origin as string;
+
+  //validation
+  const validate = validation("site_validation", org_dev);
+
+  const new_site_name = scope.find((x) => x.variable === "new_site_name");
+  const new_site_address = scope.find((x) => x.variable === "new_site_address");
+
+  if (!new_site_name.value) {
+    throw validate("Name field is empty", "danger");
+  }
+  if ((new_site_name.value as string).length < 3) {
+    throw validate("Name field is smaller than 3 character.", "danger");
+  }
+  if (!new_site_address.value) {
+    throw validate("Address field is empty", "danger");
+  }
+  if ((new_site_address.value as string).length < 3) {
+    throw validate("Address field is smaller than 3 character.", "danger");
+  }
+
+  return { new_site_name, new_site_address, validate, org_id };
 }
 
 async function installDevice({ account, new_site_name, org_id }: installDeviceParam) {
@@ -41,17 +71,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   console.log("Registering...");
   //Collecting data
   // const new_site_org = scope.find((x) => x.variable === "new_site_org");
-  const new_site_name = scope.find((x) => x.variable === "new_site_name");
-  const new_site_address = scope.find((x) => x.variable === "new_site_address");
-
-  const org_id = scope[0].origin as string;
-
-  //validation
-  const validate = validation("site_validation", org_dev);
-
-  if (!new_site_name.value) throw validate("Name field is empty", "danger");
-  if ((new_site_name.value as string).length < 3) throw validate("Name field is smaller than 3 char.", "danger");
-  if (!new_site_address.value) throw validate("Address field is empty", "danger");
+  const { new_site_name, new_site_address, validate, org_id } = getFormVariables(scope, org_dev);
 
   const [site_exists] = await org_dev.getData({ variable: "site_name", value: new_site_name.value, qty: 1 }); /** */
 
@@ -86,3 +106,5 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   return validate("Site successfully created!", "success");
 };
+
+export { getFormVariables };

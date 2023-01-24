@@ -1,4 +1,5 @@
 import { Device, Account, Types } from "@tago-io/sdk";
+import { Data } from "@tago-io/sdk/out/common/common.types";
 import validation from "../../lib/validation";
 import registerUser from "../../lib/registerUser";
 import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
@@ -16,24 +17,46 @@ interface UserData {
   site: string;
 }
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  //Collecting data
+function getFormVariables(scope: Data[], org_dev: Device) {
+  if (!Array.isArray(scope)) {
+    throw "Scope is missing";
+  }
+
+  //validation
+  const org_id = scope[0].origin;
+  const validate = validation("user_validation", org_dev);
+
   const new_user_name = scope.find((x) => x.variable === "new_user_name");
   const new_user_email = scope.find((x) => x.variable === "new_user_email");
   const new_user_site = scope.find((x) => x.variable === "new_user_site");
   const new_user_access = scope.find((x) => x.variable === "new_user_access");
   const new_user_phone = scope.find((x) => x.variable === "new_user_phone");
 
-  //validation
-  const org_id = scope[0].origin;
-  const validate = validation("user_validation", org_dev);
+  if (!new_user_name.value) {
+    throw validate("Name field is empty", "danger");
+  }
+  if ((new_user_name.value as string).length < 3) {
+    throw validate("Name field is smaller than 3 character", "danger");
+  }
+  if (!new_user_email.value) {
+    throw validate("Email field is empty", "danger");
+  }
+  if (!new_user_site?.value && new_user_access.value === "user") {
+    throw validate("Department field is empty", "danger");
+  }
+  if (!new_user_access.value) {
+    throw validate("Access field is empty", "danger");
+  }
+  if (!new_user_phone.value) {
+    throw validate("Phone field is empty", "danger");
+  }
 
-  if (!new_user_name.value) throw validate("Name field is empty", "danger");
-  if ((new_user_name.value as string).length < 3) throw validate("Name field is smaller than 3 character", "danger");
-  if (!new_user_email.value) throw validate("Email field is empty", "danger");
-  if (!new_user_site?.value && new_user_access.value === "user") throw validate("Department field is empty", "danger");
-  if (!new_user_access.value) throw validate("Access field is empty", "danger");
-  if (!new_user_phone.value) throw validate("Phone field is empty", "danger");
+  return { new_user_name, new_user_email, new_user_site, new_user_access, new_user_phone, validate, org_id };
+}
+
+export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
+  //Collecting data
+  const { new_user_name, new_user_email, new_user_site, new_user_access, new_user_phone, validate, org_id } = getFormVariables(scope, org_dev);
 
   const [user_exists] = await account.run.listUsers({
     page: 1,
@@ -91,3 +114,5 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   return validate("User successfully invited! An email will be sent with the credentials to the new user.", "success");
 };
+
+export { getFormVariables };

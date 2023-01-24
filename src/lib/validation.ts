@@ -13,15 +13,17 @@ type validation_type = "success" | "danger" | "warning" | string;
 export default function validation(validation_var: string, device: Device, show_markdown?: boolean) {
   return function _(message: string, type: validation_type) {
     if (!message || !type) throw "Missing message or type";
-    device.sendData({
-      variable: validation_var,
-      value: message,
-      metadata: {
-        type: ["success", "danger", "warning"].includes(type) ? type : null,
-        color: !["success", "danger", "warning"].includes(type) ? type : null,
-        show_markdown,
-      },
-    });
+    device
+      .sendData({
+        variable: validation_var,
+        value: message,
+        metadata: {
+          type: ["success", "danger", "warning"].includes(type) ? type : null,
+          color: !["success", "danger", "warning"].includes(type) ? type : null,
+          show_markdown,
+        },
+      })
+      .catch(console.error);
 
     return message;
   };

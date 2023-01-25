@@ -2,10 +2,9 @@ import { Device, Account, Types } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import validation from "../../lib/validation";
-import registerUser from "../../lib/registerUser";
 import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
-import getDevice from "../../lib/getDevice";
+
 
 interface installDeviceParam {
   account: Account;
@@ -18,9 +17,9 @@ function getFormVariables(scope: Data[], org_dev: Device) {
     throw "Scope is missing";
   }
 
-  const org_id = scope[0].origin as string;
+  const org_id = scope[0].device as string;
 
-  //validation
+  // validation
   const validate = validation("site_validation", org_dev);
 
   const new_site_name = scope.find((x) => x.variable === "new_site_name");
@@ -43,15 +42,18 @@ function getFormVariables(scope: Data[], org_dev: Device) {
 }
 
 async function installDevice({ account, new_site_name, org_id }: installDeviceParam) {
-  //structuring data
+  // structuring data
   const device_data: DeviceCreateInfo = {
     name: new_site_name,
+    type: "mutable",
+    connector: "5f5a8f3351d4db99c40dece5",
+    network: "5bbd0d144051a50034cd19fb"
   };
 
-  //creating new device
+  // creating new device
   const new_site = await account.devices.create(device_data);
 
-  //inserting device id -> so we can reference this later
+  // inserting device id -> so we can reference this later
   await account.devices.edit(new_site.device_id, {
     tags: [
       { key: "site_id", value: new_site.device_id },
@@ -60,25 +62,24 @@ async function installDevice({ account, new_site_name, org_id }: installDevicePa
     ],
   });
 
-  //instantiating new device
+  // instantiating new device
   const new_org_dev = new Device({ token: new_site.token });
 
-  //token, device_id, bucket_id
+  // token, device_id, bucket_id
   return { ...new_site, device: new_org_dev } as DeviceCreated;
 }
 
 export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
   console.log("Registering...");
-  //Collecting data
-  // const new_site_org = scope.find((x) => x.variable === "new_site_org");
+  // Collecting data
   const { new_site_name, new_site_address, validate, org_id } = getFormVariables(scope, org_dev);
 
-  const [site_exists] = await org_dev.getData({ variable: "site_name", value: new_site_name.value, qty: 1 }); /** */
+  const [site_exists] = await org_dev.getData({ variables: "site_name", values: new_site_name.value, qty: 1 }); /** */
 
   if (site_exists) throw validate("site already exists", "danger");
 
-  //need device id to configure serie in parseTagoObject
-  //creating new device
+  // need device id to configure serie in parseTagoObject
+  // creating new device
   const { device_id: site_id, device } = await installDevice({ account, new_site_name: new_site_name.value as string, org_id });
 
   const site_data = {
@@ -98,10 +99,10 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     // site_org: new_site_org.value,
   };
 
-  //send to admin device (settings_device) which will send to bucket
+  // send to admin device (settings_device) which will send to bucket
   await config_dev.sendData(parseTagoObject(site_data, site_id));
 
-  //send to organization device
+  // send to organization device
   await org_dev.sendData(parseTagoObject(site_data, site_id));
 
   return validate("Site successfully created!", "success");

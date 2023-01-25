@@ -19,7 +19,7 @@ function getFormVariables(scope: Types.Common.Data[], org_dev: Device) {
     throw "Scope is missing";
   }
 
-  const org_id = scope[0].origin as string;
+  const org_id = scope[0].device as string;
   const validate = validation("dev_validation", org_dev);
   validate("Registering...", "warning");
 
@@ -54,6 +54,9 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
     network: "5ed7ccd5427104001cf00183",
     serie_number: new_device_eui,
     connector,
+    type: "immutable",
+    chunk_period: "month",
+    chunk_retention: 1
   };
 
   //creating new device
@@ -76,7 +79,7 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
   return { ...new_dev, device: new_org_dev } as DeviceCreated;
 }
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
+export default async ({ config_dev, scope, account }: ServiceParams, org_dev: Device) => {
   //Collecting data
   const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, validate, org_id } = getFormVariables(scope, org_dev);
 
@@ -102,7 +105,6 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   });
 
   const device_type_name = (await account.integration.connectors.info(new_dev_type.value as string)).name;
-  console.log(device_type_name);
 
   const dev_data = parseTagoObject(
     {

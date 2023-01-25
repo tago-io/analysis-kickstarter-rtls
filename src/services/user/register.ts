@@ -3,7 +3,6 @@ import { Data } from "@tago-io/sdk/out/common/common.types";
 import validation from "../../lib/validation";
 import registerUser from "../../lib/registerUser";
 import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
-import getDevice from "../../lib/getDevice";
 import { parseTagoObject } from "../../lib/data.logic";
 
 interface UserData {
@@ -23,7 +22,7 @@ function getFormVariables(scope: Data[], org_dev: Device) {
   }
 
   //validation
-  const org_id = scope[0].origin;
+  const org_id = scope[0].device;
   const validate = validation("user_validation", org_dev);
 
   const new_user_name = scope.find((x) => x.variable === "new_user_name");
@@ -64,7 +63,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     filter: { email: new_user_email.value as string },
   });
 
-  if (user_exists) throw validate("User already exists!", "danger");
+  if (user_exists) return validate("User already exists!", "danger");
 
   //creating user
   const { timezone } = await account.info();

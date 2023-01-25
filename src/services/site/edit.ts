@@ -1,11 +1,28 @@
 import { Device } from "@tago-io/sdk";
+import { Data } from "@tago-io/sdk/out/common/common.types";
 import { ServiceParams } from "../../types";
 
-export default async ({ config_dev, scope, account }: ServiceParams, org_dev: Device) => {
-  const site_id = scope[0].device;
-
+function getFormVariables(scope: Data[]) {
+  const site_id = scope[0].group;
   const site_name = scope.find((x) => x.variable === "site_name");
   const site_address = scope.find((x) => x.variable === "site_address");
+
+  if (!site_name.value) {
+    throw "Name field is empty";
+  }
+  if (!site_address.value) {
+    throw "Address field is empty";
+  }
+  if (!site_id) {
+    throw "Site id is empty";
+  }
+
+  return { site_id, site_name, site_address };
+}
+
+export default async ({ config_dev, scope, account }: ServiceParams, org_dev: Device) => {
+  // Collecting data
+  const { site_id, site_name, site_address } = getFormVariables(scope);
 
   // getting previous id data
   const [site_data] = await org_dev.getData({ variables: "site_id", qty: 1, groups: site_id });
@@ -65,3 +82,5 @@ export default async ({ config_dev, scope, account }: ServiceParams, org_dev: De
 
   return console.log("Site edited!");
 };
+
+export { getFormVariables };

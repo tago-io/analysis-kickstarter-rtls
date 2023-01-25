@@ -1,18 +1,34 @@
 import { Device } from "@tago-io/sdk";
 import getDevice from "../../lib/getDevice";
 import { ServiceParams } from "../../types";
+import { Data } from "@tago-io/sdk/out/common/common.types";
+
+function getFormVariables(scope: Data[]) {
+  const dev_id = scope[0].device;
+  const dev_name = scope.find((x) => x.variable === "dev_name");
+  const new_site_id_data = scope.find((x) => x.variable === "dev_site");
+
+  if (!dev_name.value) {
+    throw "Device name field is empty";
+  }
+  if (!dev_id) {
+    throw "Device id is empty";
+  }
+  if (!new_site_id_data.value) {
+    throw "Site ID Data field is empty";
+  }
+
+  return { dev_name, new_site_id_data, dev_id };
+}
 
 export default async ({ config_dev, scope, account }: ServiceParams, org_dev: Device) => {
-  const dev_id = scope[0].device;
+  // fetching info
+  const { dev_name, new_site_id_data, dev_id } = getFormVariables(scope);
 
   // getting site device
   let { tags } = await account.devices.info(dev_id);
   const site_id = tags.find((tag) => tag.key === "site_id")?.value;
   const site_dev = await getDevice(account, site_id as string);
-
-  // fetching info
-  const dev_name = scope.find((x) => x.variable === "dev_name");
-  const new_site_id_data = scope.find((x) => x.variable === "dev_site");
 
   // getting previous id data
   const [dev_data] = await org_dev.getData({ variables: "dev_id", qty: 1, groups: dev_id });
@@ -62,3 +78,5 @@ export default async ({ config_dev, scope, account }: ServiceParams, org_dev: De
   }
   return;
 };
+
+export { getFormVariables };

@@ -1,25 +1,25 @@
-import { Device, Account } from "@tago-io/sdk";
+import { Device } from "@tago-io/sdk";
 import { ServiceParams } from "../../types";
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  const site_id = scope[0].serie;
+export default async ({ config_dev, scope, account }: ServiceParams, org_dev: Device) => {
+  const site_id = scope[0].device;
 
-  //delete from settings_device
-  await config_dev.deleteData({ serie: site_id, qty: 9999 });
-  //delete from org_dev
-  await org_dev.deleteData({ serie: site_id, qty: 9999 });
+  // delete from settings_device
+  await config_dev.deleteData({ groups: site_id, qty: 9999 });
+  // delete from org_dev
+  await org_dev.deleteData({ groups: site_id, qty: 9999 });
 
-  //deleting users (site's user)
+  // deleting users (site's user)
   const user_accounts = await account.run.listUsers({ filter: { tags: [{ key: "site_id", value: site_id }] } });
   if (user_accounts) {
     user_accounts.forEach(async (user) => {
       await account.run.userDelete(user.id);
-      await org_dev.deleteData({ serie: user.id, qty: 9999 }).then((msg) => console.log(msg));
-      await config_dev.deleteData({ serie: user.id, qty: 9999 });
+      await org_dev.deleteData({ groups: user.id, qty: 9999 }).then((msg) => console.log(msg));
+      await config_dev.deleteData({ groups: user.id, qty: 9999 });
     });
   }
 
-  //deleting site's device
+  // deleting site's device
   const devices = await account.devices.list({
     amount: 9999,
     page: 1,
@@ -31,8 +31,8 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     devices.forEach(async (x) => {
       account.devices.delete(x.id); /*passing the device id*/
       account.buckets.delete(x.bucket); /*passing the bucket id*/
-      await org_dev.deleteData({ serie: x.id, qty: 9999 }).then((msg) => msg); //deleting org_dev and config_dev data
-      await config_dev.deleteData({ serie: x.id, qty: 9999 });
+      await org_dev.deleteData({ groups: x.id, qty: 9999 }).then((msg) => msg); /*deleting org_dev and config_dev data*/
+      await config_dev.deleteData({ groups: x.id, qty: 9999 });
     });
   }
 

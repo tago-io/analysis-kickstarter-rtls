@@ -1,8 +1,5 @@
-import { Device, Account, Types } from "@tago-io/sdk";
-import validation from "../../lib/validation";
-import registerUser from "../../lib/registerUser";
-import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
-import getDevice from "../../lib/getDevice";
+import { Device } from "@tago-io/sdk";
+import { ServiceParams } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
 
 interface sentValue {
@@ -10,21 +7,19 @@ interface sentValue {
   value: string;
 }
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  await org_dev
-    .deleteData({ variables: ["asset_name", "asset_site", "asset_building", "asset_floor", "asset_room", "asset_link"], qty: 999 })
-    .then((msg) => console.log(msg));
+export default async ({ scope, account }: ServiceParams, org_dev: Device) => {
+  await org_dev.deleteData({ variables: ["asset_name", "asset_site", "asset_building", "asset_floor", "asset_room", "asset_link"], qty: 999 }).then((msg) => console.log(msg));
 
   await account.dashboards.edit("5fc91ac2a0e14a002654fe99", {});
 
-  //Collecting data
+  // Collecting data
   const find_asset = scope.find((x) => x.variable === "find_asset");
 
   const metadata = find_asset.metadata as any;
 
   const sentValues = metadata.sentValues.map((x: sentValue) => x.value);
 
-  const active_asset_list = (await org_dev.getData({ variable: "asset_active_info" })).filter((x) => sentValues.includes(x.value));
+  const active_asset_list = (await org_dev.getData({ variables: "asset_active_info" })).filter((x) => sentValues.includes(x.value));
 
   for (let i = 0; i < sentValues.length; i++) {
     const asset_info = active_asset_list.find((x) => x.value === sentValues[i]);

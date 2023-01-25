@@ -1,7 +1,7 @@
 import { Device, Account, Types } from "@tago-io/sdk";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import validation from "../../lib/validation";
-import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
+import { ServiceParams, DeviceCreated } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
 import getDevice from "../../lib/getDevice";
 
@@ -18,7 +18,7 @@ function getFormVariables(scope: Types.Common.Data[], config_dev: Device) {
     throw "Scope is missing";
   }
 
-  //validation
+  // validation
   const validate = validation("org_validation", config_dev);
 
   const new_equip_name = scope.find((x) => x.variable === "new_equip_name");
@@ -43,18 +43,18 @@ function getFormVariables(scope: Types.Common.Data[], config_dev: Device) {
 }
 
 async function installDevice({ account, new_dev_name, org_id, site_id, asset_id }: installDeviceParam) {
-  //structuring data
+  // structuring data
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
     type: "mutable",
     connector: "5f5a8f3351d4db99c40dece5",
-    network: "5bbd0d144051a50034cd19fb"
+    network: "5bbd0d144051a50034cd19fb",
   };
 
-  //creating new device
+  // creating new device
   const new_dev = await account.devices.create(device_data);
 
-  //inserting device id -> so we can reference this later
+  // inserting device id -> so we can reference this later
   await account.devices.edit(new_dev.device_id, {
     tags: [
       { key: "device_id", value: new_dev.device_id },
@@ -65,10 +65,10 @@ async function installDevice({ account, new_dev_name, org_id, site_id, asset_id 
     ],
   });
 
-  //instantiating new device
+  // instantiating new device
   const new_org_dev = new Device({ token: new_dev.token });
 
-  //token, device_id, bucket_id
+  // token, device_id, bucket_id
   return { ...new_dev, device: new_org_dev } as DeviceCreated;
 }
 
@@ -76,12 +76,12 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   console.log("Registering...");
   const validate = validation("equip_validation", org_dev);
   validate("Registering...", "warning");
-  //Collecting data
+  // Collecting data
   const { new_equip_asset, new_equip_name, new_equip_img, new_equip_serie } = getFormVariables(scope, org_dev);
 
   const org_id = scope[0].device as string;
 
-  //deleteData
+  // deleteData
   await org_dev.deleteData({ variables: "asset_list", values: new_equip_asset.value }).then((msg) => console.log(msg));
   // await account.dashboards.edit("608aaa44e49d32001116715e", {});
   await account.dashboards.edit(environment.dash_org, {});

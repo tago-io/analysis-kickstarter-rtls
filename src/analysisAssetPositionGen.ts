@@ -29,8 +29,8 @@ async function handler(context: TagoContext, scope: Data[]) {
     [36.020212, -78.474089],
   ];
 
-  const [asset_gen_count] = await config_dev.getData({ variable: "asset_gen_count" });
-  await config_dev.deleteData({ variable: "asset_gen_count" });
+  const [asset_gen_count] = await config_dev.getData({ variables: "asset_gen_count" });
+  await config_dev.deleteData({ variables: "asset_gen_count" });
 
   let count = asset_gen_count.value as number;
 
@@ -59,8 +59,8 @@ async function handler(context: TagoContext, scope: Data[]) {
 
   if (count !== 2) {
     count = count + 1;
-    await config_dev.sendData(parseTagoObject({ asset_gen_count: { variable: "asset_gen_count", value: count } }));
-  } else await config_dev.sendData(parseTagoObject({ asset_gen_count: { variable: "asset_gen_count", value: 0 } }));
+    await config_dev.sendData(parseTagoObject({ asset_gen_count: { variables: "asset_gen_count", values: count } }));
+  } else await config_dev.sendData(parseTagoObject({ asset_gen_count: { variables: "asset_gen_count", values: 0 } }));
 
   return context.log("Random data sent");
 }
@@ -75,18 +75,3 @@ async function startAnalysis(context: TagoContext, scope: any) {
 }
 
 export default new Analysis(startAnalysis, { token: "665002f9-3a72-4cab-8a8e-43f2a70a41d3" });
-
-// [
-//   { "variable": "payload", "value": "b05b8cf1c95b8cf4be5b8ce8b9" },
-// { "variable": "port", "value": 25 }
-//  ]
-
-// [
-//   { "variable": "payload", "value": "b05b8cf1c95b8cf4be5b8ce8BF" },
-// { "variable": "port", "value": 25 }
-//  ]
-
-// [
-//   { "variable": "payload", "value": "b05b8cf1c95b8cf4be5b8ce8C9" },
-// { "variable": "port", "value": 25 }
-//  ]

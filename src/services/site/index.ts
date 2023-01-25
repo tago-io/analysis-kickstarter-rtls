@@ -23,8 +23,8 @@ function checkType(scope: Data[], environment: AnalysisEnvironment) {
 async function controller(params: ServiceParams) {
   const type = checkType(params.scope, params.environment);
   console.log(params.scope);
-  //getting the parent device
-  const org_dev = await getDevice(params.account, params.scope[0].origin);
+  // getting the parent device
+  const org_dev = await getDevice(params.account, params.scope[0].device);
   if (type === "add") await add(params, org_dev);
   else if (type === "remove") await remove(params, org_dev);
   else if (type === "edit") await editUser(params, org_dev);

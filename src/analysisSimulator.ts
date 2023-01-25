@@ -9,7 +9,7 @@ async function startAnalysis(context: TagoContext, scope: Data[]) {
   context.log("Running analysis");
   const environment = Utils.envToJson(context.environment);
 
-  const site_id = scope[0].origin;
+  const site_id = scope[0].device;
 
   if (!environment.config_token) {
     context.log("Missing config_token environment var");
@@ -30,7 +30,7 @@ async function startAnalysis(context: TagoContext, scope: Data[]) {
 
   const pin_layer = scope.find((x) => x.variable === "pin_layer");
   const pin_equip = scope.find((x) => x.variable === "pin_equip");
-  const [layer] = await site_dev.getData({ variables: ["layers"], value: pin_layer.value });
+  const [layer] = await site_dev.getData({ variables: ["layers"], values: pin_layer.value });
 
   const beacon_sent = scope.filter((x) => x?.variable?.includes("beacon"));
   const [strongest_beacon] = beacon_sent.sort((a, b) => Number(b.value) - Number(a.value));
@@ -41,7 +41,7 @@ async function startAnalysis(context: TagoContext, scope: Data[]) {
 
   const [equip_serie] = await org_dev.getData({ variables: "equip_name", values: pin_equip.value, qty: 1 });
 
-  const [equip_img] = await site_dev.getData({ variables: "equip_img", series: equip_serie?.serie });
+  const [equip_img] = await site_dev.getData({ variables: "equip_img", series: equip_serie?.group });
 
   const data_to_plot = parseTagoObject(
     {
@@ -68,7 +68,7 @@ async function startAnalysis(context: TagoContext, scope: Data[]) {
     },
   });
 
-  await site_dev.deleteData({ variables: "equipment_location", qty: 1, series: equip_serie.serie });
+  await site_dev.deleteData({ variables: "equipment_location", qty: 1, series: equip_serie.group });
 
   await site_dev.sendData(data_to_plot.concat(assetHistory)).then((msg) => console.log(msg));
 

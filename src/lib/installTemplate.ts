@@ -12,7 +12,7 @@ function replaceJSON(item: any, replaceObj: any) {
 }
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
-export default async function InstallTemplate(account: Account, templates: string[], deviceObj: {}, replaceObj: any) {
+export default async function InstallTemplate(account: Account, templates: string[], replaceObj: any) {
   const dashboards = await Promise.all(templates.map((id) => account.template.installTemplate(id, { replace: replaceObj })));
   const dash_list = dashboards.map((x) => x.dashboard as string);
 

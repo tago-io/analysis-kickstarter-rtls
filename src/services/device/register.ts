@@ -1,7 +1,7 @@
 import { Device, Account, Types } from "@tago-io/sdk";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import validation from "../../lib/validation";
-import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
+import { ServiceParams, DeviceCreated } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
 import getDevice from "../../lib/getDevice";
 
@@ -28,7 +28,7 @@ function getFormVariables(scope: Types.Common.Data[], org_dev: Device) {
   const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
   const new_dev_site = scope.find((x) => x.variable === "new_dev_site");
 
-  //validation
+  // validation
   if (!new_dev_name.value) {
     throw validate("Name field is empty", "danger");
   }
@@ -56,13 +56,13 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
     connector,
     type: "immutable",
     chunk_period: "month",
-    chunk_retention: 1
+    chunk_retention: 1,
   };
 
-  //creating new device
+  // creating new device
   const new_dev = await account.devices.create(device_data);
 
-  //inserting device id -> so we can reference this later
+  // inserting device id -> so we can reference this later
   await account.devices.edit(new_dev.device_id, {
     tags: [
       { key: "device_id", value: new_dev.device_id },
@@ -72,15 +72,15 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
     ],
   });
 
-  //instantiating new device
+  // instantiating new device
   const new_org_dev = new Device({ token: new_dev.token });
 
-  //token, device_id, bucket_id
+  // token, device_id, bucket_id
   return { ...new_dev, device: new_org_dev } as DeviceCreated;
 }
 
 export default async ({ config_dev, scope, account }: ServiceParams, org_dev: Device) => {
-  //Collecting data
+  // Collecting data
   const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, validate, org_id } = getFormVariables(scope, org_dev);
 
   new_dev_eui.value = (new_dev_eui.value as string).toUpperCase();
@@ -93,8 +93,8 @@ export default async ({ config_dev, scope, account }: ServiceParams, org_dev: De
 
   if (dev_exists) throw validate("Device already exists", "danger");
 
-  //need device id to configure serie in parseTagoObject
-  //creating new device
+  // need device id to configure serie in parseTagoObject
+  // creating new device
   const { device_id: dev_id, device } = await installDevice({
     account,
     new_dev_name: new_dev_name.value as string,
@@ -120,15 +120,15 @@ export default async ({ config_dev, scope, account }: ServiceParams, org_dev: De
   // send to admin device (settings_device) which will send to bucket
   await config_dev.sendData(dev_data);
 
-  //send to organization device
+  // send to organization device
   await org_dev.sendData(dev_data);
 
-  //getting the site device
+  // getting the site device
   const site_dev = await getDevice(account, new_dev_site.value as string);
   site_dev.sendData(dev_data);
 
-  //Setting available asset list
-  await org_dev.sendData(parseTagoObject({ asset_list: new_dev_name.value }, dev_id)); //need to change
+  // Setting available asset list
+  await org_dev.sendData(parseTagoObject({ asset_list: new_dev_name.value }, dev_id)); // need to change
 
   return validate("Device created successfully!", "success");
 };

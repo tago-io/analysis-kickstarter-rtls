@@ -1,8 +1,5 @@
-import { Analysis, Utils, Device, Account } from "@tago-io/sdk";
-import axios from "axios";
+import { Utils, Device, Account } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
-import { DataToSend } from "@tago-io/sdk/out/modules/Device/device.types";
-import { DeviceListItem } from "@tago-io/sdk/out/modules/Account/devices.types";
 import { parseTagoObject } from "../lib/data.logic";
 import getDevice from "../lib/getDevice";
 import { TagoContext } from "../types";
@@ -44,7 +41,7 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
     const beacon_data = beacon_list.find((y) => y.value == data.variable || data.variable == y.sliced);
     if (!beacon_data) return final;
 
-    final.push({ id: beacon_data.value as string, rssi: data.value as number, serie: beacon_data.serie });
+    final.push({ id: beacon_data.value as string, rssi: data.value as number, serie: beacon_data.group });
     return final;
   }, []);
 
@@ -60,27 +57,27 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
 
   // Get Layer scales
 
-  //only the last beacon position matter (to fix)
+  // only the last beacon position matter (to fix)
   beacons_received = beacons_received.map((item) => {
     const key = `${site_id}${item.serie}`;
     const beacon_layer = (layer.metadata as any).fixed_position[key] as BeaconLocationData;
     item.x = Number(beacon_layer.x);
     item.y = Number(beacon_layer.y);
-    item.layer_id = layer.serie;
+    item.layer_id = layer.group;
     return item;
   });
 
   const { name: site_name } = await site_dev.info();
 
   const [equip_icon] = await org_dev.getData({ variables: "equip_img_icon", series: `ET${equipment?.metadata?.type}` });
-  const [equip_img] = await site_dev.getData({ variables: "equip_img", series: equipment?.serie });
+  const [equip_img] = await site_dev.getData({ variables: "equip_img", series: equipment?.group });
 
   const assetInfo = parseTagoObject(
     {
       equipment_location: {
         value: equipment?.metadata?.label as string,
         metadata: {
-          layer: layer.serie,
+          layer: layer.group,
           x: strongest_beacon.x, //
           y: strongest_beacon.y, //
           site_name,
@@ -88,20 +85,20 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
           site_id,
           layer_id: layer.id,
           icon: equip_icon ? equip_icon.value : null,
-          url: `https://admin.tago.io/dashboards/info/${enviroment.dash_site}?site_dev=${site_id}&asset_dev=${scope[0].origin}`,
+          url: `https://admin.tago.io/dashboards/info/${enviroment.dash_site}?site_dev=${site_id}&asset_dev=${scope[0].device}`,
           img_pin: equip_img?.value,
         },
       },
       // equipment_site: site_id,
     },
-    equipment.serie
+    equipment.group
   );
 
   const assetHistory = parseTagoObject({
     asset_history: {
       value: equipment.metadata.label as string,
       metadata: {
-        layer: layer.serie,
+        layer: layer.group,
         x: strongest_beacon.x, //
         y: strongest_beacon.y, //
         site: site_name,
@@ -119,7 +116,7 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
         metadata: {
           ...layer.metadata,
           fixed_position: {
-            [`${scope[0].origin}`]: {
+            [`${scope[0].device}`]: {
               value: "Offset",
               x: "0.00",
               y: "0.00",
@@ -128,17 +125,17 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
         },
       },
     },
-    layer.serie
+    layer.group
   );
 
-  await site_dev.deleteData({ variables: ["equipment_location", "equipment_outside_location"], series: equipment.serie, qty: 9999 });
+  await site_dev.deleteData({ variables: ["equipment_location", "equipment_outside_location"], series: equipment.group, qty: 9999 });
   await site_dev.sendData(assetInfo.concat(assetHistory));
   // await site_dev.sendData(assetHistory);
 
-  await org_dev.deleteData({ variables: ["equipment_location"], series: equipment.serie, qty: 9999 });
+  await org_dev.deleteData({ variables: ["equipment_location"], series: equipment.group, qty: 9999 });
   await org_dev.sendData(assetInfo);
 
-  const device = await getDevice(account, scope[0].origin);
+  const device = await getDevice(account, scope[0].device);
 
   // const [device_marker] = await device.getData({ variables: "layers" });
   // if (device_marker?.value) {
@@ -157,7 +154,7 @@ async function outdoorData(scope: Data[], site_dev: Device, equipment: Data) {
 
   if (!outdoor_data && !outdoor_data?.location?.coordinates[0]) return false;
 
-  const [equip_img] = await site_dev.getData({ variables: "equip_img", series: equipment?.serie });
+  const [equip_img] = await site_dev.getData({ variables: "equip_img", series: equipment?.group });
 
   const assetInfo = parseTagoObject(
     {
@@ -172,7 +169,7 @@ async function outdoorData(scope: Data[], site_dev: Device, equipment: Data) {
         },
       },
     },
-    equipment.serie
+    equipment.group
   );
 
   const assetHistory = parseTagoObject({
@@ -207,7 +204,7 @@ async function updateAsset(context: TagoContext, scope: Data[]) {
   const account = new Account({ token: environment.account_token });
   const config_dev = new Device({ token: environment.config_token });
   //asset device info
-  const device_id = scope[0].origin;
+  const device_id = scope[0].device;
   const { tags } = await account.devices.info(device_id);
 
   const equipment_id = tags.find((x) => x.key === "equipment_id")?.value as string;

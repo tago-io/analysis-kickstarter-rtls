@@ -6,7 +6,7 @@ import { TagoContext } from "./types";
 import getDevice from "./lib/getDevice";
 
 async function handler(context: TagoContext, scope: Data[]) {
-  //data must come through Device test 1
+  // data must come through Device test 1
   context.log("Running Analysis");
   const environment = Utils.envToJson(context.environment);
   if (!environment) {
@@ -21,7 +21,7 @@ async function handler(context: TagoContext, scope: Data[]) {
 
   const account = new Account({ token: environment.account_token });
 
-  const dev_id = scope[0].origin;
+  const dev_id = scope[0].device;
 
   const site_dev = await getDevice(account, dev_id);
 

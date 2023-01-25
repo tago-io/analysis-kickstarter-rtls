@@ -1,10 +1,9 @@
-import { Device, Account, Types } from "@tago-io/sdk";
+import { Device, Account } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import validation from "../../lib/validation";
-import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
+import { ServiceParams, DeviceCreated } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
-
 
 interface installDeviceParam {
   account: Account;
@@ -47,7 +46,7 @@ async function installDevice({ account, new_site_name, org_id }: installDevicePa
     name: new_site_name,
     type: "mutable",
     connector: "5f5a8f3351d4db99c40dece5",
-    network: "5bbd0d144051a50034cd19fb"
+    network: "5bbd0d144051a50034cd19fb",
   };
 
   // creating new device
@@ -69,7 +68,7 @@ async function installDevice({ account, new_site_name, org_id }: installDevicePa
   return { ...new_site, device: new_org_dev } as DeviceCreated;
 }
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
+export default async ({ config_dev, scope, account, environment }: ServiceParams, org_dev: Device) => {
   console.log("Registering...");
   // Collecting data
   const { new_site_name, new_site_address, validate, org_id } = getFormVariables(scope, org_dev);

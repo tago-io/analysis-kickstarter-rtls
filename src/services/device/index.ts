@@ -13,8 +13,7 @@ import editUser from "./edit";
 function checkType(scope: Data[], environment: EnvironmentItemObject) {
   if (scope.find((x) => x.variable === "new_dev_name")) return "add";
   else if (scope.find((x) => x.variable === "dev_name") && environment._widget_exec === "delete") return "remove";
-  else if (scope.find((x) => x.variable === "dev_name" || x.variable === "dev_type" || x.variable === "dev_site") && environment._widget_exec === "edit")
-    return "edit";
+  else if (scope.find((x) => x.variable === "dev_name" || x.variable === "dev_type" || x.variable === "dev_site") && environment._widget_exec === "edit") return "edit";
 }
 
 /**
@@ -23,7 +22,7 @@ function checkType(scope: Data[], environment: EnvironmentItemObject) {
  */
 async function controller(params: ServiceParams) {
   const type = checkType(params.scope, params.environment);
-  const org_dev = await getDevice(params.account, params.scope[0].origin);
+  const org_dev = await getDevice(params.account, params.scope[0].device);
 
   if (type === "add") await add(params, org_dev);
   else if (type === "remove") await remove(params, org_dev);

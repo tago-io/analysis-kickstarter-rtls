@@ -1,4 +1,4 @@
-import { Account, Services, Device, Types } from "@tago-io/sdk";
+import { Account, Services, Types } from "@tago-io/sdk";
 import { TagoContext } from "../types";
 
 /** Account Summary

@@ -1,8 +1,6 @@
-import { Utils, Services, Account, Device, Types, Analysis } from "@tago-io/sdk";
+import { Utils, Account, Device } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
-import { ConfigurationParams, DeviceListItem } from "@tago-io/sdk/out/modules/Account/devices.types";
 import moment from "moment-timezone";
-import { check } from "prettier";
 import { parseTagoObject } from "../lib/data.logic";
 import getDevice from "../lib/getDevice";
 import { TagoContext } from "../types";
@@ -70,12 +68,7 @@ async function handler(context: TagoContext, scope: Data[]): Promise<void> {
   });
 
   sensorList.map((device) =>
-    resolveDevice(
-      context,
-      account,
-      device.tags.find((tag) => tag.key === "organization_id")?.value as string,
-      device.tags.find((tag) => tag.key === "device_id")?.value as string
-    )
+    resolveDevice(context, account, device.tags.find((tag) => tag.key === "organization_id")?.value as string, device.tags.find((tag) => tag.key === "device_id")?.value as string)
   );
 }
 

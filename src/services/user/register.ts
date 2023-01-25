@@ -1,8 +1,8 @@
-import { Device, Account, Types } from "@tago-io/sdk";
+import { Device, Types } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import validation from "../../lib/validation";
 import registerUser from "../../lib/registerUser";
-import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
+import { ServiceParams } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
 
 interface UserData {
@@ -21,7 +21,7 @@ function getFormVariables(scope: Data[], org_dev: Device) {
     throw "Scope is missing";
   }
 
-  //validation
+  // validation
   const org_id = scope[0].device;
   const validate = validation("user_validation", org_dev);
 
@@ -53,8 +53,8 @@ function getFormVariables(scope: Data[], org_dev: Device) {
   return { new_user_name, new_user_email, new_user_site, new_user_access, new_user_phone, validate, org_id };
 }
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  //Collecting data
+export default async ({ config_dev, context, scope, account }: ServiceParams, org_dev: Device) => {
+  // Collecting data
   const { new_user_name, new_user_email, new_user_site, new_user_access, new_user_phone, validate, org_id } = getFormVariables(scope, org_dev);
 
   const [user_exists] = await account.run.listUsers({
@@ -65,7 +65,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   if (user_exists) return validate("User already exists!", "danger");
 
-  //creating user
+  // creating user
   const { timezone } = await account.info();
 
   const new_user_data: UserData = {
@@ -90,7 +90,7 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     ],
   };
 
-  //registering user
+  // registering user
   const new_user_id = await registerUser(context, account, new_user_data, "https://tago.io/");
 
   const user_data = parseTagoObject(
@@ -105,10 +105,10 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
     new_user_id
   );
 
-  //sending to org device
+  // sending to org device
   org_dev.sendData(user_data);
 
-  //sending to admin device (settings_device)
+  // sending to admin device (settings_device)
   config_dev.sendData(user_data);
 
   return validate("User successfully invited! An email will be sent with the credentials to the new user.", "success");

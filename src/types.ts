@@ -30,9 +30,9 @@ interface InputScope {
   time: Date;
   bucket: string;
   variable: string;
-  origin: string;
+  device: string;
   unit: string;
-  serie: string;
+  group: string;
   value: string | number | boolean | void;
   metadata: Metadata;
 }

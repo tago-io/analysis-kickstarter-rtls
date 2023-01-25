@@ -7,9 +7,6 @@ export default async ({ config_dev, scope, account, environment }: ServiceParams
   const user_exists = await account.run.userInfo(user_id);
   if (!user_exists) throw "User does not exist";
 
-  // collecting org id
-  const org_id = user_exists.tags.find((x) => x.key === "organization_id");
-
   if (!org_dev) throw "Organization device not found";
 
   // block the user from deleting himself

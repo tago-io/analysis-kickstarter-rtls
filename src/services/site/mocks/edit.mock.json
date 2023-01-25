@@ -1,0 +1,18 @@
+[
+  {
+    "variable": "site_name",
+    "value": "johnnyssite",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.473Z",
+    "group": "SAF676SAS787"
+  },
+  {
+    "variable": "site_address",
+    "value": "http://johnnyssite.com",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.473Z",
+    "group": "SAF676SAS787"
+  }
+]

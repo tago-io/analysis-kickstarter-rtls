@@ -1,0 +1,18 @@
+[
+  {
+    "variable": "org_name",
+    "value": "Some Org",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.473Z",
+    "group": "SAF676SAS787"
+  },
+  {
+    "variable": "org_address",
+    "value": "http://someOrgsWebsite.com",
+    "origin": "2023-01-23T19:59:25.472Z",
+    "time": "2023-01-23T19:59:25.472Z",
+    "created_at": "2023-01-23T19:59:25.473Z",
+    "group": "SAF676SAS787"
+  }
+]

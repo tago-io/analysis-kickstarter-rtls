@@ -8,9 +8,9 @@ interface GenericBody {
   [index: string]: any;
 }
 
-function parseTagoObject(body: GenericBody, serie?: string): DataToSend[] {
-  if (!serie) {
-    serie = String(new Date().getTime());
+function parseTagoObject(body: GenericBody, group?: string): DataToSend[] {
+  if (!group) {
+    group = String(new Date().getTime());
   }
   if (Object.keys(body).length === 0) {
     throw "Nothing to parse";
@@ -20,7 +20,7 @@ function parseTagoObject(body: GenericBody, serie?: string): DataToSend[] {
       return {
         variable: item,
         value: body[item]?.value ?? body[item],
-        serie,
+        group,
         time: body[item]?.time ?? null,
         location: body[item]?.location ?? null,
         metadata: body[item]?.metadata ?? null,

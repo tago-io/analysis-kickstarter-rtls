@@ -1,5 +1,5 @@
 import { getFormVariables } from "../register";
-import scope from "../mocks/register.mock.json";
+import scope from "./mocks/register.mock.json";
 
 const device = {
   sendData: () => Promise.resolve("success"),

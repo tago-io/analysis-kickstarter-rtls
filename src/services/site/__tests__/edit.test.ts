@@ -1,5 +1,5 @@
 import { getFormVariables } from "../edit";
-import scope from "../mocks/edit.mock.json";
+import scope from "./mocks/edit.mock.json";
 
 // jest test of src/services/site/edit.ts getFormVariables function
 describe("getFormVariables", () => {

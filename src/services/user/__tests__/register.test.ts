@@ -1,5 +1,5 @@
 import { getFormVariables } from "../register";
-import scope from "../mocks/register.mock.json";
+import scope from "./mocks/register.mock.json";
 
 const device = {
   sendData: () => Promise.resolve("success"),
@@ -24,6 +24,12 @@ describe("check form information", () => {
   test("scope is smaller than 3 character", () => {
     scope[0].value = "te";
     expect(() => getFormVariables(scope as any, device as any)).toThrow("Name field is smaller than 3 character");
+    scope[0].value = "test";
+  });
+
+  test("name field is empty", () => {
+    delete scope[0].value;
+    expect(() => getFormVariables(scope as any, device as any)).toThrow("Name field is empty");
     scope[0].value = "test";
   });
 

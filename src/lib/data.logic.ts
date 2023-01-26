@@ -9,16 +9,21 @@ interface GenericBody {
 }
 
 function parseTagoObject(body: GenericBody, serie?: string): DataToSend[] {
-  if (!serie) serie = String(new Date().getTime());
+  if (!serie) {
+    serie = String(new Date().getTime());
+  }
+  if (Object.keys(body).length === 0) {
+    throw "Nothing to parse";
+  }
   return Object.keys(body)
     .map((item) => {
       return {
         variable: item,
-        value: body[item] instanceof Object ? body[item].value : body[item],
+        value: body[item]?.value ?? body[item],
         serie,
-        time: body[item] instanceof Object ? body[item].time : null,
-        location: body[item] instanceof Object ? body[item].location : null,
-        metadata: body[item] instanceof Object ? body[item].metadata : null,
+        time: body[item]?.time ?? null,
+        location: body[item]?.location ?? null,
+        metadata: body[item]?.metadata ?? null,
       };
     })
     .filter((item) => item.value !== null && item.value !== undefined);

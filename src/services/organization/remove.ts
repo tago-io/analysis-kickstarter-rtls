@@ -1,11 +1,11 @@
 import { ServiceParams } from "../../types";
 
-export default async ({ config_dev, scope, account }: ServiceParams) => {
+async function deleteOrganization({ config_dev, scope, account }: ServiceParams) {
   // id of the org device
-  const org_id = scope[0].device;
+  const org_id = scope[0].group; // changed this from device to group...
 
   // delete from settings_device
-  const deleted = await config_dev.deleteData({ groups: org_id, qty: 99999 });
+  const deleted = await config_dev.deleteData({ groups: org_id, qty: 10_000 });
   console.log(deleted);
 
   // deleting users (organization's user)
@@ -32,4 +32,6 @@ export default async ({ config_dev, scope, account }: ServiceParams) => {
   }
 
   return;
-};
+}
+
+export { deleteOrganization };

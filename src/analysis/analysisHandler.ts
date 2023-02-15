@@ -1,11 +1,14 @@
 import { Utils, Account, Device, Analysis } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { TagoContext } from "@tago-io/sdk/out/modules/Analysis/analysis.types";
-import { createOrganization } from "../services/organization/register"
+import { createOrganization } from "../services/organization/register";
+import { deleteOrganization } from "../services/organization/remove";
+import { editOrganization } from "../services/organization/edit";
 
 async function analysisHandler(context: TagoContext, scope: Data[]): Promise<void> {
   context.log("Running Analysis");
   console.log("Scope:", scope);
+  console.log("Context:", context);
 
   // Convert environment variables to a JSON.
   const environment = Utils.envToJson(context.environment);
@@ -37,8 +40,8 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
 
   // Organization Routing - Using Device List Widget
   router.register(createOrganization).whenInputFormID("create-org");
-  // router.register(deleteOrganization as any).whenEnv("_input_id", "delete-org");
-  // router.register(editOrganization as any).whenWidgetExec("edit-org" as any);
+  router.register(deleteOrganization).whenWidgetExec("delete");
+  router.register(editOrganization).whenWidgetExec("edit");
 
   const result = await router.exec();
 

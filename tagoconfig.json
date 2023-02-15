@@ -1,0 +1,26 @@
+{
+  "analysisPath": "./src/analysis",
+  "buildPath": "./build",
+  "dev": {
+    "analysisList": [
+      {
+        "fileName": "analysisAssetTracking.ts",
+        "name": "[TagoIO] - Asset Tracking",
+        "id": "5fe0fad942fbde001f84752a"
+      },
+      {
+        "fileName": "analysisDeviceUpdater.ts",
+        "name": "[TagoIO] - Device Updater",
+        "id": "6059dd815215200013ec75a3"
+      },
+      {
+        "fileName": "analysisHandler.ts",
+        "name": "[TagoIO] - Handler",
+        "id": "5fc6566af4b03200279988a9"
+      }
+    ],
+    "id": "5fc13907cf4e170027440a96",
+    "profileName": "RTLS",
+    "email": "freddy.minuzzi@tago.io"
+  }
+}

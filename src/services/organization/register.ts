@@ -17,6 +17,7 @@ function getFormVariables(scope: Types.Common.Data[], config_dev: Device) {
 
   // validation
   const validate = validation("org_validation", config_dev);
+  validate("Registering...", "warning");
 
   const new_org_name = scope.find((x) => x.variable === "new_org_name");
   const new_org_address = scope.find((x) => x.variable === "new_org_address");
@@ -61,8 +62,7 @@ async function installDevice({ account, new_org_name }: installDeviceParam) {
   return { ...new_org, device: new_org_dev } as DeviceCreated;
 }
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams) => {
-  console.debug("Registering...");
+async function createOrganization({ config_dev, context, scope, account, environment }: ServiceParams) {
   // Collecting data
   const { new_org_name, new_org_address, validate } = getFormVariables(scope, config_dev);
 
@@ -92,4 +92,4 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
   return validate("Organization created", "success");
 };
 
-export { getFormVariables };
+export { getFormVariables, createOrganization };

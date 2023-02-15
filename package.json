@@ -5,14 +5,15 @@
   "license": "Copyright",
   "private": true,
   "scripts": {
-    "test": "jest .",
-    "test:watch": "jest . --watch",
-    "test:coverage": "jest . --coverage",
     "linter": "eslint .",
-    "deploy": "ts-node-dev ./src/deploy/upload.ts",
-    "build": "analysis-builder src/analysisHandler.ts ./build/handler.tago.js && analysis-builder src/analysisAssetTracking.ts ./build/analysisAssetTracking.tago.js  && analysis-builder src/analysisPDFGenerator.ts ./build/analysisPDFGenerator.tago.js && analysis-builder src/analysisSimulator.ts ./build/analysisSimulator.tago.js",
-    "start": "ts-node-dev --inspect --",
-    "inspect": "node --inspect ./node_modules/.bin/ts-node --files ./src/start.ts"
+    "linter-fix": "eslint --fix .",
+    "deploy": "ts-node ./src/deploy/upload.ts",
+    "inspector": "ts-node ./src/deploy/device-live-inspector.ts.ts",
+    "console": "ts-node ./src/deploy/analysis-console.ts",
+    "duplicate": "ts-node ./src/deploy/duplicate-analysis.ts",
+    "trigger": "ts-node ./src/deploy/trigger-analysis.ts",
+    "debug": "ts-node-dev src/analysis/analysisHandler --inspect",
+    "test": "jest . --"
   },
   "jest": {
     "preset": "ts-jest"

@@ -1,4 +1,4 @@
-import { Device, Types } from "@tago-io/sdk";
+import { Device, Types, Utils } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import validation from "../../lib/validation";
 import registerUser from "../../lib/registerUser";
@@ -53,8 +53,10 @@ function getFormVariables(scope: Data[], org_dev: Device) {
   return { new_user_name, new_user_email, new_user_site, new_user_access, new_user_phone, validate, org_id };
 }
 
-export default async ({ config_dev, context, scope, account }: ServiceParams, org_dev: Device) => {
+async function createUser({ config_dev, context, scope, account }: ServiceParams) {
   // Collecting data
+  const user_id = scope[0].device;
+  const org_dev = await Utils.getDevice(account, user_id);
   const { new_user_name, new_user_email, new_user_site, new_user_access, new_user_phone, validate, org_id } = getFormVariables(scope, org_dev);
 
   const [user_exists] = await account.run.listUsers({
@@ -112,6 +114,6 @@ export default async ({ config_dev, context, scope, account }: ServiceParams, or
   config_dev.sendData(user_data);
 
   return validate("User successfully invited! An email will be sent with the credentials to the new user.", "success");
-};
+}
 
-export { getFormVariables };
+export { getFormVariables, createUser };

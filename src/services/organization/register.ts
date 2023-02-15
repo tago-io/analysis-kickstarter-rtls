@@ -62,7 +62,7 @@ async function installDevice({ account, new_org_name }: installDeviceParam) {
   return { ...new_org, device: new_org_dev } as DeviceCreated;
 }
 
-async function createOrganization({ config_dev, context, scope, account, environment }: ServiceParams) {
+async function createOrganization({ config_dev, scope, account, environment }: ServiceParams) {
   // Collecting data
   const { new_org_name, new_org_address, validate } = getFormVariables(scope, config_dev);
 
@@ -90,6 +90,6 @@ async function createOrganization({ config_dev, context, scope, account, environ
   console.debug(org_device);
 
   return validate("Organization created", "success");
-};
+}
 
 export { getFormVariables, createOrganization };

@@ -4,6 +4,17 @@ import { TagoContext } from "@tago-io/sdk/out/modules/Analysis/analysis.types";
 import { createOrganization } from "../services/organization/register";
 import { deleteOrganization } from "../services/organization/remove";
 import { editOrganization } from "../services/organization/edit";
+import { createSite } from "../services/site/register";
+import { deleteSite } from "../services/site/remove";
+import { editSite } from "../services/site/edit";
+import { createEquipment } from "../services/equipment/register";
+import { deleteEquipment } from "../services/equipment/remove";
+import { createSensor } from "../services/device/register";
+import { deleteSensor } from "../services/device/remove";
+import { editSensor } from "../services/device/edit";
+import { createUser } from "../services/user/register";
+import { deleteUser } from "../services/user/remove";
+import { editUser } from "../services/user/edit";
 
 async function analysisHandler(context: TagoContext, scope: Data[]): Promise<void> {
   context.log("Running Analysis");
@@ -42,6 +53,21 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
   router.register(createOrganization).whenInputFormID("create-org");
   router.register(deleteOrganization).whenWidgetExec("delete");
   router.register(editOrganization).whenWidgetExec("edit");
+
+  router.register(createSite).whenInputFormID("create-site");
+  router.register(deleteSite).whenWidgetExec("delete");
+  router.register(editSite).whenWidgetExec("edit");
+
+  router.register(createEquipment).whenInputFormID("create-equipment");
+  router.register(deleteEquipment).whenWidgetExec("delete");
+
+  router.register(createSensor).whenInputFormID("create-sensor");
+  router.register(deleteSensor).whenWidgetExec("delete");
+  router.register(editSensor).whenWidgetExec("edit");
+
+  router.register(createUser).whenInputFormID("create-user");
+  router.register(deleteUser).whenWidgetExec("delete");
+  router.register(editUser).whenWidgetExec("edit");
 
   const result = await router.exec();
 

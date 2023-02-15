@@ -1,8 +1,9 @@
-import { Device } from "@tago-io/sdk";
+import { Utils } from "@tago-io/sdk";
 import { ServiceParams } from "../../types";
 
-export default async ({ config_dev, scope, account, environment }: ServiceParams, org_dev: Device) => {
+async function deleteUser({ config_dev, scope, account, environment }: ServiceParams) {
   const user_id = scope[0].group;
+  const org_dev = await Utils.getDevice(account, user_id);
   // checking if user exists
   const user_exists = await account.run.userInfo(user_id);
   if (!user_exists) throw "User does not exist";
@@ -21,4 +22,6 @@ export default async ({ config_dev, scope, account, environment }: ServiceParams
   // deleting user
   await account.run.userDelete(user_id).then((msg) => console.log(msg));
   return;
-};
+}
+
+export { deleteUser };

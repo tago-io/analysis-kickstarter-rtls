@@ -1,4 +1,4 @@
-import { Device, Account, Types } from "@tago-io/sdk";
+import { Utils, Device, Account, Types } from "@tago-io/sdk";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import validation from "../../lib/validation";
 import { ServiceParams, DeviceCreated } from "../../types";
@@ -79,9 +79,13 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
   return { ...new_dev, device: new_org_dev } as DeviceCreated;
 }
 
-export default async ({ config_dev, scope, account }: ServiceParams, org_dev: Device) => {
+async function createSensor({ config_dev, scope, account }: ServiceParams) {
+  // getting organization device
+  const org_id = scope[0].device as string;
+  const org_dev = await Utils.getDevice(account, org_id);
+
   // Collecting data
-  const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, validate, org_id } = getFormVariables(scope, org_dev);
+  const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, validate } = getFormVariables(scope, org_dev);
 
   new_dev_eui.value = (new_dev_eui.value as string).toUpperCase();
 
@@ -131,6 +135,6 @@ export default async ({ config_dev, scope, account }: ServiceParams, org_dev: De
   await org_dev.sendData(parseTagoObject({ asset_list: new_dev_name.value }, dev_id)); // need to change
 
   return validate("Device created successfully!", "success");
-};
+}
 
-export { getFormVariables };
+export { getFormVariables, createSensor };

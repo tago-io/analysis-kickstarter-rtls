@@ -1,9 +1,10 @@
-import { Device } from "@tago-io/sdk";
+import { Utils } from "@tago-io/sdk";
 import getDevice from "../../lib/getDevice";
 import { ServiceParams } from "../../types";
 
-export default async ({ config_dev, scope, account, environment }: ServiceParams, org_dev: Device) => {
+async function deleteSensor({ config_dev, scope, account, environment }: ServiceParams) {
   const dev_id = scope[0].device;
+  const org_dev = await Utils.getDevice(account, dev_id);
 
   const dev_name = scope.find((x) => x.variable === "dev_name");
 
@@ -27,4 +28,5 @@ export default async ({ config_dev, scope, account, environment }: ServiceParams
   await account.devices.delete(dev_id);
   await account.buckets.delete(device_info.bucket.id);
   return console.log("Device deleted!");
-};
+}
+export { deleteSensor };

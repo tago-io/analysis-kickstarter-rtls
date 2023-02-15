@@ -1,4 +1,4 @@
-import { Device } from "@tago-io/sdk";
+import { Utils } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { ServiceParams } from "../../types";
 
@@ -20,9 +20,13 @@ function getFormVariables(scope: Data[]) {
   return { site_id, site_name, site_address };
 }
 
-export default async ({ config_dev, scope, account }: ServiceParams, org_dev: Device) => {
+async function editSite({ config_dev, scope, account }: ServiceParams) {
   // Collecting data
   const { site_id, site_name, site_address } = getFormVariables(scope);
+
+  // getting Organization device
+  const org_id = scope[0].device as string;
+  const org_dev = await Utils.getDevice(account, org_id);
 
   // getting previous id data
   const [site_data] = await org_dev.getData({ variables: "site_id", qty: 1, groups: site_id });
@@ -81,6 +85,6 @@ export default async ({ config_dev, scope, account }: ServiceParams, org_dev: De
   }
 
   return console.log("Site edited!");
-};
+}
 
-export { getFormVariables };
+export { getFormVariables, editSite };

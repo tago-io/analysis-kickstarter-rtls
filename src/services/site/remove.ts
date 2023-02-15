@@ -1,8 +1,12 @@
-import { Device } from "@tago-io/sdk";
+import { Device, Utils } from "@tago-io/sdk";
 import { ServiceParams } from "../../types";
 
-export default async ({ config_dev, scope, account }: ServiceParams, org_dev: Device) => {
+async function deleteSite({ config_dev, scope, account }: ServiceParams) {
   const site_id = scope[0].device;
+
+  // getting Organization device
+  const org_id = scope[0].device as string;
+  const org_dev = await Utils.getDevice(account, org_id);
 
   // delete from settings_device
   await config_dev.deleteData({ groups: site_id, qty: 9999 });
@@ -37,4 +41,6 @@ export default async ({ config_dev, scope, account }: ServiceParams, org_dev: De
   }
 
   return;
-};
+}
+
+export { deleteSite };

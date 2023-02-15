@@ -1,4 +1,4 @@
-import { Device, Account } from "@tago-io/sdk";
+import { Device, Account, Utils } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import validation from "../../lib/validation";
@@ -68,12 +68,16 @@ async function installDevice({ account, new_site_name, org_id }: installDevicePa
   return { ...new_site, device: new_org_dev } as DeviceCreated;
 }
 
-export default async ({ config_dev, scope, account, environment }: ServiceParams, org_dev: Device) => {
+async function createSite({ config_dev, scope, account, environment }: ServiceParams) {
   console.log("Registering...");
-  // Collecting data
-  const { new_site_name, new_site_address, validate, org_id } = getFormVariables(scope, org_dev);
+  // getting Organization device
+  const org_id = scope[0].device as string;
+  const org_dev = await Utils.getDevice(account, org_id);
 
-  const [site_exists] = await org_dev.getData({ variables: "site_name", values: new_site_name.value, qty: 1 }); /** */
+  // Collecting data
+  const { new_site_name, new_site_address, validate } = getFormVariables(scope, org_dev);
+
+  const [site_exists] = await org_dev.getData({ variables: "site_name", values: new_site_name.value, qty: 1 });
 
   if (site_exists) throw validate("site already exists", "danger");
 
@@ -105,6 +109,6 @@ export default async ({ config_dev, scope, account, environment }: ServiceParams
   await org_dev.sendData(parseTagoObject(site_data, site_id));
 
   return validate("Site successfully created!", "success");
-};
+}
 
-export { getFormVariables };
+export { getFormVariables, createSite };

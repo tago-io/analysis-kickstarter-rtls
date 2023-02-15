@@ -1,4 +1,4 @@
-import { Device, Account, Types } from "@tago-io/sdk";
+import { Device, Account, Types, Utils } from "@tago-io/sdk";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import validation from "../../lib/validation";
 import { ServiceParams, DeviceCreated } from "../../types";
@@ -72,14 +72,14 @@ async function installDevice({ account, new_dev_name, org_id, site_id, asset_id 
   return { ...new_dev, device: new_org_dev } as DeviceCreated;
 }
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
+async function createEquipment({ scope, account, environment }: ServiceParams) {
+  const org_id = scope[0].device as string;
+  const org_dev = await Utils.getDevice(account, org_id);
   console.log("Registering...");
   const validate = validation("equip_validation", org_dev);
   validate("Registering...", "warning");
   // Collecting data
   const { new_equip_asset, new_equip_name, new_equip_img, new_equip_serie } = getFormVariables(scope, org_dev);
-
-  const org_id = scope[0].device as string;
 
   // deleteData
   await org_dev.deleteData({ variables: "asset_list", values: new_equip_asset.value }).then((msg) => console.log(msg));
@@ -126,6 +126,6 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
 
   return validate("Device created successfully!", "success");
   // DELETE ALSO THE IMAGE, ITS BEING KEPT!
-};
+}
 
-export { getFormVariables };
+export { getFormVariables, createEquipment };

@@ -1,10 +1,11 @@
-import { Device } from "@tago-io/sdk";
+import { Utils } from "@tago-io/sdk";
 import { parseTagoObject } from "../../lib/data.logic";
 import getDevice from "../../lib/getDevice";
 import { ServiceParams } from "../../types";
 
-export default async ({ scope, account }: ServiceParams, org_dev: Device) => {
+async function deleteEquipment({ scope, account }: ServiceParams) {
   const equip_id = scope[0].device;
+  const org_dev = await Utils.getDevice(account, equip_id);
 
   // deleting on list
   const equip_asset = scope.find((x) => x.variable === "equip_asset");
@@ -36,4 +37,6 @@ export default async ({ scope, account }: ServiceParams, org_dev: Device) => {
   await account.devices.edit(asset_id, { tags: [...asset_dev_tags] });
 
   return console.log("Equipment deleted!");
-};
+}
+
+export { deleteEquipment };

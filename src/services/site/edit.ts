@@ -7,12 +7,15 @@ function getFormVariables(scope: Data[]) {
   const site_name = scope.find((x) => x.variable === "site_name");
   const site_address = scope.find((x) => x.variable === "site_address");
 
-  if (!site_name.value) {
-    throw "Name field is empty";
+  if (!site_name?.value && !site_address?.value) {
+    throw "no values to change";
   }
-  if (!site_address.value) {
-    throw "Address field is empty";
-  }
+  // if (!site_name.value) {
+  //   throw "Name field is empty";
+  // }
+  // if (!site_address.value) {
+  //   throw "Address field is empty";
+  // }
   if (!site_id) {
     throw "Site id is empty";
   }

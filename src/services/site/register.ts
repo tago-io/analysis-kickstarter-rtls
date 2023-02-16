@@ -4,6 +4,7 @@ import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types
 import validation from "../../lib/validation";
 import { ServiceParams, DeviceCreated } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
+import getDevice from "../../lib/getDevice";
 
 interface installDeviceParam {
   account: Account;
@@ -107,6 +108,8 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
 
   // send to organization device
   await org_dev.sendData(parseTagoObject(site_data, site_id));
+  const org_device = await getDevice(account, site_id);
+  console.debug(org_device);
 
   return validate("Site successfully created!", "success");
 }

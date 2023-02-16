@@ -16,15 +16,15 @@ function getFormVariables(scope: Data[], config_dev: Device) {
   if (!org_name?.value && !org_address?.value) {
     throw "no values to change";
   }
-  if (!org_name.value) {
-    throw "Organization name is empty";
-  }
+  // if (!org_name.value) {
+  //   throw "Organization name is empty";
+  // }
   if (!org_id) {
     throw "Organization id is empty";
   }
-  if (!org_address.value) {
-    throw "Organization address field is empty";
-  }
+  // if (!org_address.value) {
+  //   throw "Organization address field is empty";
+  // }
 
   return { org_name, org_id, org_address };
 }

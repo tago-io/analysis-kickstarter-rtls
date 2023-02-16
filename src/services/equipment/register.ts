@@ -11,6 +11,8 @@ interface installDeviceParam {
   org_id: string;
   site_id: string;
   asset_id: string;
+  equip_serie: string;
+  equip_img: string;
 }
 
 function getFormVariables(scope: Types.Common.Data[], config_dev: Device) {
@@ -42,7 +44,7 @@ function getFormVariables(scope: Types.Common.Data[], config_dev: Device) {
   return { new_equip_asset, new_equip_name, new_equip_img, new_equip_serie };
 }
 
-async function installDevice({ account, new_dev_name, org_id, site_id, asset_id }: installDeviceParam) {
+async function installDevice({ account, new_dev_name, org_id, site_id, asset_id, equip_serie, equip_img }: installDeviceParam) {
   // structuring data
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
@@ -62,6 +64,8 @@ async function installDevice({ account, new_dev_name, org_id, site_id, asset_id 
       { key: "site_id", value: site_id },
       { key: "organization_id", value: org_id },
       { key: "device_type", value: "equipment" },
+      { key: "equip_serie", value: equip_serie },
+      { key: "equip_img", value: equip_img },
     ],
   });
 
@@ -98,6 +102,8 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
     org_id,
     site_id: site_id,
     asset_id,
+    equip_serie: new_equip_serie.value as string,
+    equip_img: new_equip_img.value as string,
   });
 
   const equip_data = parseTagoObject(

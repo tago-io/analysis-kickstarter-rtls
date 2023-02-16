@@ -8,7 +8,8 @@ import getDevice from "../../lib/getDevice";
 
 interface installDeviceParam {
   account: Account;
-  new_site_name: string;
+  site_name: string;
+  site_address: string;
   org_id: string;
 }
 
@@ -41,10 +42,10 @@ function getFormVariables(scope: Data[], org_dev: Device) {
   return { new_site_name, new_site_address, validate, org_id };
 }
 
-async function installDevice({ account, new_site_name, org_id }: installDeviceParam) {
+async function installDevice({ account, site_name, site_address, org_id }: installDeviceParam) {
   // structuring data
   const device_data: DeviceCreateInfo = {
-    name: new_site_name,
+    name: site_name,
     type: "mutable",
     connector: "5f5a8f3351d4db99c40dece5",
     network: "5bbd0d144051a50034cd19fb",
@@ -59,6 +60,7 @@ async function installDevice({ account, new_site_name, org_id }: installDevicePa
       { key: "site_id", value: new_site.device_id },
       { key: "organization_id", value: org_id },
       { key: "device_type", value: "site" },
+      { key: "site_address", value: site_address },
     ],
   });
 
@@ -84,8 +86,7 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
 
   // need device id to configure serie in parseTagoObject
   // creating new device
-  const { device_id: site_id, device } = await installDevice({ account, new_site_name: new_site_name.value as string, org_id });
-
+  const { device_id: site_id, device } = await installDevice({ account, site_name: new_site_name.value as string, site_address: new_site_address.value as string, org_id });
   const site_data = {
     site_id: {
       value: site_id,
@@ -103,13 +104,17 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
     // site_org: new_site_org.value,
   };
 
+  const device_info = await device.info();
+  const tags = device_info.tags || [];
+  tags.push({ key: "url_link", value: `https://admin.tago.io/dashboards/info/${environment.dash_site}?site_dev=${site_id}&org_dev=${org_id}` });
+
+  await account.devices.edit(site_id, { tags });
+
   // send to admin device (settings_device) which will send to bucket
   await config_dev.sendData(parseTagoObject(site_data, site_id));
 
   // send to organization device
   await org_dev.sendData(parseTagoObject(site_data, site_id));
-  const org_device = await getDevice(account, site_id);
-  console.debug(org_device);
 
   return validate("Site successfully created!", "success");
 }

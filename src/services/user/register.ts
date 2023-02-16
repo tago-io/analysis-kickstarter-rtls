@@ -89,6 +89,14 @@ async function createUser({ config_dev, context, scope, account }: ServiceParams
         key: "access",
         value: new_user_access.value as string,
       },
+      {
+        key: "phone",
+        value: new_user_phone.value as string,
+      },
+      {
+        key: "email",
+        value: new_user_email.value as string,
+      },
     ],
   };
 

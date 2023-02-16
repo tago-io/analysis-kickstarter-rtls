@@ -12,6 +12,7 @@ interface installDeviceParam {
   site_id: string;
   connector: string;
   new_device_eui: string;
+  new_device_network: string;
 }
 
 function getFormVariables(scope: Types.Common.Data[], org_dev: Device) {
@@ -25,6 +26,7 @@ function getFormVariables(scope: Types.Common.Data[], org_dev: Device) {
 
   const new_dev_name = scope.find((x) => x.variable === "new_dev_name");
   const new_dev_eui = scope.find((x) => x.variable === "new_dev_eui");
+  const new_dev_network = scope.find((x) => x.variable === "new_dev_network");
   const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
   const new_dev_site = scope.find((x) => x.variable === "new_dev_site");
 
@@ -45,10 +47,10 @@ function getFormVariables(scope: Types.Common.Data[], org_dev: Device) {
     throw validate("EUI field is empty", "danger");
   }
 
-  return { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, validate, org_id };
+  return { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, new_dev_network, validate, org_id };
 }
 
-async function installDevice({ account, new_dev_name, org_id, site_id, connector, new_device_eui }: installDeviceParam) {
+async function installDevice({ account, new_dev_name, org_id, site_id, connector, new_device_eui, new_device_network }: installDeviceParam) {
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
     network: "5ed7ccd5427104001cf00183",
@@ -69,6 +71,8 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
       { key: "site_id", value: site_id },
       { key: "organization_id", value: org_id },
       { key: "device_type", value: "device" },
+      { key: "device_eui", value: new_device_eui },
+      { key: "device_network", value: new_device_network },
     ],
   });
 
@@ -85,7 +89,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   const org_dev = await Utils.getDevice(account, org_id);
 
   // Collecting data
-  const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, validate } = getFormVariables(scope, org_dev);
+  const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, new_dev_network, validate } = getFormVariables(scope, org_dev);
 
   new_dev_eui.value = (new_dev_eui.value as string).toUpperCase();
 
@@ -106,6 +110,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
     site_id: new_dev_site.value as string,
     connector: new_dev_type.value as string,
     new_device_eui: new_dev_eui.value as string,
+    new_device_network: new_dev_network.value as string,
   });
 
   const device_type_name = (await account.integration.connectors.info(new_dev_type.value as string)).name;

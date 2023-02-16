@@ -10,19 +10,11 @@ describe("getFormVariables", () => {
     expect(site_id).toBe("SAF676SAS787");
   });
 
-  test("both values are empty", () => {
+  test("site_name should be empty", () => {
     delete scope[0].value;
-    delete scope[1].value;
-    expect(() => getFormVariables(scope as any)).toThrow("no values to change");
+    expect(() => getFormVariables(scope as any)).toThrow("Name field is empty");
     scope[0].value = "johnnyssite";
-    scope[1].value = "http://johnnyssite.com";
   });
-
-  // test("site_name should be empty", () => {
-  //   delete scope[0].value;
-  //   expect(() => getFormVariables(scope as any)).toThrow("Name field is empty");
-  //   scope[0].value = "johnnyssite";
-  // });
 
   test("site_id should be empty", () => {
     delete scope[0].group;
@@ -30,9 +22,9 @@ describe("getFormVariables", () => {
     scope[0].group = "SAF676SAS787";
   });
 
-  // test("site_address should be empty", () => {
-  //   delete scope[1].value;
-  //   expect(() => getFormVariables(scope as any)).toThrow("Address field is empty");
-  //   scope[1].value = "http://johnnyssite.com";
-  // });
+  test("site_address should be empty", () => {
+    delete scope[1].value;
+    expect(() => getFormVariables(scope as any)).toThrow("Address field is empty");
+    scope[1].value = "http://johnnyssite.com";
+  });
 });

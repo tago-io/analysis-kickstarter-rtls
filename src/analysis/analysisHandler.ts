@@ -51,23 +51,23 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
 
   // Organization Routing - Using Device List Widget
   router.register(createOrganization).whenInputFormID("create-org");
-  router.register(deleteOrganization).whenVariables(["org_name", "org_address"]).whenWidgetExec("delete");
-  router.register(editOrganization).whenVariables(["org_name", "org_address"]).whenWidgetExec("edit");
+  router.register(deleteOrganization).whenWidgetExec("delete");
+  router.register(editOrganization).whenWidgetExec("edit");
 
   router.register(createSite).whenInputFormID("create-site");
-  router.register(deleteSite).whenVariables(["site_name", "site_address"]).whenWidgetExec("delete");
-  router.register(editSite).whenVariables(["site_name", "site_address"]).whenWidgetExec("edit");
+  router.register(deleteSite).whenWidgetExec("delete");
+  router.register(editSite).whenWidgetExec("edit");
 
-  router.register(createEquipment).whenInputFormID("create-equip");
-  router.register(deleteEquipment).whenVariables("equip_asset").whenWidgetExec("delete");
+  router.register(createEquipment).whenInputFormID("create-equipment");
+  router.register(deleteEquipment).whenWidgetExec("delete");
 
-  router.register(createSensor).whenInputFormID("create-dev"); //devices
-  router.register(deleteSensor).whenVariables(["dev_name", "dev_site"]).whenWidgetExec("delete");
-  router.register(editSensor).whenVariables(["dev_name", "dev_site"]).whenWidgetExec("edit");
+  router.register(createSensor).whenInputFormID("create-sensor");
+  router.register(deleteSensor).whenWidgetExec("delete");
+  router.register(editSensor).whenWidgetExec("edit");
 
   router.register(createUser).whenInputFormID("create-user");
-  router.register(deleteUser).whenVariables(["user_name", "user_phone"]).whenWidgetExec("delete");
-  router.register(editUser).whenVariables(["user_name", "user_phone"]).whenWidgetExec("edit");
+  router.register(deleteUser).whenWidgetExec("delete");
+  router.register(editUser).whenWidgetExec("edit");
 
   const result = await router.exec();
 

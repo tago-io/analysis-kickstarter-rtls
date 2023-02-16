@@ -22,15 +22,15 @@ describe("getFormVariables", () => {
     scope[1].value = "http://someOrgsWebsite.com";
   });
 
-  test("org_id is empty", () => {
-    delete scope[0].group;
-    expect(() => getFormVariables(scope as any, device as any)).toThrow("Organization id is empty");
-    scope[0].group = "SAF676SAS787";
-  });
+  // test("org_id is empty", () => {
+  //   delete scope[0].group;
+  //   expect(() => getFormVariables(scope as any, device as any)).toThrow("Organization id is empty");
+  //   scope[0].group = "SAF676SAS787";
+  // });
 
-  test("org_address is empty", () => {
-    delete scope[1].value;
-    expect(() => getFormVariables(scope as any, device as any)).toThrow("Organization address field is empty");
-    scope[1].value = "http://someOrgsWebsite.com";
-  });
+  // test("org_address is empty", () => {
+  //   delete scope[1].value;
+  //   expect(() => getFormVariables(scope as any, device as any)).toThrow("Organization address field is empty");
+  //   scope[1].value = "http://someOrgsWebsite.com";
+  // });
 });

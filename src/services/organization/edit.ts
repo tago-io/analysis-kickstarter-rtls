@@ -1,37 +1,12 @@
-import { Device } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-
 import validation from "../../lib/validation";
 import { ServiceParams } from "../../types";
-
-function getFormVariables(scope: Data[], config_dev: Device) {
-  const org_id = scope[0].group;
-
-  // validation
-  const validate = validation("org_validation", config_dev);
-  validate("Editing...", "warning");
-
-  const org_name = scope.find((x) => x.variable === "org_name");
-  const org_address = scope.find((x) => x.variable === "org_address");
-
-  if (!org_name?.value && !org_address?.value) {
-    throw "no values to change";
-  }
-  // if (!org_name.value) {
-  //   throw "Organization name is empty";
-  // }
-  if (!org_id) {
-    throw "Organization id is empty";
-  }
-  // if (!org_address.value) {
-  //   throw "Organization address field is empty";
-  // }
-
-  return { org_name, org_id, org_address };
-}
+import { getOrgVariables } from "./models/edit.model";
 
 async function editOrganization({ config_dev, scope, account }: ServiceParams) {
-  const { org_name, org_id, org_address } = getFormVariables(scope, config_dev);
+  const org_id = scope[0].group;
+  const validate = validation("org_validation", config_dev);
+  // Collecting data
+  const { org_name, org_address } = await getOrgVariables(scope, validate);
   console.debug(org_id);
 
   if (org_name) {
@@ -62,4 +37,4 @@ async function editOrganization({ config_dev, scope, account }: ServiceParams) {
   return console.debug("edited!");
 }
 
-export { getFormVariables, editOrganization };
+export { editOrganization };

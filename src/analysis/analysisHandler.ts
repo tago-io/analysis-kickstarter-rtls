@@ -51,22 +51,22 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
 
   // Organization Routing - Using Device List Widget
   router.register(createOrganization).whenInputFormID("create-org");
-  router.register(deleteOrganization).whenCustomBtnID("delete-org");
+  router.register(deleteOrganization).whenDeviceListIdentifier("delete-org");
   router.register(editOrganization).whenCustomBtnID("edit-org");
 
   router.register(createSite).whenInputFormID("create-site");
-  router.register(deleteSite).whenCustomBtnID("delete-site");
+  router.register(deleteSite).whenDeviceListIdentifier("delete-site");
   router.register(editSite).whenCustomBtnID("edit-site");
 
   router.register(createEquipment).whenInputFormID("create-equip");
   router.register(deleteEquipment).whenCustomBtnID("delete-equip");
 
   router.register(createSensor).whenInputFormID("create-dev");
-  router.register(deleteSensor).whenCustomBtnID("delete-dev");
+  router.register(deleteSensor).whenDeviceListIdentifier("delete-dev");
   router.register(editSensor).whenCustomBtnID("edit-dev");
 
   router.register(createUser).whenInputFormID("create-user");
-  router.register(deleteUser).whenCustomBtnID("delete-user");
+  router.register(deleteUser).whenUserListIdentifier("delete-user");
   router.register(editUser).whenCustomBtnID("edit-user");
 
   const result = await router.exec();

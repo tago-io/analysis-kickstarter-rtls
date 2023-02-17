@@ -5,7 +5,7 @@ module.exports = {
     es2021: true,
   },
   root: true,
-  ignorePatterns: ["*.js", "tsconfig.json", "decoders/**/*", "helpers/**/*", "*.built.js"],
+  ignorePatterns: [".eslintrc.js", "tsconfig.json"],
   parserOptions: {
     ecmaVersion: 2021,
     sourceType: "module",
@@ -14,12 +14,6 @@ module.exports = {
     },
     tsconfigRootDir: __dirname,
     project: ["./tsconfig.json"],
-  },
-  globals: {
-    payload: true,
-    device: true,
-    moment: true,
-    dayjs: true
   },
   parser: "@typescript-eslint/parser",
   plugins: ["@typescript-eslint", "import", "jest", "functional", "unicorn"],
@@ -35,9 +29,9 @@ module.exports = {
   rules: {
     semi: [2, "always"],
     "import/order": 1,
-    "no-unused-vars": "off",
+    "no-unused-vars": 1,
     "@typescript-eslint/no-unused-vars": [
-      "error",
+      "warn",
       {
         //? Ignore unused args in functions if arg starts with '_'
         argsIgnorePattern: "^_",
@@ -59,14 +53,14 @@ module.exports = {
     "@typescript-eslint/no-floating-promises": 1,
     "@typescript-eslint/restrict-template-expressions": 0,
     "@typescript-eslint/require-await": 0,
-    "functional/no-class": 1,
+    "functional/no-class": 0,
     "functional/prefer-tacit": 0,
     "unicorn/catch-error-name": 1,
     "unicorn/consistent-destructuring": 1,
     "unicorn/error-message": 2,
     "unicorn/expiring-todo-comments": 2, // So nice, check on https://github.com/sindresorhus/eslint-plugin-unicorn/blob/v41.0.1/docs/rules/expiring-todo-comments.md
     "unicorn/explicit-length-check": 1,
-    "unicorn/filename-case": 1,
+    "unicorn/filename-case": 0,
     "unicorn/new-for-builtins": 2,
     "unicorn/no-array-callback-reference": 1,
     "unicorn/no-array-for-each": 1,
@@ -85,7 +79,7 @@ module.exports = {
     "unicorn/prefer-array-flat-map": 1,
     "unicorn/prefer-array-index-of": 1,
     "unicorn/prefer-array-some": 1,
-    "unicorn/prefer-at": 1,
+    "unicorn/prefer-at": 0,
     "unicorn/prefer-code-point": 1,
     "unicorn/prefer-date-now": 1,
     "unicorn/prefer-export-from": 1,

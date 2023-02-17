@@ -1,9 +1,9 @@
-import { Device, Account, Types } from "@tago-io/sdk";
+import { Account, Device, Types } from "@tago-io/sdk";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
-import validation from "../../lib/validation";
-import { ServiceParams, DeviceCreated } from "../../types";
+
 import { parseTagoObject } from "../../lib/data.logic";
-import getDevice from "../../lib/getDevice";
+import validation from "../../lib/validation";
+import { DeviceCreated, ServiceParams } from "../../types";
 
 interface installDeviceParam {
   account: Account;
@@ -71,7 +71,9 @@ async function createOrganization({ config_dev, context, scope, account, environ
   const [org_exists] = await config_dev.getData({ variables: "org_name", values: new_org_name.value, qty: 1 });
   const { id: config_dev_id } = await config_dev.info();
 
-  if (org_exists) throw validate("User already exists", "danger");
+  if (org_exists) {
+    throw validate("User already exists", "danger");
+  }
 
   // need device id to configure serie in parseTagoObject
   // creating new device

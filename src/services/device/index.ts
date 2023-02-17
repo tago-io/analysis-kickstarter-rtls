@@ -1,9 +1,10 @@
 import { Data } from "@tago-io/sdk/out/common/common.types";
-import { ServiceParams, EnvironmentItemObject } from "../../types";
+
 import getDevice from "../../lib/getDevice";
+import { EnvironmentItemObject, ServiceParams } from "../../types";
+import editUser from "./edit";
 import add from "./register";
 import remove from "./remove";
-import editUser from "./edit";
 
 /**
  * Check each variable sent in the scope of the analysis.
@@ -11,9 +12,13 @@ import editUser from "./edit";
  * Actions like delete and edit does send the internal environment variable _widget_exec when the user take this kind of action.
  */
 function checkType(scope: Data[], environment: EnvironmentItemObject) {
-  if (scope.find((x) => x.variable === "new_dev_name")) return "add";
-  else if (scope.find((x) => x.variable === "dev_name") && environment._widget_exec === "delete") return "remove";
-  else if (scope.find((x) => x.variable === "dev_name" || x.variable === "dev_type" || x.variable === "dev_site") && environment._widget_exec === "edit") return "edit";
+  if (scope.find((x) => x.variable === "new_dev_name")) {
+    return "add";
+  } else if (scope.find((x) => x.variable === "dev_name") && environment._widget_exec === "delete") {
+    return "remove";
+  } else if (scope.find((x) => x.variable === "dev_name" || x.variable === "dev_type" || x.variable === "dev_site") && environment._widget_exec === "edit") {
+    return "edit";
+  }
 }
 
 /**
@@ -24,9 +29,13 @@ async function controller(params: ServiceParams) {
   const type = checkType(params.scope, params.environment);
   const org_dev = await getDevice(params.account, params.scope[0].device);
 
-  if (type === "add") await add(params, org_dev);
-  else if (type === "remove") await remove(params, org_dev);
-  else if (type === "edit") await editUser(params, org_dev);
+  if (type === "add") {
+    await add(params, org_dev);
+  } else if (type === "remove") {
+    await remove(params, org_dev);
+  } else if (type === "edit") {
+    await editUser(params, org_dev);
+  }
 }
 
 export { checkType, controller };

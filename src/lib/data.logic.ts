@@ -1,4 +1,5 @@
 import { DataToSend } from "@tago-io/sdk/out/modules/Device/device.types";
+
 // ? ==================================== (c) TagoIO ====================================
 // ? What is this file?
 // * This file is all logics of parseit (example script).
@@ -10,7 +11,7 @@ interface GenericBody {
 
 function parseTagoObject(body: GenericBody, group?: string): DataToSend[] {
   if (!group) {
-    group = String(new Date().getTime());
+    group = String(Date.now());
   }
   if (Object.keys(body).length === 0) {
     throw "Nothing to parse";

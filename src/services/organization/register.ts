@@ -4,36 +4,12 @@ import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types
 import { parseTagoObject } from "../../lib/data.logic";
 import validation from "../../lib/validation";
 import { DeviceCreated, ServiceParams } from "../../types";
+import { getNewOrgVariables } from "./models/register.model";
 
 interface installDeviceParam {
   account: Account;
   new_org_name: string;
   new_org_address: string;
-}
-
-function getFormVariables(scope: Types.Common.Data[], config_dev: Device) {
-  if (!Array.isArray(scope)) {
-    throw "Scope is missing";
-  }
-
-  // validation
-  const validate = validation("org_validation", config_dev);
-  validate("Registering...", "warning");
-
-  const new_org_name = scope.find((x) => x.variable === "new_org_name");
-  const new_org_address = scope.find((x) => x.variable === "new_org_address");
-
-  if (!new_org_name.value) {
-    throw validate("Name field is empty", "danger");
-  }
-  if ((new_org_name.value as string).length < 3) {
-    throw validate("Name field is smaller than 3 character", "danger");
-  }
-  if (!new_org_address.value) {
-    throw validate("Address field is empty", "danger");
-  }
-
-  return { new_org_name, new_org_address, validate };
 }
 
 async function installDevice({ account, new_org_name, new_org_address }: installDeviceParam) {
@@ -65,8 +41,10 @@ async function installDevice({ account, new_org_name, new_org_address }: install
 }
 
 async function createOrganization({ config_dev, context, scope, account, environment }: ServiceParams) {
+  // creating validate
+  const validate = validation("org_validation", config_dev);
   // Collecting data
-  const { new_org_name, new_org_address, validate } = getFormVariables(scope, config_dev);
+  const { new_org_name, new_org_address } = await getNewOrgVariables(scope, validate);
 
   const [org_exists] = await config_dev.getData({ variables: "org_name", values: new_org_name.value, qty: 1 });
   const { id: config_dev_id } = await config_dev.info();
@@ -98,4 +76,4 @@ async function createOrganization({ config_dev, context, scope, account, environ
   return validate("Organization created", "success");
 }
 
-export { getFormVariables, createOrganization };
+export { createOrganization };

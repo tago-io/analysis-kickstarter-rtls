@@ -5,41 +5,13 @@ import validation from "../../lib/validation";
 import { ServiceParams, DeviceCreated } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
 import getDevice from "../../lib/getDevice";
+import { getNewSiteVariables } from "./model/register.model";
 
 interface installDeviceParam {
   account: Account;
   site_name: string;
   site_address: string;
   org_id: string;
-}
-
-function getFormVariables(scope: Data[], org_dev: Device) {
-  if (!Array.isArray(scope)) {
-    throw "Scope is missing";
-  }
-
-  const org_id = scope[0].device as string;
-
-  // validation
-  const validate = validation("site_validation", org_dev);
-
-  const new_site_name = scope.find((x) => x.variable === "new_site_name");
-  const new_site_address = scope.find((x) => x.variable === "new_site_address");
-
-  if (!new_site_name.value) {
-    throw validate("Name field is empty", "danger");
-  }
-  if ((new_site_name.value as string).length < 3) {
-    throw validate("Name field is smaller than 3 character.", "danger");
-  }
-  if (!new_site_address.value) {
-    throw validate("Address field is empty", "danger");
-  }
-  if ((new_site_address.value as string).length < 3) {
-    throw validate("Address field is smaller than 3 character.", "danger");
-  }
-
-  return { new_site_name, new_site_address, validate, org_id };
 }
 
 async function installDevice({ account, site_name, site_address, org_id }: installDeviceParam) {
@@ -74,19 +46,21 @@ async function installDevice({ account, site_name, site_address, org_id }: insta
 async function createSite({ config_dev, scope, account, environment }: ServiceParams) {
   console.log("Registering...");
   // getting Organization device
-  const org_id = scope[0].device as string;
+  const org_id = scope[0].device;
   const org_dev = await Utils.getDevice(account, org_id);
-
+  const validate = validation("site_validation", org_dev);
   // Collecting data
-  const { new_site_name, new_site_address, validate } = getFormVariables(scope, org_dev);
+  const { new_site_name, new_site_address } = await getNewSiteVariables(scope, validate);
 
   const [site_exists] = await org_dev.getData({ variables: "site_name", values: new_site_name.value, qty: 1 });
 
-  if (site_exists) throw validate("site already exists", "danger");
+  if (site_exists) {
+    throw validate("site already exists", "danger");
+  }
 
   // need device id to configure serie in parseTagoObject
   // creating new device
-  const { device_id: site_id, device } = await installDevice({ account, site_name: new_site_name.value as string, site_address: new_site_address.value as string, org_id });
+  const { device_id: site_id, device } = await installDevice({ account, site_name: new_site_name.value, site_address: new_site_address.value, org_id });
   const site_data = {
     site_id: {
       value: site_id,
@@ -119,4 +93,4 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
   return validate("Site successfully created!", "success");
 }
 
-export { getFormVariables, createSite };
+export { createSite };

@@ -5,7 +5,7 @@ async function deleteSite({ config_dev, scope, account }: ServiceParams) {
   const site_id = scope[0].device;
 
   // getting Organization device
-  const org_id = scope[0].device as string;
+  const org_id = scope[0].device;
   const org_dev = await Utils.getDevice(account, org_id);
 
   // delete from settings_device

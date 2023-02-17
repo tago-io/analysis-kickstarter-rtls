@@ -1,28 +1,15 @@
 import { Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
+import validation from "../../lib/validation";
 import { ServiceParams } from "../../types";
-
-function getFormVariables(scope: Data[]) {
-  const user_id = scope[0].group;
-  const user_name = scope.find((x) => x.variable === "user_name");
-  const user_phone = scope.find((x) => x.variable === "user_phone");
-
-  if (!user_name.value) {
-    throw "Name field is empty";
-  }
-  if (!user_phone.value) {
-    throw "Phone field is empty";
-  }
-  if (!user_id) {
-    throw "User id is empty";
-  }
-
-  return { user_name, user_phone, user_id };
-}
+import { getUserVariables } from "./model/edit.model";
 
 async function editUser({ config_dev, scope, account }: ServiceParams) {
+  const user_id = scope[0].group;
+
   // Collecting data
-  const { user_name, user_phone, user_id } = getFormVariables(scope);
+  // validate variable
+  const validate = validation("user_validation", config_dev);
+  const { user_name, user_phone } = await getUserVariables(scope, validate);
   const org_dev = await Utils.getDevice(account, user_id);
 
   const new_user_info: any = {};
@@ -47,10 +34,10 @@ async function editUser({ config_dev, scope, account }: ServiceParams) {
     console.debug(user_name_config_dev);
 
     // sending new data
-    await config_dev.sendData({ ...user_name_config_dev, value: user_name.value as string }).then((msg) => console.log(msg));
-    await org_dev.sendData({ ...user_name_org_dev, value: user_name.value as string });
+    await config_dev.sendData({ ...user_name_config_dev, value: user_name }).then((msg) => console.log(msg));
+    await org_dev.sendData({ ...user_name_org_dev, value: user_name });
 
-    new_user_info.name = user_name.value;
+    new_user_info.name = user_name;
     await account.run.userEdit(user_id, new_user_info);
   }
   if (user_phone) {
@@ -70,13 +57,13 @@ async function editUser({ config_dev, scope, account }: ServiceParams) {
     console.debug(user_phone_config_dev);
 
     // sending new data
-    await config_dev.sendData({ ...user_phone_config_dev, value: user_phone.value as string }).then((msg) => console.log(msg));
-    await org_dev.sendData({ ...user_phone_org_dev, value: user_phone.value as string });
+    await config_dev.sendData({ ...user_phone_config_dev, value: user_phone }).then((msg) => console.log(msg));
+    await org_dev.sendData({ ...user_phone_org_dev, value: user_phone });
 
-    new_user_info.phone = user_phone.value;
+    new_user_info.phone = user_phone;
     await account.run.userEdit(user_id, new_user_info);
   }
   return;
 }
 
-export { getFormVariables, editUser };
+export { editUser };

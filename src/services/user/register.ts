@@ -1,9 +1,9 @@
-import { Device, Types, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
+import { Types, Utils } from "@tago-io/sdk";
 import validation from "../../lib/validation";
 import registerUser from "../../lib/registerUser";
 import { ServiceParams } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
+import { getNewUserVariables } from "./model/register.model";
 
 interface UserData {
   name: string;
@@ -16,65 +16,32 @@ interface UserData {
   site: string;
 }
 
-function getFormVariables(scope: Data[], org_dev: Device) {
-  if (!Array.isArray(scope)) {
-    throw "Scope is missing";
-  }
-
-  // validation
-  const org_id = scope[0].device;
-  const validate = validation("user_validation", org_dev);
-
-  const new_user_name = scope.find((x) => x.variable === "new_user_name");
-  const new_user_email = scope.find((x) => x.variable === "new_user_email");
-  const new_user_site = scope.find((x) => x.variable === "new_user_site");
-  const new_user_access = scope.find((x) => x.variable === "new_user_access");
-  const new_user_phone = scope.find((x) => x.variable === "new_user_phone");
-
-  if (!new_user_name.value) {
-    throw validate("Name field is empty", "danger");
-  }
-  if ((new_user_name.value as string).length < 3) {
-    throw validate("Name field is smaller than 3 character", "danger");
-  }
-  if (!new_user_email.value) {
-    throw validate("Email field is empty", "danger");
-  }
-  if (!new_user_site?.value && new_user_access.value === "user") {
-    throw validate("Department field is empty", "danger");
-  }
-  if (!new_user_access.value) {
-    throw validate("Access field is empty", "danger");
-  }
-  if (!new_user_phone.value) {
-    throw validate("Phone field is empty", "danger");
-  }
-
-  return { new_user_name, new_user_email, new_user_site, new_user_access, new_user_phone, validate, org_id };
-}
-
 async function createUser({ config_dev, context, scope, account }: ServiceParams) {
   // Collecting data
+  const org_id = scope[0].device;
   const user_id = scope[0].device;
   const org_dev = await Utils.getDevice(account, user_id);
-  const { new_user_name, new_user_email, new_user_site, new_user_access, new_user_phone, validate, org_id } = getFormVariables(scope, org_dev);
+  const validate = validation("user_validation", org_dev);
+  const { new_user_name, new_user_email, new_user_site, new_user_access, new_user_phone } = await getNewUserVariables(scope, validate);
 
   const [user_exists] = await account.run.listUsers({
     page: 1,
     amount: 1,
-    filter: { email: new_user_email.value as string },
+    filter: { email: new_user_email.value },
   });
 
-  if (user_exists) return validate("User already exists!", "danger");
+  if (user_exists) {
+    return validate("User already exists!", "danger");
+  }
 
   // creating user
   const { timezone } = await account.info();
 
   const new_user_data: UserData = {
-    name: new_user_name.value as string,
-    email: new_user_email.value as string,
-    phone: new_user_phone.value as string,
-    site: new_user_site === undefined ? "" : (new_user_site?.metadata.label as string),
+    name: new_user_name.value,
+    email: new_user_email.value,
+    phone: new_user_phone.value,
+    site: new_user_site === undefined ? "" : new_user_site?.metadata.label,
     timezone: timezone,
     tags: [
       {
@@ -83,19 +50,19 @@ async function createUser({ config_dev, context, scope, account }: ServiceParams
       },
       {
         key: "department_id",
-        value: new_user_site === undefined ? "" : (new_user_site?.value as string),
+        value: new_user_site === undefined ? "" : new_user_site?.value,
       },
       {
         key: "access",
-        value: new_user_access.value as string,
+        value: new_user_access.value,
       },
       {
         key: "phone",
-        value: new_user_phone.value as string,
+        value: new_user_phone.value,
       },
       {
         key: "email",
-        value: new_user_email.value as string,
+        value: new_user_email.value,
       },
     ],
   };
@@ -105,23 +72,23 @@ async function createUser({ config_dev, context, scope, account }: ServiceParams
 
   const user_data = parseTagoObject(
     {
-      user_id: new_user_id as string,
-      user_name: new_user_name.value as string,
-      user_email: new_user_email.value as string,
-      user_phone: new_user_phone.value as string,
-      user_site: new_user_site === undefined ? "" : (new_user_site?.metadata.label as string),
-      user_access: new_user_access.value as string,
+      user_id: new_user_id,
+      user_name: new_user_name.value,
+      user_email: new_user_email.value,
+      user_phone: new_user_phone.value,
+      user_site: new_user_site === undefined ? "" : new_user_site?.metadata.label,
+      user_access: new_user_access.value,
     },
     new_user_id
   );
 
   // sending to org device
-  org_dev.sendData(user_data);
+  await org_dev.sendData(user_data);
 
   // sending to admin device (settings_device)
-  config_dev.sendData(user_data);
+  await config_dev.sendData(user_data);
 
   return validate("User successfully invited! An email will be sent with the credentials to the new user.", "success");
 }
 
-export { getFormVariables, createUser };
+export { createUser };

@@ -46,7 +46,6 @@ async function getNewUserVariables(scope: Data[], validate: ReturnType<typeof va
       new_user_phone,
       new_user_access,
       new_user_site,
-      validate,
     });
   } catch (error) {
     const zodErrorMsg = getZodError(error);

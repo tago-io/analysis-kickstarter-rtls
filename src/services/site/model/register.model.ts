@@ -27,7 +27,6 @@ async function getNewSiteVariables(scope: Data[], validate: ReturnType<typeof va
     return registerSiteModel.parse({
       new_site_name,
       new_site_address,
-      validate,
     });
   } catch (error) {
     const zodErrorMsg = getZodError(error);

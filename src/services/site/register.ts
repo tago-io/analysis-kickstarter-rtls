@@ -1,10 +1,8 @@
 import { Device, Account, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import validation from "../../lib/validation";
 import { ServiceParams, DeviceCreated } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
-import getDevice from "../../lib/getDevice";
 import { getNewSiteVariables } from "./model/register.model";
 
 interface installDeviceParam {

@@ -1,4 +1,4 @@
-import { Account, Device, Types } from "@tago-io/sdk";
+import { Account, Device } from "@tago-io/sdk";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 
 import { parseTagoObject } from "../../lib/data.logic";
@@ -40,7 +40,7 @@ async function installDevice({ account, new_org_name, new_org_address }: install
   return { ...new_org, device: new_org_dev } as DeviceCreated;
 }
 
-async function createOrganization({ config_dev, context, scope, account, environment }: ServiceParams) {
+async function createOrganization({ config_dev, scope, account, environment }: ServiceParams) {
   // creating validate
   const validate = validation("org_validation", config_dev);
   // Collecting data
@@ -55,7 +55,7 @@ async function createOrganization({ config_dev, context, scope, account, environ
 
   // need device id to configure serie in parseTagoObject
   // creating new device
-  const { device_id, device } = await installDevice({ account, new_org_name: new_org_name.value as string, new_org_address: new_org_address.value as string });
+  const { device_id, device } = await installDevice({ account, new_org_name: new_org_name.value, new_org_address: new_org_address.value });
   const org_data = {
     org_id: device_id,
     org_name: {

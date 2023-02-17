@@ -2,7 +2,7 @@ import { ServiceParams } from "../../types";
 
 async function deleteOrganization({ config_dev, scope, account }: ServiceParams) {
   // id of the org device
-  const org_id = scope[0].group; // changed this from device to group...
+  const org_id = scope[0].device; // changed this from device to group... it was deleting all organizations, so i changed it back to device
 
   // delete from settings_device
   const deleted = await config_dev.deleteData({ groups: org_id, qty: 10_000 });

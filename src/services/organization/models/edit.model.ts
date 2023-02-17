@@ -18,7 +18,6 @@ async function getOrgVariables(scope: any, validate: ReturnType<typeof validatio
     return editOrgModel.parse({
       org_name,
       org_address,
-      validate,
     });
   } catch (error) {
     const zodErrorMsg = getZodError(error);

@@ -27,7 +27,6 @@ async function getNewOrgVariables(scope: Data[], validate: ReturnType<typeof val
     return registerOrgModel.parse({
       new_org_name,
       new_org_address,
-      validate,
     });
   } catch (error) {
     const zodErrorMsg = getZodError(error);

@@ -30,7 +30,7 @@ function getFormVariables(scope: Data[], config_dev: Device) {
   return { org_name, org_id, org_address };
 }
 
-async function editOrganization({ config_dev, scope }: ServiceParams) {
+async function editOrganization({ config_dev, scope, account }: ServiceParams) {
   const { org_name, org_id, org_address } = getFormVariables(scope, config_dev);
   console.debug(org_id);
 
@@ -41,6 +41,9 @@ async function editOrganization({ config_dev, scope }: ServiceParams) {
     await config_dev.deleteData({ variables: "org_name", groups: org_id_data.group, qty: 10_000 });
     // updating data
     await config_dev.sendData({ ...org_id_data, metadata: { ...org_id_data.metadata, label: org_name.value as string }, time: null });
+    // updating device name
+    const org_device = org_id_data.metadata.device_id;
+    await account.devices.edit(org_device, { name: org_name.value as string });
   }
   if (org_address) {
     // getting previous data
@@ -49,6 +52,12 @@ async function editOrganization({ config_dev, scope }: ServiceParams) {
     await config_dev.deleteData({ variables: "org_address", groups: org_id_data.group, qty: 10_000 });
     // updating data
     await config_dev.sendData({ ...org_id_data, metadata: { ...org_id_data.metadata, label: org_address.value as string }, time: null });
+    // updating device tag
+    const org_device = org_id_data.metadata.device_id;
+    const device_info = await org_device.info();
+    const tags = device_info.tags || [];
+    tags.push({ key: "org_address", value: org_address });
+    await account.devices.edit(org_device, { tags });
   }
   return console.debug("edited!");
 }

@@ -1,7 +1,7 @@
 import { Utils } from "@tago-io/sdk";
+import { Data } from "@tago-io/sdk/out/common/common.types";
 import getDevice from "../../lib/getDevice";
 import { ServiceParams } from "../../types";
-import { Data } from "@tago-io/sdk/out/common/common.types";
 
 function getFormVariables(scope: Data[]) {
   const dev_id = scope[0].device;
@@ -29,7 +29,7 @@ async function editSensor({ config_dev, scope, account }: ServiceParams) {
   // getting site device
   let { tags } = await account.devices.info(dev_id);
   const site_id = tags.find((tag) => tag.key === "site_id")?.value;
-  const site_dev = await getDevice(account, site_id as string);
+  const site_dev = await getDevice(account, site_id);
 
   // getting previous id data
   const [dev_data] = await org_dev.getData({ variables: "dev_id", qty: 1, groups: dev_id });

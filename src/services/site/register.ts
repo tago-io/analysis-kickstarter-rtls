@@ -106,7 +106,7 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
 
   const device_info = await device.info();
   const tags = device_info.tags || [];
-  tags.push({ key: "url_link", value: `https://admin.tago.io/dashboards/info/${environment.dash_site}?site_dev=${site_id}&org_dev=${org_id}` });
+  tags.push({ key: "url_link", value: `https://admin.tago.io/dashboards/info/5fc91ac2a0e14a002654fe99?org_dev=${org_id}&site_dev=${site_id}` });
 
   await account.devices.edit(site_id, { tags });
 

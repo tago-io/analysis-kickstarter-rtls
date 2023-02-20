@@ -14,7 +14,9 @@ const registerEquipModel = z.object({
   new_equip_img: z.object({
     value: z.string(),
     metadata: z.object({
-      file: z.string(),
+      file: z.object({
+        path: z.string(),
+      }),
     }),
   }),
   new_equip_asset: z.object({

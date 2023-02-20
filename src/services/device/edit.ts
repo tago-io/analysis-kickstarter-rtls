@@ -8,16 +8,6 @@ function getFormVariables(scope: Data[]) {
   const dev_name = scope.find((x) => x.variable === "dev_name");
   const new_site_id_data = scope.find((x) => x.variable === "dev_site");
 
-  if (!dev_name.value) {
-    throw "Device name field is empty";
-  }
-  if (!dev_id) {
-    throw "Device id is empty";
-  }
-  if (!new_site_id_data.value) {
-    throw "Site ID Data field is empty";
-  }
-
   return { dev_name, new_site_id_data, dev_id };
 }
 

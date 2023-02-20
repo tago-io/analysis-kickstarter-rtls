@@ -4,19 +4,17 @@ import { ServiceParams } from "../../types";
 import { getUserVariables } from "./model/edit.model";
 
 async function editUser({ config_dev, scope, account }: ServiceParams) {
-  const user_id = scope[0].group;
-
-  // Collecting data
+  // the line below is incorret, need to find another way to get since we aren´t using dynamic table anymore.
+  const user_id = scope[0].device;
+  const userInfo = await account.run.userInfo(user_id);
+  console.log("User info:", userInfo);
   // validate variable
   const validate = validation("user_validation", config_dev);
+  // Collecting data
   const { user_name, user_phone } = await getUserVariables(scope, validate);
   const org_dev = await Utils.getDevice(account, user_id);
 
   const new_user_info: any = {};
-
-  // const user_to_edit = await account.run.userInfo(user_id);
-  // const [user_data] = await org_dev.getData({ variable: "user_id", qty: 1, serie: user_id });
-
   if (user_name) {
     // fetching prev data
     const [user_name_config_dev] = await config_dev.getData({ variables: "user_name", qty: 1, groups: user_id });

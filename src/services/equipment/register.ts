@@ -4,6 +4,7 @@ import validation from "../../lib/validation";
 import { ServiceParams, DeviceCreated } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
 import getDevice from "../../lib/getDevice";
+import { getNewEquipVariables } from "./model/register.model";
 
 interface installDeviceParam {
   account: Account;
@@ -13,35 +14,6 @@ interface installDeviceParam {
   asset_id: string;
   equip_serie: string;
   equip_img: string;
-}
-
-function getFormVariables(scope: Types.Common.Data[], config_dev: Device) {
-  if (!Array.isArray(scope)) {
-    throw "Scope is missing";
-  }
-
-  // validation
-  const validate = validation("org_validation", config_dev);
-
-  const new_equip_name = scope.find((x) => x.variable === "new_equip_name");
-  const new_equip_serie = scope.find((x) => x.variable === "new_equip_serie");
-  const new_equip_img = scope.find((x) => x.variable === "new_equip_img");
-  const new_equip_asset = scope.find((x) => x.variable === "new_equip_asset");
-
-  if (!new_equip_name.value) {
-    throw validate("Name field is empty", "danger");
-  }
-  if (!new_equip_serie.value) {
-    throw validate("Serie field is empty", "danger");
-  }
-  if (!new_equip_img.value) {
-    throw validate("Image field is empty", "danger");
-  }
-  if (!new_equip_asset.value) {
-    throw validate("Asset field is empty", "danger");
-  }
-
-  return { new_equip_asset, new_equip_name, new_equip_img, new_equip_serie };
 }
 
 async function installDevice({ account, new_dev_name, org_id, site_id, asset_id, equip_serie, equip_img }: installDeviceParam) {
@@ -77,13 +49,13 @@ async function installDevice({ account, new_dev_name, org_id, site_id, asset_id,
 }
 
 async function createEquipment({ scope, account, environment }: ServiceParams) {
-  const org_id = scope[0].device as string;
+  const org_id = scope[0].device;
   const org_dev = await Utils.getDevice(account, org_id);
   console.log("Registering...");
   const validate = validation("equip_validation", org_dev);
   validate("Registering...", "warning");
   // Collecting data
-  const { new_equip_asset, new_equip_name, new_equip_img, new_equip_serie } = getFormVariables(scope, org_dev);
+  const { new_equip_asset, new_equip_name, new_equip_img, new_equip_serie } = await getNewEquipVariables(scope, validate);
 
   // deleteData
   await org_dev.deleteData({ variables: "asset_list", values: new_equip_asset.value }).then((msg) => console.log(msg));
@@ -93,17 +65,17 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
   const [asset_name] = await org_dev.getData({ variables: "dev_name", values: new_equip_asset.value, qty: 1 });
   const asset_id = asset_name?.group;
 
-  const site_id = (await account.devices.info(asset_id)).tags.find((x) => x.key === "site_id").value as string;
+  const site_id = (await account.devices.info(asset_id)).tags.find((x) => x.key === "site_id").value;
   const site_dev = await getDevice(account, site_id);
 
-  const { device_id: equip_id, device: equip_dev } = await installDevice({
+  const { device_id: equip_id } = await installDevice({
     account,
-    new_dev_name: new_equip_name.value as string,
+    new_dev_name: new_equip_name.value,
     org_id,
     site_id: site_id,
     asset_id,
-    equip_serie: new_equip_serie.value as string,
-    equip_img: new_equip_img.value as string,
+    equip_serie: new_equip_serie.value,
+    equip_img: `https://api.tago.io/file/5fc13907cf4e170027440a96/${(new_equip_img?.metadata as any)?.file?.path}`,
   });
 
   const equip_data = parseTagoObject(
@@ -134,4 +106,4 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
   // DELETE ALSO THE IMAGE, ITS BEING KEPT!
 }
 
-export { getFormVariables, createEquipment };
+export { createEquipment };

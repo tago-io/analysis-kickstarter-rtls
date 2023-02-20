@@ -16,11 +16,11 @@ async function deleteSensor({ config_dev, scope, account, environment }: Service
     await org_dev.deleteData({ groups: dev_id, qty: 9999 });
   }
   if (site_id) {
-    const site_dev = await getDevice(account, site_id as string);
-    site_dev.deleteData({ groups: dev_id, qty: 9999 });
+    const site_dev = await getDevice(account, site_id);
+    await site_dev.deleteData({ groups: dev_id, qty: 9999 });
   }
 
-  await config_dev.deleteData({ groups: dev_id, qty: 99999 });
+  await config_dev.deleteData({ groups: dev_id, qty: 9999 });
 
   await org_dev.deleteData({ variables: "asset_list", values: dev_name.value });
   await account.dashboards.edit(environment.dash_org, {});

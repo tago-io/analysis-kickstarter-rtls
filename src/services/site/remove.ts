@@ -5,7 +5,9 @@ async function deleteSite({ config_dev, scope, account }: ServiceParams) {
   const site_id = scope[0].device;
 
   // getting Organization device
-  const org_id = scope[0].device;
+  const site_dev = await Utils.getDevice(account, site_id);
+  const site_tags = await site_dev.info();
+  const org_id = site_tags.tags.find((x) => x.key === "organization_id").value;
   const org_dev = await Utils.getDevice(account, org_id);
 
   // delete from settings_device
@@ -30,7 +32,7 @@ async function deleteSite({ config_dev, scope, account }: ServiceParams) {
     filter: { tags: [{ key: "site_id", value: site_id }] },
     fields: ["id", "bucket", "tags", "name"],
   });
-
+  console.debug("devices: ", devices);
   if (devices) {
     devices.forEach(async (x) => {
       await account.devices.delete(x.id); /*passing the device id*/

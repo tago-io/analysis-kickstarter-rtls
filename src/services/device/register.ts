@@ -20,7 +20,7 @@ function getFormVariables(scope: Types.Common.Data[], org_dev: Device) {
     throw "Scope is missing";
   }
 
-  const org_id = scope[0].device as string;
+  const org_id = scope[0].device;
   const validate = validation("dev_validation", org_dev);
   validate("Registering...", "warning");
 
@@ -85,7 +85,7 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
 
 async function createSensor({ config_dev, scope, account }: ServiceParams) {
   // getting organization device
-  const org_id = scope[0].device as string;
+  const org_id = scope[0].device;
   const org_dev = await Utils.getDevice(account, org_id);
 
   // Collecting data
@@ -99,17 +99,18 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
     qty: 1,
   });
 
-  if (dev_exists) throw validate("Device already exists", "danger");
-
+  if (dev_exists) {
+    throw validate("Device already exists", "danger");
+  }
   // need device id to configure serie in parseTagoObject
   // creating new device
-  const { device_id: dev_id, device } = await installDevice({
+  const { device_id: dev_id } = await installDevice({
     account,
     new_dev_name: new_dev_name.value as string,
     org_id,
     site_id: new_dev_site.value as string,
     connector: new_dev_type.value as string,
-    new_device_eui: new_dev_eui.value as string,
+    new_device_eui: new_dev_eui.value,
     new_device_network: new_dev_network.value as string,
   });
 
@@ -134,7 +135,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
 
   // getting the site device
   const site_dev = await getDevice(account, new_dev_site.value as string);
-  site_dev.sendData(dev_data);
+  await site_dev.sendData(dev_data);
 
   // Setting available asset list
   await org_dev.sendData(parseTagoObject({ asset_list: new_dev_name.value }, dev_id)); // need to change

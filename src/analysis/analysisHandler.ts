@@ -59,7 +59,7 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
   router.register(editSite).whenCustomBtnID("edit-site");
 
   router.register(createEquipment).whenInputFormID("create-equip");
-  router.register(deleteEquipment).whenCustomBtnID("delete-equip");
+  router.register(deleteEquipment).whenDeviceListIdentifier("delete-equip");
 
   router.register(createSensor).whenInputFormID("create-dev");
   router.register(deleteSensor).whenDeviceListIdentifier("delete-dev");

@@ -4,6 +4,7 @@ import validation from "../../lib/validation";
 import { ServiceParams, DeviceCreated } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
 import getDevice from "../../lib/getDevice";
+import { getNewDeviceVariables } from "./model/register.model";
 
 interface installDeviceParam {
   account: Account;
@@ -13,41 +14,6 @@ interface installDeviceParam {
   connector: string;
   new_device_eui: string;
   new_device_network: string;
-}
-
-function getFormVariables(scope: Types.Common.Data[], org_dev: Device) {
-  if (!Array.isArray(scope)) {
-    throw "Scope is missing";
-  }
-
-  const org_id = scope[0].device;
-  const validate = validation("dev_validation", org_dev);
-  validate("Registering...", "warning");
-
-  const new_dev_name = scope.find((x) => x.variable === "new_dev_name");
-  const new_dev_eui = scope.find((x) => x.variable === "new_dev_eui");
-  const new_dev_network = scope.find((x) => x.variable === "new_dev_network");
-  const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
-  const new_dev_site = scope.find((x) => x.variable === "new_dev_site");
-
-  // validation
-  if (!new_dev_name.value) {
-    throw validate("Name field is empty", "danger");
-  }
-  if ((new_dev_name.value as string).length < 3) {
-    throw validate("Name field is smaller than 3 character.", "danger");
-  }
-  if (!new_dev_type.value) {
-    throw validate("Type field is empty", "danger");
-  }
-  if (!new_dev_site.value) {
-    throw validate("Site field is empty", "danger");
-  }
-  if (!new_dev_eui.value) {
-    throw validate("EUI field is empty", "danger");
-  }
-
-  return { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, new_dev_network, validate, org_id };
 }
 
 async function installDevice({ account, new_dev_name, org_id, site_id, connector, new_device_eui, new_device_network }: installDeviceParam) {
@@ -89,9 +55,10 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   const org_dev = await Utils.getDevice(account, org_id);
 
   // Collecting data
-  const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, new_dev_network, validate } = getFormVariables(scope, org_dev);
+  const validate = validation("dev_validation", org_dev);
+  const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, new_dev_network } = await getNewDeviceVariables(scope, validate);
 
-  new_dev_eui.value = (new_dev_eui.value as string).toUpperCase();
+  new_dev_eui.value = new_dev_eui.value.toUpperCase();
 
   const [dev_exists] = await org_dev.getData({
     variables: ["dev_eui", "dev_name"],
@@ -106,15 +73,15 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   // creating new device
   const { device_id: dev_id } = await installDevice({
     account,
-    new_dev_name: new_dev_name.value as string,
+    new_dev_name: new_dev_name.value,
     org_id,
-    site_id: new_dev_site.value as string,
-    connector: new_dev_type.value as string,
+    site_id: new_dev_site.value,
+    connector: new_dev_type.value,
     new_device_eui: new_dev_eui.value,
-    new_device_network: new_dev_network.value as string,
+    new_device_network: new_dev_network.value,
   });
 
-  const device_type_name = (await account.integration.connectors.info(new_dev_type.value as string)).name;
+  const device_type_name = (await account.integration.connectors.info(new_dev_type.value)).name;
 
   const dev_data = parseTagoObject(
     {
@@ -134,7 +101,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   await org_dev.sendData(dev_data);
 
   // getting the site device
-  const site_dev = await getDevice(account, new_dev_site.value as string);
+  const site_dev = await getDevice(account, new_dev_site.value);
   await site_dev.sendData(dev_data);
 
   // Setting available asset list
@@ -143,4 +110,4 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   return validate("Device created successfully!", "success");
 }
 
-export { getFormVariables, createSensor };
+export { createSensor };

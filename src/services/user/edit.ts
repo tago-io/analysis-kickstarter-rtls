@@ -22,8 +22,8 @@ async function editUser({ config_dev, scope, account }: ServiceParams) {
     const [user_name_config_dev] = await config_dev.getData({ variables: "user_name", qty: 1, groups: user_id });
     const [user_name_org_dev] = await org_dev.getData({ variables: "user_name", qty: 1, groups: user_id });
     // deleting prev data
-    await config_dev.deleteData({ groups: user_name_config_dev.group });
-    await org_dev.deleteData({ groups: user_name_org_dev.group });
+    await config_dev.deleteData({ groups: user_name_config_dev.id });
+    await org_dev.deleteData({ groups: user_name_org_dev.id });
 
     // modifying json object
     delete user_name_config_dev.time;
@@ -48,8 +48,8 @@ async function editUser({ config_dev, scope, account }: ServiceParams) {
     console.log("aqui", user_phone_config_dev);
     console.log("aqui", user_phone_org_dev);
 
-    await config_dev.deleteData({ groups: user_phone_config_dev.group });
-    await org_dev.deleteData({ groups: user_phone_org_dev.group });
+    await config_dev.deleteData({ groups: user_phone_config_dev.id });
+    await org_dev.deleteData({ groups: user_phone_org_dev.id });
 
     // modifying json object
     delete user_phone_config_dev.time;

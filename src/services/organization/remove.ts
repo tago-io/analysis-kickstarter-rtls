@@ -27,7 +27,6 @@ async function deleteOrganization({ config_dev, scope, account }: ServiceParams)
   if (devices) {
     devices.forEach((x) => {
       account.devices.delete(x.id); /*passing the device id*/
-      account.buckets.delete(x.bucket); /*passing the bucket id*/
     });
   }
 

@@ -5,23 +5,25 @@ import { getUserVariables } from "./model/edit.model";
 
 async function editUser({ config_dev, scope, account }: ServiceParams) {
   // the line below is incorret, need to find another way to get since we aren´t using dynamic table anymore.
-  const user_id = scope[0].device;
+  const user_id = scope[0].user;
   const userInfo = await account.run.userInfo(user_id);
+  const tags = userInfo.tags;
+  const org_id = tags.find((tag) => tag.key === "organization_id").value;
   console.log("User info:", userInfo);
   // validate variable
   const validate = validation("user_validation", config_dev);
   // Collecting data
   const { user_name, user_phone } = await getUserVariables(scope, validate);
-  const org_dev = await Utils.getDevice(account, user_id);
+  const org_dev = await Utils.getDevice(account, org_id);
 
   const new_user_info: any = {};
   if (user_name) {
     // fetching prev data
     const [user_name_config_dev] = await config_dev.getData({ variables: "user_name", qty: 1, groups: user_id });
-    const [user_name_org_dev] = await config_dev.getData({ variables: "user_name", qty: 1, groups: user_id });
+    const [user_name_org_dev] = await org_dev.getData({ variables: "user_name", qty: 1, groups: user_id });
     // deleting prev data
-    await config_dev.deleteData({ groups: user_name_config_dev.id });
-    await org_dev.deleteData({ groups: user_name_org_dev.id });
+    await config_dev.deleteData({ groups: user_name_config_dev.group });
+    await org_dev.deleteData({ groups: user_name_org_dev.group });
 
     // modifying json object
     delete user_name_config_dev.time;
@@ -41,10 +43,13 @@ async function editUser({ config_dev, scope, account }: ServiceParams) {
   if (user_phone) {
     // fetching prev data
     const [user_phone_config_dev] = await config_dev.getData({ variables: "user_phone", qty: 1, groups: user_id });
-    const [user_phone_org_dev] = await config_dev.getData({ variables: "user_phone", qty: 1, groups: user_id });
+    const [user_phone_org_dev] = await org_dev.getData({ variables: "user_phone", qty: 1, groups: user_id });
     // deleting prev data
-    await config_dev.deleteData({ groups: user_phone_config_dev.id });
-    await org_dev.deleteData({ groups: user_phone_org_dev.id });
+    console.log("aqui", user_phone_config_dev);
+    console.log("aqui", user_phone_org_dev);
+
+    await config_dev.deleteData({ groups: user_phone_config_dev.group });
+    await org_dev.deleteData({ groups: user_phone_org_dev.group });
 
     // modifying json object
     delete user_phone_config_dev.time;

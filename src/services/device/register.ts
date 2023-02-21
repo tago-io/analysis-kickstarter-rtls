@@ -56,6 +56,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
 
   // Collecting data
   const validate = validation("dev_validation", org_dev);
+  validate("Registering...", "warning");
   const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, new_dev_network } = await getNewDeviceVariables(scope, validate);
 
   new_dev_eui.value = new_dev_eui.value.toUpperCase();

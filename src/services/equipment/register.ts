@@ -102,7 +102,7 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
   await org_dev.sendData(equip_data);
   await site_dev.sendData(equip_data);
 
-  return validate("Device created successfully!", "success");
+  return validate("Equipment created successfully!", "success");
   // DELETE ALSO THE IMAGE, ITS BEING KEPT!
 }
 

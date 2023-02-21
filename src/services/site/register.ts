@@ -48,6 +48,7 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
   const org_dev = await Utils.getDevice(account, org_id);
   const validate = validation("site_validation", org_dev);
   // Collecting data
+  validate("Registering...", "warning");
   const { new_site_name, new_site_address } = await getNewSiteVariables(scope, validate);
 
   const [site_exists] = await org_dev.getData({ variables: "site_name", values: new_site_name.value, qty: 1 });

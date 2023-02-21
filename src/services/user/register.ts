@@ -22,6 +22,7 @@ async function createUser({ config_dev, context, scope, account }: ServiceParams
   const user_id = scope[0].device;
   const org_dev = await Utils.getDevice(account, user_id);
   const validate = validation("user_validation", org_dev);
+  validate("Registering...", "warning");
   const { new_user_name, new_user_email, new_user_site, new_user_access, new_user_phone } = await getNewUserVariables(scope, validate);
 
   const [user_exists] = await account.run.listUsers({

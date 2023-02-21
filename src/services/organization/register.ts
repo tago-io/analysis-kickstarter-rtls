@@ -44,6 +44,7 @@ async function createOrganization({ config_dev, scope, account, environment }: S
   // creating validate
   const validate = validation("org_validation", config_dev);
   // Collecting data
+  validate("Registering...", "warning");
   const { new_org_name, new_org_address } = await getNewOrgVariables(scope, validate);
 
   const [org_exists] = await config_dev.getData({ variables: "org_name", values: new_org_name.value, qty: 1 });

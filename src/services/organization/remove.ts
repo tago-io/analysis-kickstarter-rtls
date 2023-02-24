@@ -1,12 +1,15 @@
+import { queue } from "async";
 import { ServiceParams } from "../../types";
 
 async function deleteOrganization({ config_dev, scope, account }: ServiceParams) {
+  if (!scope[0].device) {
+    throw "Organization not found!";
+  }
   // id of the org device
   const org_id = scope[0].device; // changed this from device to group... it was deleting all organizations, so i changed it back to device
 
   // delete from settings_device
-  const deleted = await config_dev.deleteData({ groups: org_id, qty: 10_000 });
-  console.log(deleted);
+  await config_dev.deleteData({ groups: org_id, qty: 10_000 });
 
   // deleting users (organization's user)
   const user_accounts = await account.run.listUsers({ filter: { tags: [{ key: "organization_id", value: org_id }] } });
@@ -22,14 +25,19 @@ async function deleteOrganization({ config_dev, scope, account }: ServiceParams)
     fields: ["id", "bucket", "tags", "name"],
   });
 
-  console.log(devices);
+  async function deleteData(device: any) {
+    await account.devices.delete(device.id);
+  }
 
+  const deleteQueue = await queue(deleteData, 5);
+  deleteQueue.error((error: any) => console.log(error));
   if (devices) {
-    devices.forEach((x) => {
-      account.devices.delete(x.id); /*passing the device id*/
+    devices.forEach((device) => {
+      deleteQueue.push(device);
     });
   }
 
+  await deleteQueue.drain();
   return;
 }
 

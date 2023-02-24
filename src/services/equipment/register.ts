@@ -1,10 +1,12 @@
-import { Device, Account, Types, Utils } from "@tago-io/sdk";
+import { Device, Account, Utils } from "@tago-io/sdk";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
+import { Data } from "@tago-io/sdk/out/common/common.types";
 import validation from "../../lib/validation";
 import { ServiceParams, DeviceCreated } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
 import getDevice from "../../lib/getDevice";
-import { getNewEquipVariables } from "./model/register.model";
+import { getZodError } from "../../lib/get-zod-error";
+import { registerEquipModel } from "./model/equipment.model";
 
 interface installDeviceParam {
   account: Account;
@@ -14,6 +16,26 @@ interface installDeviceParam {
   asset_id: string;
   equip_serie: string;
   equip_img: string;
+}
+
+async function getNewEquipVariables(scope: Data[], validate: ReturnType<typeof validation>) {
+  const new_equip_name = scope.find((x) => x.variable === "new_equip_name");
+  const new_equip_serie = scope.find((x) => x.variable === "new_equip_serie");
+  const new_equip_img = scope.find((x) => x.variable === "new_equip_img");
+  const new_equip_asset = scope.find((x) => x.variable === "new_equip_asset");
+
+  try {
+    return registerEquipModel.parse({
+      new_equip_name,
+      new_equip_serie,
+      new_equip_img,
+      new_equip_asset,
+    });
+  } catch (error) {
+    const zodErrorMsg = getZodError(error);
+    await validate(zodErrorMsg, "danger");
+    throw error;
+  }
 }
 
 async function installDevice({ account, new_dev_name, org_id, site_id, asset_id, equip_serie, equip_img }: installDeviceParam) {
@@ -51,14 +73,13 @@ async function installDevice({ account, new_dev_name, org_id, site_id, asset_id,
 async function createEquipment({ scope, account, environment }: ServiceParams) {
   const org_id = scope[0].device;
   const org_dev = await Utils.getDevice(account, org_id);
-  console.log("Registering...");
   const validate = validation("equip_validation", org_dev);
-  validate("Registering...", "warning");
+  await validate("Registering...", "warning");
   // Collecting data
   const { new_equip_asset, new_equip_name, new_equip_img, new_equip_serie } = await getNewEquipVariables(scope, validate);
 
   // deleteData
-  await org_dev.deleteData({ variables: "asset_list", values: new_equip_asset.value }).then((msg) => console.log(msg));
+  await org_dev.deleteData({ variables: "asset_list", values: new_equip_asset.value });
   // await account.dashboards.edit("608aaa44e49d32001116715e", {});
   await account.dashboards.edit(environment.dash_org, {});
 
@@ -83,7 +104,6 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
       equip_name: new_equip_name.value,
       // equip_serie: new_equip_serie.value,
       // equip_img: `https://api.tago.io/file/608aa9bd050d8f0012e20a8a/${(new_equip_img?.metadata as any)?.file?.path}`,
-      equip_img: `https://api.tago.io/file/5fc13907cf4e170027440a96/${(new_equip_img?.metadata as any)?.file?.path}`,
       equip_asset: new_equip_asset.value,
       equip_serie: {
         value: new_equip_serie.value,
@@ -106,4 +126,4 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
   // DELETE ALSO THE IMAGE, ITS BEING KEPT!
 }
 
-export { createEquipment };
+export { createEquipment, getNewEquipVariables };

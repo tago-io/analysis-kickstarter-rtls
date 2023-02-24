@@ -5,6 +5,9 @@
   "license": "Copyright",
   "private": true,
   "scripts": {
+    "test": "jest . --",
+    "test:watch": "jest . --watch",
+    "test:coverage": "jest . --coverage",
     "linter": "eslint .",
     "linter-fix": "eslint --fix .",
     "deploy": "ts-node ./src/deploy/upload.ts",
@@ -12,8 +15,7 @@
     "console": "ts-node ./src/deploy/analysis-console.ts",
     "duplicate": "ts-node ./src/deploy/duplicate-analysis.ts",
     "trigger": "ts-node ./src/deploy/trigger-analysis.ts",
-    "debug": "ts-node-dev src/analysis/analysisHandler --inspect",
-    "test": "jest . --"
+    "debug": "ts-node-dev src/analysis/analysisHandler --inspect"
   },
   "jest": {
     "preset": "ts-jest"
@@ -25,6 +27,8 @@
     }
   },
   "devDependencies": {
+    "@types/jest": "29.4.0",
+    "@types/luxon": "3.2.0",
     "@typescript-eslint/eslint-plugin": "^5.52.0",
     "@typescript-eslint/parser": "^5.52.0",
     "eslint": "8.34.0",
@@ -46,6 +50,7 @@
   "dependencies": {
     "@tago-io/builder": "3.1.3",
     "@tago-io/sdk": "10.10.0",
+    "async": "3.2.4",
     "dayjs": "1.11.7",
     "moment-timezone": "0.5.40",
     "zod": "3.19.1"

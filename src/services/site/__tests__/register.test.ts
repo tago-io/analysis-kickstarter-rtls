@@ -1,38 +1,30 @@
-import { getFormVariables } from "../register";
+import { getNewSiteVariables } from "../register";
 import scope from "./mocks/register.mock.json";
 
-const device = {
-  sendData: () => Promise.resolve("success"),
-};
+const validate = () => Promise.resolve({});
 
 describe("Check form information", () => {
   test("scope doesn't exists", () => {
     // @ts-expect-error
-    expect(() => getFormVariables("test")).toThrow("Scope is missing");
+    expect(() => getNewSiteVariables("test")).toThrow("Scope is missing");
   });
 
-  test("success", () => {
-    const result = getFormVariables(scope as any, device as any);
+  test("success", async () => {
+    const { name: new_site_name, address: new_site_address } = await getNewSiteVariables(scope as any, validate as any);
 
-    expect(result.new_site_name?.value).toBe("johnnyappleseed");
-    expect(result.new_site_address?.value).toBe("johnnyappleseed.com");
+    expect(new_site_name).toBe("johnnyappleseed");
+    expect(new_site_address?.value).toBe("johnnyappleseed.com");
   });
 
-  test("scope is smaller than 3 character", () => {
-    scope[0].value = "te";
-    expect(() => getFormVariables(scope as any, device as any)).toThrow("Name field is smaller than 3 character");
-    scope[0].value = "test";
+  test("name field is empty", () => {
+    delete scope[0].value;
+    expect(() => getNewSiteVariables(scope as any, validate as any)).toThrow("Name field is empty");
+    scope[0].value = "johnnyappleseed";
   });
 
   test("address field is empty", () => {
     delete scope[1].value;
-    expect(() => getFormVariables(scope as any, device as any)).toThrow("Address field is empty");
-    scope[1].value = "johnnyappleseed.com";
-  });
-
-  test("address field is smaller than 3 character", () => {
-    scope[1].value = "jo";
-    expect(() => getFormVariables(scope as any, device as any)).toThrow("Address field is smaller than 3 character");
+    expect(() => getNewSiteVariables(scope as any, validate as any)).toThrow("Address field is empty");
     scope[1].value = "johnnyappleseed.com";
   });
 });

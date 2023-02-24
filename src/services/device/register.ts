@@ -1,10 +1,12 @@
 import { Utils, Device, Account, Types } from "@tago-io/sdk";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
+import { Data } from "@tago-io/sdk/out/common/common.types";
 import validation from "../../lib/validation";
 import { ServiceParams, DeviceCreated } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
 import getDevice from "../../lib/getDevice";
-import { getNewDeviceVariables } from "./model/register.model";
+import { getZodError } from "../../lib/get-zod-error";
+import { registerDeviceModel } from "./model/register.model";
 
 interface installDeviceParam {
   account: Account;
@@ -14,6 +16,28 @@ interface installDeviceParam {
   connector: string;
   new_device_eui: string;
   new_device_network: string;
+}
+
+async function getNewDeviceVariables(scope: Data[], validate: ReturnType<typeof validation>) {
+  const new_dev_name = scope.find((x) => x.variable === "new_dev_name");
+  const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
+  const new_dev_network = scope.find((x) => x.variable === "new_dev_network");
+  const new_dev_eui = scope.find((x) => x.variable === "new_dev_eui");
+  const new_dev_site = scope.find((x) => x.variable === "new_dev_site");
+
+  try {
+    return registerDeviceModel.parse({
+      new_dev_name,
+      new_dev_type,
+      new_dev_network,
+      new_dev_eui,
+      new_dev_site,
+    });
+  } catch (error) {
+    const zodErrorMsg = getZodError(error);
+    await validate(zodErrorMsg, "danger");
+    throw error;
+  }
 }
 
 async function installDevice({ account, new_dev_name, org_id, site_id, connector, new_device_eui, new_device_network }: installDeviceParam) {
@@ -56,7 +80,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
 
   // Collecting data
   const validate = validation("dev_validation", org_dev);
-  validate("Registering...", "warning");
+  await validate("Registering...", "warning");
   const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, new_dev_network } = await getNewDeviceVariables(scope, validate);
 
   new_dev_eui.value = new_dev_eui.value.toUpperCase();
@@ -83,6 +107,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   });
 
   const device_type_name = (await account.integration.connectors.info(new_dev_type.value)).name;
+  const device_network_name = (await account.integration.networks.info(new_dev_network.value)).name;
 
   const dev_data = parseTagoObject(
     {
@@ -91,19 +116,21 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
       dev_eui: new_dev_eui.value,
       dev_type: { value: new_dev_type.value, metadata: { label: device_type_name } },
       dev_site: new_dev_site.value,
+      dev_network: { value: new_dev_network.value, metadata: { label: device_network_name } },
     },
     dev_id
   );
 
+  const dev_dev = await getDevice(account, dev_id);
+
   // send to admin device (settings_device) which will send to bucket
   await config_dev.sendData(dev_data);
 
+  // send to device device
+  await dev_dev.sendData(dev_data);
+
   // send to organization device
   await org_dev.sendData(dev_data);
-
-  // getting the site device
-  const site_dev = await getDevice(account, new_dev_site.value);
-  await site_dev.sendData(dev_data);
 
   // Setting available asset list
   await org_dev.sendData(parseTagoObject({ asset_list: new_dev_name.value }, dev_id)); // need to change
@@ -111,4 +138,4 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   return validate("Device created successfully!", "success");
 }
 
-export { createSensor };
+export { createSensor, getNewDeviceVariables };

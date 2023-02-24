@@ -17,23 +17,8 @@ import { deleteUser } from "../services/user/remove";
 import { editUser } from "../services/user/edit";
 
 async function analysisHandler(context: TagoContext, scope: Data[]): Promise<void> {
-  context.log("Running Analysis");
-  console.log("Scope:", scope);
-  console.log("Context:", context);
-
   // Convert environment variables to a JSON.
   const environment = Utils.envToJson(context.environment);
-
-  // Check if all tokens needed for the application were provided.
-  if (!environment.config_token) {
-    throw "Missing config_token environment var";
-  } else if (environment.config_token.length !== 36) {
-    return context.log('Invalid "config_token" in the environment variable');
-  } else if (!environment.account_token) {
-    throw "Missing account_token environment var";
-  } else if (environment.account_token.length !== 36) {
-    return context.log('Invalid "account_token" in the environment variable');
-  }
 
   // Just a hack to transform input_id from Device List edit to an environment variable,
   environment._input_id = (scope as any).find((x: any) => x.device_list_button_id)?.device_list_button_id;
@@ -74,4 +59,35 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
   console.log("Services found:", result.services);
 }
 
-export default new Analysis(analysisHandler, { token: "94f78b11-587d-432d-a6b0-52e8ce4821a7" });
+/**
+ * Main function - handle the analysis initialization
+ */
+async function startAnalysis(context: TagoContext, scope: Data[]): Promise<void> {
+  console.log("SCOPE:", JSON.stringify(scope, null, 4));
+  console.log("CONTEXT:", JSON.stringify(context, null, 4));
+  console.log("Running Analysis");
+
+  // Convert the environment variables from [{ key, value }] to { key: value };
+  const environment = Utils.envToJson(context.environment);
+  if (!environment) {
+    return;
+  }
+  // Check if all tokens needed for the application were provided.
+  if (!environment.config_token) {
+    throw "Missing config_token environment var";
+  } else if (environment.config_token.length !== 36) {
+    return context.log('Invalid "config_token" in the environment variable');
+  } else if (!environment.account_token) {
+    throw "Missing account_token environment var";
+  } else if (environment.account_token.length !== 36) {
+    return context.log('Invalid "account_token" in the environment variable');
+  }
+
+  await analysisHandler(context, scope);
+}
+
+if (!process.env.T_TEST) {
+  Analysis.use(startAnalysis, { token: process.env.T_ANALYSIS_TOKEN });
+}
+
+export { startAnalysis };

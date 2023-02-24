@@ -31,7 +31,7 @@ async function deleteUser({ config_dev, scope, account, environment }: ServicePa
   await config_dev.deleteData({ groups: user_id, qty: 9999 });
   await org_dev.deleteData({ groups: user_id, qty: 9999 });
   // deleting user
-  await account.run.userDelete(user_id).then((msg) => console.log(msg));
+  await account.run.userDelete(user_id);
   return;
 }
 

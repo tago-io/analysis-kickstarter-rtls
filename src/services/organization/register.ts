@@ -1,15 +1,31 @@
 import { Account, Device } from "@tago-io/sdk";
+import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
-
 import { parseTagoObject } from "../../lib/data.logic";
+import { getZodError } from "../../lib/get-zod-error";
 import validation from "../../lib/validation";
 import { DeviceCreated, ServiceParams } from "../../types";
-import { getNewOrgVariables } from "./models/register.model";
+import { registerOrgModel } from "./models/org.model";
 
 interface installDeviceParam {
   account: Account;
   new_org_name: string;
   new_org_address: string;
+}
+
+async function getNewOrgVariables(scope: Data[], validate: ReturnType<typeof validation>) {
+  const name = scope.find((x) => x.variable === "new_org_name").value;
+  const address = scope.find((x) => x.variable === "new_org_address");
+  try {
+    return registerOrgModel.parse({
+      name,
+      address: { value: address.value, location: address.location.coordinates },
+    });
+  } catch (error) {
+    const zodErrorMsg = getZodError(error);
+    await validate(zodErrorMsg, "danger");
+    throw error;
+  }
 }
 
 async function installDevice({ account, new_org_name, new_org_address }: installDeviceParam) {
@@ -44,10 +60,10 @@ async function createOrganization({ config_dev, scope, account, environment }: S
   // creating validate
   const validate = validation("org_validation", config_dev);
   // Collecting data
-  validate("Registering...", "warning");
-  const { new_org_name, new_org_address } = await getNewOrgVariables(scope, validate);
+  await validate("Registering...", "warning");
+  const { name: new_org_name, address: new_org_address } = await getNewOrgVariables(scope, validate);
 
-  const [org_exists] = await config_dev.getData({ variables: "org_name", values: new_org_name.value, qty: 1 });
+  const [org_exists] = await config_dev.getData({ variables: "org_name", values: new_org_name, qty: 1 });
   const { id: config_dev_id } = await config_dev.info();
 
   if (org_exists) {
@@ -56,11 +72,11 @@ async function createOrganization({ config_dev, scope, account, environment }: S
 
   // need device id to configure serie in parseTagoObject
   // creating new device
-  const { device_id, device } = await installDevice({ account, new_org_name: new_org_name.value, new_org_address: new_org_address.value });
+  const { device_id, device } = await installDevice({ account, new_org_name: new_org_name, new_org_address: new_org_address.value });
   const org_data = {
     org_id: device_id,
     org_name: {
-      value: new_org_name.value,
+      value: new_org_name,
       metadata: { url: `https://admin.tago.io/dashboards/info/${environment.dash_org}?settings=${config_dev_id}&org_dev=${device_id}` },
     }, // org_name.value widget?
     org_address: { value: new_org_address.value, location: new_org_address.location },
@@ -77,4 +93,4 @@ async function createOrganization({ config_dev, scope, account, environment }: S
   return validate("Organization created", "success");
 }
 
-export { createOrganization };
+export { createOrganization, getNewOrgVariables };

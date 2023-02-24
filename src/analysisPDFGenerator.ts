@@ -28,13 +28,11 @@ async function handler(context: TagoContext, scope: Data[]) {
   const site_dev = await getDevice(account, dev_id);
 
   const [pdf_email_list] = await site_dev.getData({ variables: "pdf_email_list" });
-  console.log(pdf_email_list);
 
   if (!pdf_email_list) {
-    return console.log("No email");
+    return console.error("No email");
   }
   const email_list = (pdf_email_list?.value as string).split(";");
-  console.log(email_list);
 
   // const table_data = await site_dev.getData({ variables: ["asset_name", "asset_equip_paired", "asset_closest_beacon", "asset_strongest_rssi"], qty: 10 });
 
@@ -89,4 +87,8 @@ async function startAnalysis(context: TagoContext, scope: any) {
   }
 }
 
-export default new Analysis(startAnalysis, { token: "e6074132-f8a8-44f9-ad63-4395cae16e34" });
+if (!process.env.T_TEST) {
+  Analysis.use(startAnalysis, { token: process.env.T_ANALYSIS_TOKEN });
+}
+
+export { startAnalysis };

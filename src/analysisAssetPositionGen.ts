@@ -1,10 +1,9 @@
 import { Analysis, Utils, Device, Account } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
 import { parseTagoObject } from "./lib/data.logic";
 import getDevice from "./lib/getDevice";
 import { TagoContext } from "./types";
 
-async function handler(context: TagoContext, scope: Data[]) {
+async function handler(context: TagoContext) {
   context.log("Running Analysis");
   const environment = Utils.envToJson(context.environment);
   if (!environment) {
@@ -25,8 +24,8 @@ async function handler(context: TagoContext, scope: Data[]) {
 
   const coord_pos = [
     [35.7796, -78.6382],
-    [35.975493, -78.910795],
-    [36.020212, -78.474089],
+    [35.975_493, -78.910_795],
+    [36.020_212, -78.474_089],
   ];
 
   const [asset_gen_count] = await config_dev.getData({ variables: "asset_gen_count" });
@@ -60,18 +59,24 @@ async function handler(context: TagoContext, scope: Data[]) {
   if (count !== 2) {
     count = count + 1;
     await config_dev.sendData(parseTagoObject({ asset_gen_count: { variables: "asset_gen_count", values: count } }));
-  } else await config_dev.sendData(parseTagoObject({ asset_gen_count: { variables: "asset_gen_count", values: 0 } }));
+  } else {
+    await config_dev.sendData(parseTagoObject({ asset_gen_count: { variables: "asset_gen_count", values: 0 } }));
+  }
 
   return context.log("Random data sent");
 }
 
-async function startAnalysis(context: TagoContext, scope: any) {
+async function startAnalysis(context: TagoContext) {
   try {
-    await handler(context, scope);
+    await handler(context);
   } catch (error) {
     console.log(error);
     context.log(error.message || JSON.stringify(error));
   }
 }
 
-export default new Analysis(startAnalysis, { token: "665002f9-3a72-4cab-8a8e-43f2a70a41d3" });
+if (!process.env.T_TEST) {
+  Analysis.use(startAnalysis, { token: process.env.T_ANALYSIS_TOKEN });
+}
+
+export { startAnalysis };

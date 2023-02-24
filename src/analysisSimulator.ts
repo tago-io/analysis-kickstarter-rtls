@@ -1,4 +1,4 @@
-import { Utils, Services, Account, Device, Types, Analysis } from "@tago-io/sdk";
+import { Utils, Account, Analysis } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import validation from "./lib/validation";
 import { parseTagoObject } from "./lib/data.logic";
@@ -18,11 +18,10 @@ async function startAnalysis(context: TagoContext, scope: Data[]) {
   }
 
   const account = new Account({ token: environment.account_token });
-  const config_dev = new Device({ token: environment.config_token });
 
   const site_dev = await getDevice(account, site_id);
 
-  const org_id = (await site_dev.info()).tags.find((x) => x.key === "organization_id").value as string;
+  const org_id = (await site_dev.info()).tags.find((x) => x.key === "organization_id").value;
 
   const org_dev = await getDevice(account, org_id);
 
@@ -35,7 +34,7 @@ async function startAnalysis(context: TagoContext, scope: Data[]) {
   const beacon_sent = scope.filter((x) => x?.variable?.includes("beacon"));
   const [strongest_beacon] = beacon_sent.sort((a, b) => Number(b.value) - Number(a.value));
 
-  const pos = Number((strongest_beacon.variable as string).substr(7)); //beacon_1 -> 1
+  const pos = Number(strongest_beacon.variable.slice(7)); //beacon_1 -> 1
 
   const keys = Object.keys((layer.metadata as any).fixed_position);
 
@@ -70,9 +69,13 @@ async function startAnalysis(context: TagoContext, scope: Data[]) {
 
   await site_dev.deleteData({ variables: "equipment_location", qty: 1, series: equip_serie.group });
 
-  await site_dev.sendData(data_to_plot.concat(assetHistory)).then((msg) => console.log(msg));
+  await site_dev.sendData(data_to_plot.concat(assetHistory));
 
   throw validate("Position plotted successfully!", "success");
 }
 
-export default new Analysis(startAnalysis, { token: "338895a3-805b-499e-917f-f2fa51903cc5" });
+if (!process.env.T_TEST) {
+  Analysis.use(startAnalysis, { token: process.env.T_ANALYSIS_TOKEN });
+}
+
+export { startAnalysis };

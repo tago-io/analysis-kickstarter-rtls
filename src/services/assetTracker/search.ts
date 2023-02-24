@@ -8,7 +8,7 @@ interface sentValue {
 }
 
 export default async ({ scope, account }: ServiceParams, org_dev: Device) => {
-  await org_dev.deleteData({ variables: ["asset_name", "asset_site", "asset_building", "asset_floor", "asset_room", "asset_link"], qty: 999 }).then((msg) => console.log(msg));
+  await org_dev.deleteData({ variables: ["asset_name", "asset_site", "asset_building", "asset_floor", "asset_room", "asset_link"], qty: 999 });
 
   await account.dashboards.edit("5fc91ac2a0e14a002654fe99", {});
 
@@ -19,7 +19,10 @@ export default async ({ scope, account }: ServiceParams, org_dev: Device) => {
 
   const sentValues = metadata.sentValues.map((x: sentValue) => x.value);
 
-  const active_asset_list = (await org_dev.getData({ variables: "asset_active_info" })).filter((x) => sentValues.includes(x.value));
+  //const active_asset_list = (await org_dev.getData({ variables: "asset_active_info" })).filter((x) => sentValues.includes(x.value));
+
+  const active_info_list = await org_dev.getData({ variables: "asset_active_info" });
+  const active_asset_list = active_info_list.filter((x) => sentValues.includes(x.value));
 
   for (let i = 0; i < sentValues.length; i++) {
     const asset_info = active_asset_list.find((x) => x.value === sentValues[i]);
@@ -48,5 +51,5 @@ export default async ({ scope, account }: ServiceParams, org_dev: Device) => {
     }
   }
 
-  return console.log("Searched!");
+  return;
 };

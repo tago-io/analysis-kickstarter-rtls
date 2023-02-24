@@ -3,6 +3,9 @@ import { parseTagoObject } from "../../lib/data.logic";
 import { ServiceParams } from "../../types";
 
 async function deleteEquipment({ scope, account }: ServiceParams) {
+  if (!scope[0].device) {
+    throw "Equipment not found!";
+  }
   const equip_id = scope[0].device;
   const org_dev = await Utils.getDevice(account, equip_id);
 
@@ -23,7 +26,7 @@ async function deleteEquipment({ scope, account }: ServiceParams) {
   const asset_dev_tags = (await account.devices.info(asset_id)).tags.filter((x) => x.key !== "equipment_id");
   await account.devices.edit(asset_id, { tags: [...asset_dev_tags] });
 
-  return console.log("Equipment deleted!");
+  return;
 }
 
 export { deleteEquipment };

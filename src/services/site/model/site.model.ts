@@ -1,9 +1,9 @@
 import z from "zod";
 
 const registerSiteModel = z.object({
-  name: z.string(),
+  name: z.string({ required_error: "Name field is empty" }),
   address: z.object({
-    value: z.string(),
+    value: z.string({ required_error: "Address field is empty" }),
     location: z.array(z.number()).transform((x) => ({
       lng: x[0],
       lat: x[1],

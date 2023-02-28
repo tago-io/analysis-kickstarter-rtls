@@ -1,30 +1,56 @@
 [
   {
     "variable": "new_dev_name",
-    "value": "test1",
-    "origin": "2023-01-23T19:59:25.472Z",
-    "time": "2023-01-23T19:59:25.472Z",
-    "created_at": "2023-01-23T19:59:25.472Z"
-  },
-  {
-    "variable": "new_dev_eui",
-    "value": "2B123ER2",
-    "origin": "2023-01-23T19:59:25.472Z",
-    "time": "2023-01-23T19:59:25.472Z",
-    "created_at": "2023-01-23T19:59:25.472Z"
+    "time": "2023-02-27T16:45:10.855Z",
+    "created_at": "2023-02-27T16:45:10.855Z",
+    "value": "Device Test",
+    "id": "63fcde16cdea1f0009a40596",
+    "group": "1677516310618",
+    "device": "63f799a619ed1e000905d795"
   },
   {
     "variable": "new_dev_type",
-    "value": "Type2",
-    "origin": "2023-01-23T19:59:25.472Z",
-    "time": "2023-01-23T19:59:25.472Z",
-    "created_at": "2023-01-23T19:59:25.472Z"
+    "time": "2023-02-27T16:45:10.856Z",
+    "created_at": "2023-02-27T16:45:10.856Z",
+    "value": "5f5a8f3351d4db99c40deecf",
+    "metadata": {
+      "label": "Tektelic BLE Asset Tracker"
+    },
+    "id": "63fcde16cdea1f0009a40597",
+    "group": "1677516310618",
+    "device": "63f799a619ed1e000905d795"
+  },
+  {
+    "variable": "new_dev_network",
+    "time": "2023-02-27T16:45:10.857Z",
+    "created_at": "2023-02-27T16:45:10.857Z",
+    "value": "602275f9fc48a40018510a8a",
+    "metadata": {
+      "label": "LoRaWAN Helium"
+    },
+    "id": "63fcde16cdea1f0009a40598",
+    "group": "1677516310618",
+    "device": "63f799a619ed1e000905d795"
+  },
+  {
+    "variable": "new_dev_eui",
+    "time": "2023-02-27T16:45:10.858Z",
+    "created_at": "2023-02-27T16:45:10.858Z",
+    "value": "12312312390",
+    "id": "63fcde16cdea1f0009a40599",
+    "group": "1677516310618",
+    "device": "63f799a619ed1e000905d795"
   },
   {
     "variable": "new_dev_site",
-    "value": "DevEnv",
-    "origin": "2023-01-23T19:59:25.472Z",
-    "time": "2023-01-23T19:59:25.472Z",
-    "created_at": "2023-01-23T19:59:25.472Z"
+    "time": "2023-02-27T16:45:10.859Z",
+    "created_at": "2023-02-27T16:45:10.859Z",
+    "value": "63f799c2602c4500093527e3",
+    "metadata": {
+      "label": "Site Two"
+    },
+    "id": "63fcde16cdea1f0009a4059a",
+    "group": "1677516310618",
+    "device": "63f799a619ed1e000905d795"
   }
 ]

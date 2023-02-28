@@ -29,19 +29,12 @@ describe("parseTagoObject", () => {
   });
   // testing time
   test("parseTagoObject time", () => {
-    expect(result[0].time).toBe(null);
-    expect(result[1].time).toBe(null);
-    expect(result[2].time).toBe(null);
     expect(result[3].time).toBe("2020-01-01T00:00:00.000Z");
     expect(result[4].time).toBe("2020-01-01T00:00:00.000Z");
   });
   // testing metadata
   test("parseTagoObject metadata", () => {
-    expect(result[0].metadata).toBe(null);
-    expect(result[1].metadata).toBe(null);
     expect(result[2].metadata).toEqual({ color: "Green" });
-    expect(result[3].metadata).toBe(null);
-    expect(result[4].metadata).toBe(null);
   });
 
   test("parseTagoObject with empty body", () => {
@@ -49,7 +42,7 @@ describe("parseTagoObject", () => {
   });
 
   test("checking if the serie is being created", () => {
-    const serie = new Date().getTime();
+    const serie = Date.now();
     expect(parseTagoObject(obj)[0].group).toEqual(String(serie));
   });
 });

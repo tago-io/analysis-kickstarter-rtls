@@ -40,6 +40,10 @@ async function handler(context: TagoContext, scope: Data[]) {
 
   const logoImageBase64 = await getImageBase64("https://api.tago.io/file/5f2c66d367edac0027103d7d/scripts/Flag_blank.png");
 
+  if (!logoImageBase64) {
+    return console.error("No logo");
+  }
+
   const options = {
     path: "example.html", //change the path where
     displayHeaderFooter: true,
@@ -81,7 +85,7 @@ async function handler(context: TagoContext, scope: Data[]) {
 async function startAnalysis(context: TagoContext, scope: any) {
   try {
     await handler(context, scope);
-  } catch (error) {
+  } catch (error: any) {
     console.log(error);
     context.log(error.message || JSON.stringify(error));
   }

@@ -1,26 +1,36 @@
 {
-  "analysisPath": "./src/analysis",
-  "buildPath": "./build",
-  "dev": {
-    "analysisList": [
-      {
-        "fileName": "analysisAssetTracking.ts",
-        "name": "[TagoIO] - Asset Tracking",
-        "id": "5fe0fad942fbde001f84752a"
-      },
-      {
-        "fileName": "analysisDeviceUpdater.ts",
-        "name": "[TagoIO] - Device Updater",
-        "id": "6059dd815215200013ec75a3"
-      },
-      {
-        "fileName": "analysisHandler.ts",
-        "name": "[TagoIO] - Handler",
-        "id": "5fc6566af4b03200279988a9"
-      }
-    ],
-    "id": "5fc13907cf4e170027440a96",
-    "profileName": "RTLS",
-    "email": "freddy.minuzzi@tago.io"
-  }
+    "analysisPath": "./src/analysis",
+    "buildPath": "./build",
+    "dev": {
+        "analysisList": [
+            {
+                "fileName": "analysisHandlerAlert.ts",
+                "name": "[TagoIO] - Alert Handler",
+                "id": "63fe06131fa96300095676f1"
+            },
+            {
+                "fileName": "alertTrigger.ts",
+                "name": "[TagoIO] - AlertTrigger",
+                "id": "63fe5275b3238b000953deb6"
+            },
+            {
+                "fileName": "analysisAssetTracking.ts",
+                "name": "[TagoIO] - Asset Tracking",
+                "id": "5fe0fad942fbde001f84752a"
+            },
+            {
+                "fileName": "analysisDeviceUpdater.ts",
+                "name": "[TagoIO] - Device Updater",
+                "id": "6059dd815215200013ec75a3"
+            },
+            {
+                "fileName": "analysisHandler.ts",
+                "name": "[TagoIO] - Handler",
+                "id": "5fc6566af4b03200279988a9"
+            }
+        ],
+        "id": "5fc13907cf4e170027440a96",
+        "profileName": "RTLS",
+        "email": "freddy.minuzzi@tago.io"
+    }
 }

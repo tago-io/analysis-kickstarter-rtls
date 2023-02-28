@@ -2,13 +2,17 @@ import { Utils } from "@tago-io/sdk";
 import { ServiceParams } from "../../types";
 
 async function deleteUser({ config_dev, scope, account, environment }: ServiceParams) {
+  // @ts-ignore
   const user_id = scope[0].user;
   // checking if user exists
   const user_exists = await account.run.userInfo(user_id);
 
   // getting the organization_id tag
   const tags = user_exists.tags;
-  const org_id = tags.find((tag) => tag.key === "organization_id").value;
+  const org_id = tags.find((tag) => tag.key === "organization_id")?.value;
+  if (!org_id) {
+    throw "Organization ID not found";
+  }
 
   // creating organization device
   const org_dev = await Utils.getDevice(account, org_id);

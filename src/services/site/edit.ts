@@ -10,11 +10,12 @@ async function getSiteVariables(scope: any, validate: ReturnType<typeof validati
   const name = scope[0]?.name;
   const address = scope[0]?.["tags.site_address"];
   const new_address = convertLocationParamToObj(address);
+  const addressInfo = { value: new_address?.value, location: new_address?.location?.coordinates };
 
   try {
     return updateSiteModel.parse({
       name,
-      address: { value: new_address.value, location: new_address.location.coordinates },
+      address: address ? addressInfo : undefined,
     });
   } catch (error) {
     const zodErrorMsg = getZodError(error);
@@ -33,7 +34,10 @@ async function editSite({ config_dev, scope, account }: ServiceParams) {
   const site_dev = await Utils.getDevice(account, site_id);
 
   const site_info = await site_dev.info();
-  const org_id = site_info.tags.find((tag) => tag.key === "organization_id").value;
+  const org_id = site_info.tags.find((tag) => tag.key === "organization_id")?.value;
+  if (!org_id) {
+    throw new Error("Organization not found");
+  }
   const org_dev = await Utils.getDevice(account, org_id);
 
   // getting previous id data
@@ -53,9 +57,9 @@ async function editSite({ config_dev, scope, account }: ServiceParams) {
     await site_dev.deleteData({ groups: site_id });
     await org_dev.deleteData({ groups: site_id });
     // sending to settings new info
-    await config_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name }, time: null });
-    await site_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name }, time: null });
-    await org_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name }, time: null });
+    await config_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name } });
+    await site_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name } });
+    await org_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name } });
 
     await config_dev.getData({ variables: "site_id", qty: 1, groups: site_id });
 
@@ -73,12 +77,12 @@ async function editSite({ config_dev, scope, account }: ServiceParams) {
       },
     });
 
-    const editQueue = await queue(editData, 5);
+    const editQueue = queue(editData, 5);
     editQueue.error((error: any) => console.log(error));
 
     if (device_list) {
       device_list.forEach((device) => {
-        editQueue.push(device);
+        void editQueue.push(device);
       });
     }
 
@@ -91,8 +95,8 @@ async function editSite({ config_dev, scope, account }: ServiceParams) {
 
     await config_dev.deleteData({ groups: site_id });
     await site_dev.deleteData({ groups: site_id });
-    await config_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, address: site_address }, time: null });
-    await site_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, address: site_address }, time: null });
+    await config_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, address: site_address } });
+    await site_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, address: site_address } });
 
     // console.log(await config_dev.editData(new_site_data));
     // console.log(await site_dev.editData(new_site_data));

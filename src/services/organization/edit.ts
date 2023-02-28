@@ -8,11 +8,12 @@ async function getOrgVariables(scope: any, validate: ReturnType<typeof validatio
   const name = scope[0]?.name;
   const address = scope[0]?.["tags.address"];
   const new_address = convertLocationParamToObj(address);
+  const addressInfo = { value: new_address?.value, location: new_address?.location?.coordinates };
 
   try {
     return updateOrgModel.parse({
       name,
-      address: { value: new_address.value, location: new_address.location.coordinates },
+      address: address ? addressInfo : undefined,
     });
   } catch (error) {
     const zodErrorMsg = getZodError(error);

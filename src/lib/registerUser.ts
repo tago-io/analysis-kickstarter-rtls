@@ -1,5 +1,6 @@
 import { Account, Services, Types } from "@tago-io/sdk";
-import { TagoContext } from "../types";
+import { TagoContext } from "@tago-io/sdk/out/modules/Analysis/analysis.types";
+import { fetchUserList } from "./fetch-user-list";
 
 /** Account Summary
  * @param  {Object} context analysis context
@@ -20,13 +21,29 @@ interface UserData {
   password?: string;
 }
 
+async function updateUserAndReturnID(account: Account, user_data: UserData) {
+  // If got an error, try to find the user_data.
+  const [user] = await fetchUserList(account, { email: user_data.email });
+  if (!user) {
+    throw "Couldn`t find user data";
+  }
+
+  // If found, update the tags.
+  user.tags = user.tags?.filter((x) => user_data.tags?.find((y) => x.key !== y.key));
+  user.tags = user.tags?.concat(user_data.tags || []);
+
+  await account.run.userEdit(user.id, { tags: user_data.tags });
+
+  return user.id;
+}
+
 async function inviteUser(context: TagoContext, account: Account, user_data: UserData, domain_url: string) {
   user_data.email = user_data.email.toLowerCase();
-  user_data.tags = user_data.tags.map((x, i) => ({ ...x, __rowManipulatorKey: i + 1 }));
 
   // Generate a Random Password
-  const password = user_data.password || String(new Date().getTime());
+  const password = user_data.password || `A${Math.random().toString(36).slice(2, 12)}!`;
 
+  let createError = "";
   // Try to create the user.
   const result = await account.run
     .userCreate({
@@ -35,39 +52,38 @@ async function inviteUser(context: TagoContext, account: Account, user_data: Use
       email: user_data.email,
       language: "en",
       name: user_data.name,
-      phone: String(user_data.phone) || "",
+      phone: String(user_data.phone || ""),
       tags: user_data.tags,
-      timezone: user_data.timezone || "America/New_York",
+      timezone: user_data.timezone || "America/Sao_Paulo",
       password,
     })
-    .catch(() => null);
+    .catch((error) => {
+      createError = error;
+      return null;
+    });
 
   if (!result) {
-    // If got an error, try to find the user_data.
-    // const [user_data] = await account.run.listUsers(1, ["id", "email", "tags"], { email: user_data.email }, 1);
-    const [user] = await account.run.listUsers({ page: 1, amount: 1, filter: { email: user_data.email }, fields: ["id", "name", "email", "tags"] });
-    if (!user) throw "Couldn`t find user data";
-
-    // If found, update the tags.
-    user.tags = user.tags.filter((x) => user_data.tags.find((y) => x.key !== y.key));
-    user.tags = user.tags.concat(user_data.tags);
-
-    await account.run.userEdit(user.id, { tags: user_data.tags });
-    return user.id;
+    return updateUserAndReturnID(account, user_data).catch(() => {
+      throw createError;
+    });
   }
 
   // If success, send an email with the password
   const emailService = new Services({ token: context.token }).email;
-  emailService.send({
+  await emailService.send({
     to: user_data.email,
-    subject: "Account Details",
-    message: `Your account for the application was created..\n\nYour Login is: <b>${user_data.email}</b>\nYour password is: <b>${password}</b>\n\n In order to access it, visit our website <a href="${domain_url}">${domain_url}</a>`,
+    template: {
+      name: "invite_user",
+      params: {
+        name: user_data.name,
+        email: user_data.email,
+        password,
+        domain_url,
+      },
+    },
   });
 
-  const [user] = await account.run.listUsers({ page: 1, amount: 1, filter: { email: user_data.email } });
-  if (!user) throw "Couldn`t find user data";
-
-  return user.id;
+  return result.user;
 }
 
-export default inviteUser;
+export { inviteUser };

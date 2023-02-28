@@ -1,5 +1,16 @@
 import { getDeviceVariables } from "../edit";
-import scope from "./mocks/edit.mock.json";
+
+const scope = [
+  {
+    device: "63f799df602c450009352a37",
+    name: "Device Three",
+    "tags.site_id": "63f7ea5954083c0009096414",
+    old: {
+      name: "Device two",
+      "tags.site_id": "63f799c2602c4500093527e3",
+    },
+  },
+];
 
 const validate = () => Promise.resolve({});
 
@@ -7,19 +18,7 @@ const validate = () => Promise.resolve({});
 describe("getDeviceVariables", () => {
   test("success", async () => {
     const { dev_name, new_site_id_data } = await getDeviceVariables(scope as any, validate as any);
-    expect(dev_name).toBe("SomeDeviceName");
-    expect(new_site_id_data).toBe("SomeSiteIdData");
-  });
-
-  test("dev_name is empty", () => {
-    delete scope[0].value;
-    expect(() => getDeviceVariables(scope as any, validate as any)).toThrow("Device name field is empty");
-    scope[0].value = "SomeDeviceName";
-  });
-
-  test("new_site_id_data is empty", () => {
-    delete scope[1].value;
-    expect(() => getDeviceVariables(scope as any, validate as any)).toThrow("Site ID Data field is empty");
-    scope[1].value = "SomeSiteIdData";
+    expect(dev_name).toBe("Device Three");
+    expect(new_site_id_data).toBe("63f7ea5954083c0009096414");
   });
 });

@@ -10,15 +10,13 @@
     "test:coverage": "jest . --coverage",
     "linter": "eslint .",
     "linter-fix": "eslint --fix .",
-    "deploy": "ts-node ./src/deploy/upload.ts",
-    "inspector": "ts-node ./src/deploy/device-live-inspector.ts.ts",
-    "console": "ts-node ./src/deploy/analysis-console.ts",
-    "duplicate": "ts-node ./src/deploy/duplicate-analysis.ts",
-    "trigger": "ts-node ./src/deploy/trigger-analysis.ts",
     "debug": "ts-node-dev src/analysis/analysisHandler --inspect"
   },
   "jest": {
-    "preset": "ts-jest"
+    "preset": "ts-jest",
+    "modulePathIgnorePatterns": [
+      "mocks"
+    ]
   },
   "husky": {
     "hooks": {
@@ -27,6 +25,7 @@
     }
   },
   "devDependencies": {
+    "@types/async": "3.2.18",
     "@types/jest": "29.4.0",
     "@types/luxon": "3.2.0",
     "@typescript-eslint/eslint-plugin": "^5.52.0",

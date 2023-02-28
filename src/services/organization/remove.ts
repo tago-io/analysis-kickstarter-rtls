@@ -29,11 +29,11 @@ async function deleteOrganization({ config_dev, scope, account }: ServiceParams)
     await account.devices.delete(device.id);
   }
 
-  const deleteQueue = await queue(deleteData, 5);
+  const deleteQueue = queue(deleteData, 5);
   deleteQueue.error((error: any) => console.log(error));
   if (devices) {
     devices.forEach((device) => {
-      deleteQueue.push(device);
+      void deleteQueue.push(device);
     });
   }
 

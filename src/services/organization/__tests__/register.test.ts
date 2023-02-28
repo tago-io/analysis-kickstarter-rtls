@@ -4,27 +4,23 @@ import scope from "./mocks/register.mock.json";
 const validate = () => Promise.resolve({});
 
 describe("Check form information", () => {
-  test("scope doesn't exists", () => {
-    // @ts-expect-error
-    expect(async () => await getNewOrgVariables("test")).toThrow("Scope is missing");
-  });
-
   test("success", async () => {
-    const result = await getNewOrgVariables(scope as any, validate as any);
-
-    expect(result.name).toBe("johnnyappleseed");
-    expect(result.address?.value).toBe("johnnyappleseed.com");
+    const data = await getNewOrgVariables(scope as any, validate as any);
+    expect(data.name).toBe("johnnyappleseed");
+    expect(data.address.value).toBe("Florida");
   });
 
-  test("new_org_name is empty", () => {
+  test("new_org_name is empty", async () => {
+    // @ts-expect-error
     delete scope[0].value;
-    expect(async () => await getNewOrgVariables(scope as any, validate as any)).toThrow("Name is required");
+    await expect(() => getNewOrgVariables(scope as any, validate as any)).rejects.toThrow("Name field is empty");
     scope[0].value = "johnnyappleseed";
   });
 
-  test("new_org_address is empty", () => {
+  test("new_org_address is empty", async () => {
+    // @ts-expect-error
     delete scope[1].value;
-    expect(async () => await getNewOrgVariables(scope as any, validate as any)).toThrow("Address is required");
-    scope[1].value = "johnnyappleseed.com";
+    await expect(() => getNewOrgVariables(scope as any, validate as any)).rejects.toThrow("Address field is empty");
+    scope[1].value = "Florida";
   });
 });

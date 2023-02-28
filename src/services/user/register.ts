@@ -1,5 +1,6 @@
 import { Types, Utils } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
+import { parseTagoObject } from "../../lib/data.logic";
 import { getZodError } from "../../lib/get-zod-error";
 import registerUser from "../../lib/registerUser";
 import validation from "../../lib/validation";
@@ -39,7 +40,7 @@ async function getNewUserVariables(scope: Data[], validate: ReturnType<typeof va
   }
 }
 
-async function createUser({ context, scope, account }: ServiceParams) {
+async function createUser({ context, scope, account, config_dev }: ServiceParams) {
   // Collecting data
   const org_id = scope[0].device;
   const user_id = scope[0].device;
@@ -92,7 +93,29 @@ async function createUser({ context, scope, account }: ServiceParams) {
   };
 
   // registering user
-  await registerUser(context, account, new_user_data, "https://tago.io/");
+  const userNumber = await registerUser(context, account, new_user_data, "https://tago.io/");
+  console.log("userNumber", userNumber);
+
+  const user_data = {
+    user_name: {
+      value: new_user_name.value,
+    },
+    user_email: {
+      value: new_user_email.value,
+    },
+    user_phone: {
+      value: new_user_phone.value,
+    },
+    user_site: {
+      value: new_user_site === undefined ? "" : new_user_site?.metadata.label,
+    },
+    user_access: {
+      value: new_user_access.value,
+    },
+  };
+
+  await org_dev.sendData(parseTagoObject(user_data, userNumber));
+  await config_dev.sendData(parseTagoObject(user_data, userNumber));
   return validate("User successfully invited! An email will be sent with the credentials to the new user.", "success");
 }
 

@@ -37,8 +37,6 @@ async function resolveDevice(context: TagoContext, account: Account, dept_id: st
     device_id
   );
 
-  context.log(data);
-
   await org_dev.sendData(data);
 }
 
@@ -67,7 +65,15 @@ async function handler(context: TagoContext): Promise<void> {
     const orgID = device.tags.find((tag) => tag.key === "organization_id")?.value;
     const deviceID = device.tags.find((tag) => tag.key === "device_id")?.value;
 
-    resolveDevice(context, account, orgID, deviceID);
+    if (!orgID) {
+      throw "Device not assigned to an Organization";
+    }
+
+    if (!deviceID) {
+      throw "Device not assigned to a Site";
+    }
+
+    void resolveDevice(context, account, orgID, deviceID);
   });
 }
 
@@ -75,7 +81,7 @@ async function startAnalysis(context: TagoContext) {
   try {
     await handler(context);
     context.log("Analysis finished");
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
     context.log(error.message || JSON.stringify(error));
   }

@@ -14,12 +14,12 @@ interface installDeviceParam {
 }
 
 async function getNewOrgVariables(scope: Data[], validate: ReturnType<typeof validation>) {
-  const name = scope.find((x) => x.variable === "new_org_name").value;
+  const name = scope.find((x) => x.variable === "new_org_name")?.value;
   const address = scope.find((x) => x.variable === "new_org_address");
   try {
     return registerOrgModel.parse({
       name,
-      address: { value: address.value, location: address.location.coordinates },
+      address: { value: address?.value, location: address?.location?.coordinates },
     });
   } catch (error) {
     const zodErrorMsg = getZodError(error);
@@ -62,12 +62,11 @@ async function createOrganization({ config_dev, scope, account, environment }: S
   // Collecting data
   await validate("Registering...", "warning");
   const { name: new_org_name, address: new_org_address } = await getNewOrgVariables(scope, validate);
-
   const [org_exists] = await config_dev.getData({ variables: "org_name", values: new_org_name, qty: 1 });
   const { id: config_dev_id } = await config_dev.info();
 
   if (org_exists) {
-    throw validate("User already exists", "danger");
+    throw await validate("Organization name already exists", "danger");
   }
 
   // need device id to configure serie in parseTagoObject

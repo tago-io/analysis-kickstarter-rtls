@@ -1,4 +1,4 @@
-import { Utils, Device, Account, Types } from "@tago-io/sdk";
+import { Utils, Device, Account } from "@tago-io/sdk";
 import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import validation from "../../lib/validation";

@@ -1,18 +1,11 @@
 [
   {
-    "variable": "site_name",
-    "value": "johnnyssite",
-    "origin": "2023-01-23T19:59:25.472Z",
-    "time": "2023-01-23T19:59:25.472Z",
-    "created_at": "2023-01-23T19:59:25.473Z",
-    "group": "SAF676SAS787"
-  },
-  {
-    "variable": "site_address",
-    "value": "http://johnnyssite.com",
-    "origin": "2023-01-23T19:59:25.472Z",
-    "time": "2023-01-23T19:59:25.472Z",
-    "created_at": "2023-01-23T19:59:25.473Z",
-    "group": "SAF676SAS787"
+    "device": "63f799c2602c4500093527e3",
+    "name": "Site Two",
+    "tags.site_address": "56.130366,-106.346771;Canada",
+    "old": {
+      "name": "Site one",
+      "tags.site_address": "-40.900557,174.885971;New Zealand"
+    }
   }
 ]

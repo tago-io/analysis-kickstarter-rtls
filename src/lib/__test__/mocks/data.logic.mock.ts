@@ -13,23 +13,18 @@ const objResult: DataToSend[] = [
     variable: "name",
     value: "stringValuee",
     group: "1588160000000",
-    time: null,
     location: null,
-    metadata: null,
   },
   {
     variable: "user_amount",
     value: 2,
     group: "1588160000000",
-    time: null,
     location: null,
-    metadata: null,
   },
   {
     variable: "active",
     value: true,
     group: "1588160000000",
-    time: null,
     location: null,
     metadata: { color: "Green" },
   },
@@ -39,7 +34,6 @@ const objResult: DataToSend[] = [
     group: "1588160000000",
     time: "2020-01-01T00:00:00.000Z",
     location: null,
-    metadata: null,
   },
   {
     variable: "location",
@@ -47,7 +41,6 @@ const objResult: DataToSend[] = [
     group: "1588160000000",
     time: "2020-01-01T00:00:00.000Z",
     location: { lat: 0, lng: 0 },
-    metadata: null,
   },
 ];
 

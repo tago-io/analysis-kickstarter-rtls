@@ -1,30 +1,46 @@
 [
   {
     "variable": "new_equip_name",
-    "value": "hammer",
-    "origin": "2023-01-23T19:59:25.472Z",
-    "time": "2023-01-23T19:59:25.472Z",
-    "created_at": "2023-01-23T19:59:25.472Z"
+    "time": "2023-02-27T16:40:09.505Z",
+    "created_at": "2023-02-27T16:40:09.505Z",
+    "value": "Equipment Test",
+    "id": "63fcdce9839b49000984d6f8",
+    "group": "1677516009278",
+    "device": "63f799a619ed1e000905d795"
   },
   {
     "variable": "new_equip_serie",
-    "value": "1CD23DW2",
-    "origin": "2023-01-23T19:59:25.472Z",
-    "time": "2023-01-23T19:59:25.472Z",
-    "created_at": "2023-01-23T19:59:25.472Z"
+    "time": "2023-02-27T16:40:09.506Z",
+    "created_at": "2023-02-27T16:40:09.506Z",
+    "value": "2347856934567892",
+    "id": "63fcdce9839b49000984d6f9",
+    "group": "1677516009278",
+    "device": "63f799a619ed1e000905d795"
   },
   {
     "variable": "new_equip_img",
-    "value": "imagelink",
-    "origin": "2023-01-23T19:59:25.472Z",
-    "time": "2023-01-23T19:59:25.472Z",
-    "created_at": "2023-01-23T19:59:25.472Z"
+    "time": "2023-02-27T16:40:09.508Z",
+    "created_at": "2023-02-27T16:40:09.508Z",
+    "value": "Screenshot from 2023-02-27 13-35-48.png",
+    "metadata": {
+      "file": {
+        "md5": "871650125f86e812f3025db0279d0453",
+        "path": "1677516009_Screenshot from 2023-02-27 13-35-48.png",
+        "url": "https://api.tago.io/file/5fc13907cf4e170027440a96/buckets/5fc6499ff4b03200279822dc/1677516007_Screenshot%20from%202023-02-27%2013-35-48.png"
+      }
+    },
+    "id": "63fcdce9839b49000984d6fa",
+    "group": "1677516009278",
+    "device": "63f799a619ed1e000905d795"
   },
   {
     "variable": "new_equip_asset",
-    "value": "123123123",
-    "origin": "2023-01-23T19:59:25.472Z",
-    "time": "2023-01-23T19:59:25.472Z",
-    "created_at": "2023-01-23T19:59:25.472Z"
+    "time": "2023-02-27T16:40:09.509Z",
+    "created_at": "2023-02-27T16:40:09.509Z",
+    "value": "Device Test 1",
+    "metadata": { "label": "Device Test 1" },
+    "id": "63fcdce9839b49000984d6fb",
+    "group": "1677516009278",
+    "device": "63f799a619ed1e000905d795"
   }
 ]

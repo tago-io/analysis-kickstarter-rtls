@@ -12,7 +12,7 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "removeComments": true,
-    "strictNullChecks": false,
+    "strictNullChecks": true,
     "skipLibCheck": true,
     "inlineSourceMap": true,
     "strict": true

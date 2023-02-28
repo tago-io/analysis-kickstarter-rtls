@@ -15,13 +15,13 @@ interface installDeviceParam {
 }
 
 async function getNewSiteVariables(scope: Data[], validate: ReturnType<typeof validation>) {
-  const name = scope.find((x) => x.variable === "new_site_name").value;
+  const name = scope.find((x) => x.variable === "new_site_name")?.value;
   const address = scope.find((x) => x.variable === "new_site_address");
 
   try {
     return registerSiteModel.parse({
       name,
-      address: { value: address.value, location: address.location.coordinates },
+      address: { value: address?.value, location: address?.location?.coordinates },
     });
   } catch (error) {
     const zodErrorMsg = getZodError(error);
@@ -71,7 +71,7 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
   const [site_exists] = await org_dev.getData({ variables: "site_name", values: new_site_name, qty: 1 });
 
   if (site_exists) {
-    throw validate("site already exists", "danger");
+    throw await validate("Site name already exists", "danger");
   }
 
   // need device id to configure serie in parseTagoObject
@@ -91,12 +91,11 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
       },
     },
     site_address: { value: new_site_address.value, location: new_site_address.location },
-    // site_org: new_site_org.value,
   };
 
   const dashboard_info = await account.dashboards.list();
   const site_dashboard = dashboard_info.find((dashboard) => dashboard.label === "Site");
-  const site_dashboard_id = site_dashboard.id;
+  const site_dashboard_id = site_dashboard?.id;
 
   const device_info = await device.info();
   const tags = device_info.tags || [];

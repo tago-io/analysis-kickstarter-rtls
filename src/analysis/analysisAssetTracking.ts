@@ -45,8 +45,8 @@ function getAssetInfoInside(
         value: equipment?.metadata?.label,
         metadata: {
           layer: layer.group,
-          x: strongest_beacon.x, //
-          y: strongest_beacon.y, //
+          x: strongest_beacon.x,
+          y: strongest_beacon.y,
           site_name,
           floor_name: layer.value,
           site_id,
@@ -65,7 +65,7 @@ function getAssetInfoInside(
 function getAssetHistoryInside(strongest_beacon: Beacon, equipment: Data, layer: Data, site_name: string, equip_icon: Data) {
   return parseTagoObject({
     asset_history: {
-      value: equipment.metadata.label,
+      value: equipment.metadata?.label,
       metadata: {
         layer: layer.group,
         x: strongest_beacon.x,
@@ -104,7 +104,7 @@ function getAssetInfoOutside(equipment: Data, outdoor_data: any, equip_img: Data
   return parseTagoObject(
     {
       equipment_outside_location: {
-        value: equipment.metadata.label,
+        value: equipment.metadata?.label,
         location: {
           lat: outdoor_data?.location?.coordinates[0],
           lng: outdoor_data?.location?.coordinates[1],
@@ -121,7 +121,7 @@ function getAssetInfoOutside(equipment: Data, outdoor_data: any, equip_img: Data
 function getAssetHistoryOutside(equipment: Data) {
   return parseTagoObject({
     asset_history: {
-      value: equipment.metadata.label,
+      value: equipment.metadata?.label,
       metadata: {
         site: "Equipment is Outdoor",
         floor: "Equipment is Outdoor",
@@ -138,7 +138,7 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
     sliced: (x.value as string).slice(6).toUpperCase(),
   }));
 
-  let beacons_received: Beacon[] = scope.reduce((final, data) => {
+  let beacons_received: Beacon[] = scope.reduce((final: any, data) => {
     data.variable = data.variable.toUpperCase();
     const beacon_data = beacon_list.find((y) => y.value == data.variable || data.variable == y.sliced);
     if (!beacon_data) {
@@ -201,11 +201,6 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
 async function outdoorData(scope: Data[], site_dev: Device, equipment: Data) {
   const outdoor_data = scope.find((x) => x?.location) as any; //as any tagoIO issue -> location coordinates/lat,lng
 
-  console.log("scope", scope);
-  console.log("outdoor_data", outdoor_data);
-  console.log("equipment", equipment);
-  console.log("site_dev", site_dev);
-
   if (!outdoor_data && !outdoor_data?.location?.coordinates[0]) {
     return false;
   }
@@ -251,6 +246,11 @@ async function updateAsset(context: TagoContext, scope: Data[]) {
 
   //getting the org_dev through the tag
   const site_id = tags.find((x) => x.key === "site_id")?.value;
+
+  if (!site_id) {
+    throw "Device not assigned to a Site";
+  }
+
   const site_dev = await getDevice(account, site_id);
 
   const [equipment] = await site_dev.getData({ variables: ["equip_group"], groups: equipment_id });
@@ -267,7 +267,7 @@ async function updateAsset(context: TagoContext, scope: Data[]) {
 async function startAnalysis(context: TagoContext, scope: any) {
   try {
     await updateAsset(context, scope);
-  } catch (error) {
+  } catch (error: any) {
     console.log(error);
     context.log(error.message || JSON.stringify(error));
   }

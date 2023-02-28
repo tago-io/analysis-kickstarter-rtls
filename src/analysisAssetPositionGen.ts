@@ -69,7 +69,7 @@ async function handler(context: TagoContext) {
 async function startAnalysis(context: TagoContext) {
   try {
     await handler(context);
-  } catch (error) {
+  } catch (error: any) {
     console.log(error);
     context.log(error.message || JSON.stringify(error));
   }

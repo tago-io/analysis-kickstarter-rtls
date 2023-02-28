@@ -86,7 +86,16 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
   const [asset_name] = await org_dev.getData({ variables: "dev_name", values: new_equip_asset.value, qty: 1 });
   const asset_id = asset_name?.group;
 
-  const site_id = (await account.devices.info(asset_id)).tags.find((x) => x.key === "site_id").value;
+  if (!asset_id) {
+    throw "Asset id not found";
+  }
+
+  const site_id = (await account.devices.info(asset_id)).tags.find((x) => x.key === "site_id")?.value;
+
+  if (!site_id) {
+    throw "Site id not found!";
+  }
+
   const site_dev = await getDevice(account, site_id);
 
   const { device_id: equip_id } = await installDevice({
@@ -96,14 +105,14 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
     site_id: site_id,
     asset_id,
     equip_serie: new_equip_serie.value,
-    equip_img: `https://api.tago.io/file/5fc13907cf4e170027440a96/${(new_equip_img?.metadata as any)?.file?.path}`,
+    equip_img: new_equip_img.metadata.file.url,
   });
 
   const equip_data = parseTagoObject(
     {
       equip_name: new_equip_name.value,
       // equip_serie: new_equip_serie.value,
-      // equip_img: `https://api.tago.io/file/608aa9bd050d8f0012e20a8a/${(new_equip_img?.metadata as any)?.file?.path}`,
+      equip_img: new_equip_img.metadata.file.url,
       equip_asset: new_equip_asset.value,
       equip_serie: {
         value: new_equip_serie.value,

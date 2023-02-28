@@ -30,11 +30,21 @@ async function editSensor({ config_dev, scope, account }: ServiceParams) {
   const dev_tags = (await account.devices.info(dev_id)).tags;
   // get tag named device_id
   const org_id = dev_tags.find((tag) => tag.key === "organization_id");
+
+  if (!org_id) {
+    throw new Error("Device has no organization_id tag");
+  }
+
+  // getting org device
   const org_dev = await getDevice(account, org_id.value);
 
   // getting site device
-  let { tags } = await account.devices.info(dev_id);
-  const site_id = tags.find((tag) => tag.key === "site_id")?.value;
+  const site_id = dev_tags.find((tag) => tag.key === "site_id")?.value;
+
+  if (!site_id) {
+    throw new Error("Device has no site_id tag");
+  }
+
   const site_dev = await getDevice(account, site_id);
 
   // getting previous id data
@@ -47,16 +57,16 @@ async function editSensor({ config_dev, scope, account }: ServiceParams) {
     await site_dev.deleteData({ groups: dev_id, variables: "dev_name" });
 
     // sending to settings new info
-    await config_dev.sendData({ ...dev_data, metadata: { ...dev_data.metadata, label: dev_name }, time: null });
-    await org_dev.sendData({ ...dev_data, metadata: { ...dev_data.metadata, label: dev_name }, time: null });
-    await site_dev.sendData({ variable: "dev_name", value: dev_name, metadata: { ...dev_data.metadata, label: dev_name }, time: null });
+    await config_dev.sendData({ ...dev_data, metadata: { ...dev_data.metadata, label: dev_name } });
+    await org_dev.sendData({ ...dev_data, metadata: { ...dev_data.metadata, label: dev_name } });
+    await site_dev.sendData({ variable: "dev_name", value: dev_name, metadata: { ...dev_data.metadata, label: dev_name } });
 
     // updating device name
     await account.devices.edit(dev_id, { name: dev_name });
 
     // updating asset list
     await org_dev.deleteData({ variables: "asset_list", groups: dev_id });
-    await org_dev.sendData({ variable: "dev_name", value: dev_name, time: null, group: dev_id });
+    await org_dev.sendData({ variable: "dev_name", value: dev_name, group: dev_id });
   }
 
   if (new_site_id_data) {

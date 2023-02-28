@@ -1,5 +1,16 @@
 import { getSiteVariables } from "../edit";
-import scope from "./mocks/edit.mock.json";
+
+const scope = [
+  {
+    device: "63f799c2602c4500093527e3",
+    name: "Site Two",
+    "tags.site_address": "56.130366,-106.346771;Canada",
+    old: {
+      name: "Site one",
+      "tags.site_address": "-40.900557,174.885971;New Zealand",
+    },
+  },
+];
 
 const validate = () => Promise.resolve({});
 

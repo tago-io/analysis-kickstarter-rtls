@@ -1,5 +1,22 @@
 import { getNewOrgVariables } from "../register";
-import scope from "./mocks/register.mock.json";
+
+const scope = [
+  {
+    variable: "new_org_name",
+    value: "johnnyappleseed",
+    origin: "2023-01-23T19:59:25.472Z",
+    time: "2023-01-23T19:59:25.472Z",
+    created_at: "2023-01-23T19:59:25.472Z",
+  },
+  {
+    variable: "new_org_address",
+    value: "Florida",
+    origin: "2023-01-23T19:59:25.472Z",
+    time: "2023-01-23T19:59:25.472Z",
+    created_at: "2023-01-23T19:59:25.472Z",
+    location: { type: "Point", coordinates: [-81.5157535, 27.6648274] },
+  },
+];
 
 const validate = () => Promise.resolve({});
 

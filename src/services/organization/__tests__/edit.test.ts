@@ -1,5 +1,16 @@
 import { getOrgVariables } from "../edit";
-import scope from "./mocks/edit.mock.json";
+
+const scope = [
+  {
+    device: "63fcad0cdbfb0a00092d7472",
+    name: "Org Seven",
+    "tags.address": "-8.783195,34.508523;Africa",
+    old: {
+      name: "Org six",
+      "tags.address": "56.130366,-106.346771;Canada",
+    },
+  },
+];
 
 const validate = () => Promise.resolve({});
 

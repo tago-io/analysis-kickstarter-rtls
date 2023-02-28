@@ -39,7 +39,9 @@ async function editSensor({ config_dev, scope, account }: ServiceParams) {
   const org_dev = await getDevice(account, org_id.value);
 
   // getting site device
-  const site_id = dev_tags.find((tag) => tag.key === "site_id")?.value;
+  let { tags } = await account.devices.info(dev_id);
+
+  const site_id = tags.find((tag) => tag.key === "site_id")?.value;
 
   if (!site_id) {
     throw new Error("Device has no site_id tag");

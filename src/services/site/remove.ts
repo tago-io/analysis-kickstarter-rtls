@@ -1,6 +1,7 @@
 import { queue } from "async";
 import { Utils } from "@tago-io/sdk";
 import { ServiceParams } from "../../types";
+import { fetchDeviceList } from "../../lib/fetch-device-list";
 
 async function deleteSite({ config_dev, scope, account }: ServiceParams) {
   if (!scope[0].device) {
@@ -10,8 +11,8 @@ async function deleteSite({ config_dev, scope, account }: ServiceParams) {
   // getting Organization device
   const site_dev = await Utils.getDevice(account, site_id);
   const site_tags = await site_dev.info();
-  const org_id = site_tags.tags.find((x) => x.key === "organization_id").value;
-  const org_dev = await Utils.getDevice(account, org_id);
+  const org_id = site_tags.tags.find((x) => x.key === "organization_id")?.value;
+  const org_dev = await Utils.getDevice(account, org_id as string);
 
   // delete from settings_device
   await config_dev.deleteData({ groups: site_id, qty: 9999 });
@@ -22,19 +23,14 @@ async function deleteSite({ config_dev, scope, account }: ServiceParams) {
   const user_accounts = await account.run.listUsers({ filter: { tags: [{ key: "site_id", value: site_id }] } });
   if (user_accounts) {
     user_accounts.forEach(async (user) => {
-      await account.run.userDelete(user.id);
+      await account.run.userDelete(user.id as string);
       await org_dev.deleteData({ groups: user.id, qty: 9999 });
       await config_dev.deleteData({ groups: user.id, qty: 9999 });
     });
   }
 
   // deleting site's device
-  const devices = await account.devices.list({
-    amount: 9999,
-    page: 1,
-    filter: { tags: [{ key: "site_id", value: site_id }] },
-    fields: ["id", "bucket", "tags", "name"],
-  });
+  const devices = await fetchDeviceList(account, { tags: [{ key: "site_id", value: site_id }] });
 
   async function deleteData(device: any) {
     await account.devices.delete(device.id); /*passing the device id*/
@@ -42,12 +38,12 @@ async function deleteSite({ config_dev, scope, account }: ServiceParams) {
     await config_dev.deleteData({ groups: device.id, qty: 9999 });
   }
 
-  const deleteQueue = await queue(deleteData, 5);
+  const deleteQueue = queue(deleteData, 5);
   deleteQueue.error((error: any) => console.log(error));
 
   if (devices) {
     devices.forEach(async (device) => {
-      deleteQueue.push(device);
+      void deleteQueue.push(device);
     });
   }
 

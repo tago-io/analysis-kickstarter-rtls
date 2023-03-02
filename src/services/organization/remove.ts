@@ -1,4 +1,5 @@
 import { queue } from "async";
+import { fetchDeviceList } from "../../lib/fetch-device-list";
 import { ServiceParams } from "../../types";
 
 async function deleteOrganization({ config_dev, scope, account }: ServiceParams) {
@@ -14,16 +15,11 @@ async function deleteOrganization({ config_dev, scope, account }: ServiceParams)
   // deleting users (organization's user)
   const user_accounts = await account.run.listUsers({ filter: { tags: [{ key: "organization_id", value: org_id }] } });
   if (user_accounts) {
-    user_accounts.forEach((user) => account.run.userDelete(user.id));
+    user_accounts.forEach((user) => account.run.userDelete(user.id as string));
   }
 
   // deleting organization's device
-  const devices = await account.devices.list({
-    amount: 9999,
-    page: 1,
-    filter: { tags: [{ key: "organization_id", value: org_id }] },
-    fields: ["id", "bucket", "tags", "name"],
-  });
+  const devices = await fetchDeviceList(account, { tags: [{ key: "organization_id", value: org_id }] });
 
   async function deleteData(device: any) {
     await account.devices.delete(device.id);

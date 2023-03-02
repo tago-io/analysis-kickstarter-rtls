@@ -76,7 +76,7 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
 
   // need device id to configure serie in parseTagoObject
   // creating new device
-  const { device_id: site_id, device } = await installDevice({ account, site_name: new_site_name, site_address: new_site_address.value, org_id });
+  const { device_id: site_id, device: site_dev } = await installDevice({ account, site_name: new_site_name, site_address: new_site_address.value, org_id });
   const site_data = {
     site_id: {
       value: site_id,
@@ -97,7 +97,7 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
   const site_dashboard = dashboard_info.find((dashboard) => dashboard.label === "Site");
   const site_dashboard_id = site_dashboard?.id;
 
-  const device_info = await device.info();
+  const device_info = await site_dev.info();
   const tags = device_info.tags || [];
   tags.push({
     key: "url_link",
@@ -111,6 +111,9 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
 
   // send to organization device
   await org_dev.sendData(parseTagoObject(site_data, site_id));
+
+  // send to site device
+  await site_dev.sendData(parseTagoObject(site_data, site_id));
 
   return validate("Site successfully created!", "success");
 }

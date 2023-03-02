@@ -1,8 +1,8 @@
-import { Types, Utils } from "@tago-io/sdk";
+import { Services, Types, Utils } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { parseTagoObject } from "../../lib/data.logic";
 import { getZodError } from "../../lib/get-zod-error";
-import registerUser from "../../lib/registerUser";
+import { inviteUser } from "../../lib/registerUser";
 import validation from "../../lib/validation";
 import { ServiceParams } from "../../types";
 import { registerUserModel } from "./model/register.model";
@@ -93,8 +93,7 @@ async function createUser({ context, scope, account, config_dev }: ServiceParams
   };
 
   // registering user
-  const userNumber = await registerUser(context, account, new_user_data, "https://tago.io/");
-  console.log("userNumber", userNumber);
+  const userNumber = await inviteUser(context, account, new_user_data, "https://tago.io/");
 
   const user_data = {
     user_name: {

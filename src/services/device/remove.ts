@@ -20,9 +20,11 @@ async function deleteSensor({ config_dev, scope, account, environment }: Service
     await site_dev.deleteData({ groups: dev_id, qty: 9999 });
   }
   await config_dev.deleteData({ groups: dev_id, qty: 9999 });
-  await org_dev.deleteData({ groups: dev_id, qty: 9999 });
+
   await account.dashboards.edit(environment.dash_org, {});
   await account.devices.delete(dev_id);
-  await account.devices.delete(equip_id as string);
+  if (equip_id) {
+    await account.devices.delete(equip_id);
+  }
 }
 export { deleteSensor };

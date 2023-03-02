@@ -4,6 +4,8 @@ import { ServiceParams } from "../../types";
 import validation from "../../lib/validation";
 import { getZodError } from "../../lib/get-zod-error";
 import { convertLocationParamToObj } from "../../lib/fix-address";
+import { DataResolver } from "../../lib/edit.data";
+import { fetchDeviceList } from "../../lib/fetch-device-list";
 import { updateSiteModel } from "./model/site.model";
 
 async function getSiteVariables(scope: any, validate: ReturnType<typeof validation>) {
@@ -42,40 +44,36 @@ async function editSite({ config_dev, scope, account }: ServiceParams) {
 
   // getting previous id data
   const [site_data] = await org_dev.getData({ variables: "site_id", qty: 1, groups: site_id });
-  //const [config_address_data] = await config_dev.getData({ variables: "site_address", qty: 1, groups: site_id });
 
   async function editData(device: any) {
-    const dev_device = await Utils.getDevice(account, device.id);
-    const [data_to_edit] = await dev_device.getData({ groups: device.id, variables: "dev_site" });
-    await site_dev.deleteData({ groups: data_to_edit.id });
-    await site_dev.sendData({ ...data_to_edit, value: site_name });
+    await DataResolver(site_dev).setVariable({ variable: "dev_site", value: site_name }).apply(device.id);
   }
 
   if (site_name) {
-    // deleting prev data in settings_device
-    await config_dev.deleteData({ groups: site_id });
-    await site_dev.deleteData({ groups: site_id });
-    await org_dev.deleteData({ groups: site_id });
-    // sending to settings new info
-    await config_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name } });
-    await site_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name } });
-    await org_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name } });
+    await DataResolver(config_dev)
+      .setVariable({ variable: "site_id", metadata: { ...site_data.metadata, label: site_name } })
+      .apply(site_id);
 
-    await config_dev.getData({ variables: "site_id", qty: 1, groups: site_id });
+    await DataResolver(org_dev)
+      .setVariable({ variable: "site_id", metadata: { ...site_data.metadata, label: site_name } })
+      .apply(site_id);
+
+    await DataResolver(site_dev)
+      .setVariable({ variable: "site_id", metadata: { ...site_data.metadata, label: site_name } })
+      .apply(site_id);
 
     // updating device name
     await account.devices.edit(site_id, { name: site_name });
 
     // editing device site info
-    const device_list = await account.devices.list({
-      fields: ["id", "bucket", "tags", "name"],
-      filter: {
-        tags: [
-          { key: "site_id", value: site_id },
-          { key: "device_type", value: "device" },
-        ],
-      },
+    const device_list = await fetchDeviceList(account, {
+      tags: [
+        { key: "site_id", value: site_id },
+        { key: "device_type", value: "device" },
+      ],
     });
+
+    console.log(device_list);
 
     const editQueue = queue(editData, 5);
     editQueue.error((error: any) => console.log(error));
@@ -90,19 +88,33 @@ async function editSite({ config_dev, scope, account }: ServiceParams) {
   }
 
   if (site_address) {
-    // const new_site_data = { ...site_data, metadata: { ...site_data.metadata, address: site_address } };
-    // console.log(new_site_data);
+    await DataResolver(config_dev)
+      .setVariable({
+        variable: "site_address",
+        value: site_address.value,
+        location: { lat: site_address.location.lat, lng: site_address.location.lng },
+        group: site_id,
+      })
+      .apply(site_id);
 
-    await config_dev.deleteData({ groups: site_id });
-    await site_dev.deleteData({ groups: site_id });
-    await config_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, address: site_address } });
-    await site_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, address: site_address } });
+    await DataResolver(org_dev)
+      .setVariable({
+        variable: "site_address",
+        value: site_address.value,
+        location: { lat: site_address.location.lat, lng: site_address.location.lng },
+        group: site_id,
+      })
+      .apply();
 
-    // console.log(await config_dev.editData(new_site_data));
-    // console.log(await site_dev.editData(new_site_data));
+    await DataResolver(site_dev)
+      .setVariable({
+        variable: "site_address",
+        value: site_address.value,
+        location: { lat: site_address.location.lat, lng: site_address.location.lng },
+        group: site_id,
+      })
+      .apply(site_id);
   }
-
-  return;
 }
 
 export { editSite, getSiteVariables };

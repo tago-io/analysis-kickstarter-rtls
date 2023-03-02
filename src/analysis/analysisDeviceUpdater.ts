@@ -1,43 +1,28 @@
 import { Utils, Account, Analysis } from "@tago-io/sdk";
-import moment from "moment-timezone";
-import { parseTagoObject } from "../lib/data.logic";
+import { queue } from "async";
 import getDevice from "../lib/getDevice";
 import { TagoContext } from "../types";
+import { ParamResolver } from "../lib/edit.params";
+import { fetchDeviceList } from "../lib/fetch-device-list";
 
-async function resolveDevice(context: TagoContext, account: Account, dept_id: string, device_id: string) {
+async function resolveSensorQueue(data: any) {
+  const { context, account, deviceID } = data;
+  void resolveDevice(context, account, deviceID);
+}
+
+async function resolveDevice(context: TagoContext, account: Account, device_id: string) {
   const device = await getDevice(account, device_id);
-  const org_dev = await getDevice(account, dept_id);
 
   const dataList = await device.getData({ variables: ["battery_status_life", "payload"], qty: 1 });
-  const payload = dataList.find((item) => item.variable === "payload");
   const battery = dataList.find((item) => item.variable === "battery_status_life");
   if (dataList.length === 0) {
     return context.log("No data");
   }
 
-  let checkin_date;
-
-  if (payload) {
-    checkin_date = moment(payload.time).tz("America/New_York").format("MMMM Do YYYY, h:mm:ss a");
-  } else if (battery) {
-    checkin_date = moment(battery.time).tz("America/New_York").format("MMMM Do YYYY, h:mm:ss a");
-  }
-
-  await org_dev.deleteData({
-    variables: ["dev_battery", "dev_lastcheckin"],
-    series: device_id,
-    qty: 99,
-  });
-
-  const data = parseTagoObject(
-    {
-      dev_battery: { value: battery?.value, unit: battery?.unit },
-      dev_lastcheckin: { value: checkin_date ? checkin_date : null },
-    },
-    device_id
-  );
-
-  await org_dev.sendData(data);
+  // adding battery parameter
+  const paramList = await account.devices.paramList(device_id);
+  const paramResolver = ParamResolver(paramList);
+  paramResolver.setParam("battery", battery?.value as string);
 }
 
 async function handler(context: TagoContext): Promise<void> {
@@ -53,28 +38,23 @@ async function handler(context: TagoContext): Promise<void> {
   }
 
   const account = new Account({ token: environment.account_token });
+  const sensorList = await fetchDeviceList(account, { tags: [{ key: "device_type", value: "device" }] });
+  const resolveQueue = queue(resolveSensorQueue, 5);
 
-  const sensorList = await account.devices.list({
-    page: 1,
-    fields: ["id", "name", "tags", "last_input"],
-    filter: { tags: [{ key: "device_type", value: "device" }] },
-    amount: 10_000,
-  });
-
-  sensorList.map((device) => {
+  sensorList.forEach((device) => {
     const orgID = device.tags.find((tag) => tag.key === "organization_id")?.value;
     const deviceID = device.tags.find((tag) => tag.key === "device_id")?.value;
-
     if (!orgID) {
       throw "Device not assigned to an Organization";
     }
-
     if (!deviceID) {
       throw "Device not assigned to a Site";
     }
-
-    void resolveDevice(context, account, orgID, deviceID);
+    const data = { context, account, deviceID };
+    void resolveQueue.push({ data });
   });
+
+  await resolveQueue.drain();
 }
 
 async function startAnalysis(context: TagoContext) {

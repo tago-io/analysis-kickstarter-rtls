@@ -70,19 +70,19 @@ async function inviteUser(context: TagoContext, account: Account, user_data: Use
 
   // If success, send an email with the password
   const emailService = new Services({ token: context.token }).email;
-  await emailService.send({
+
+  void emailService.send({
     to: user_data.email,
     template: {
-      name: "invite_user",
+      name: "user_registration",
       params: {
         name: user_data.name,
         email: user_data.email,
-        password,
-        domain_url,
+        password: password,
+        url_platform: domain_url,
       },
     },
   });
-
   return result.user;
 }
 

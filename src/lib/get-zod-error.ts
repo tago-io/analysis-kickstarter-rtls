@@ -1,4 +1,10 @@
-export function getZodError(error: any) {
-  const zodErrorMsg = error.issues.map((issue: any) => issue.message);
-  return zodErrorMsg;
+import { ZodError } from "zod";
+
+function getZodError(error: any) {
+  if (error instanceof ZodError) {
+    return error.issues.shift()?.message;
+  }
+  return error;
 }
+
+export { getZodError };

@@ -7,6 +7,7 @@ import { parseTagoObject } from "../../lib/data.logic";
 import getDevice from "../../lib/getDevice";
 import { getZodError } from "../../lib/get-zod-error";
 import { registerDeviceModel } from "./model/register.model";
+import { site_id } from "../../analysis/__tests__/mocks/getAssetInfoInside.mock";
 
 interface installDeviceParam {
   account: Account;
@@ -121,19 +122,19 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
     dev_id
   );
 
-  const dev_dev = await getDevice(account, dev_id);
+  const site_dev = await getDevice(account, new_dev_site.value);
 
   // send to admin device (settings_device) which will send to bucket
   await config_dev.sendData(dev_data);
 
-  // send to device device
-  await dev_dev.sendData(dev_data);
-
   // send to organization device
   await org_dev.sendData(dev_data);
 
+  // send to site device
+  await site_dev.sendData(dev_data);
+
   // Setting available asset list
-  await org_dev.sendData(parseTagoObject({ asset_list: new_dev_name.value }, dev_id)); // need to change
+  await org_dev.sendData(parseTagoObject({ asset_list: new_dev_name.value }, dev_id));
 
   return validate("Device created successfully!", "success");
 }

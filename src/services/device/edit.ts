@@ -1,3 +1,4 @@
+import { DataResolver } from "../../lib/edit.data";
 import { getZodError } from "../../lib/get-zod-error";
 import getDevice from "../../lib/getDevice";
 import validation from "../../lib/validation";
@@ -27,7 +28,7 @@ async function editSensor({ config_dev, scope, account }: ServiceParams) {
   const { dev_name, new_site_id_data } = await getDeviceVariables(scope, validate);
 
   // get device tags
-  const dev_tags = (await account.devices.info(dev_id)).tags;
+  const { tags: dev_tags } = await account.devices.info(dev_id);
   // get tag named device_id
   const org_id = dev_tags.find((tag) => tag.key === "organization_id");
 
@@ -50,25 +51,26 @@ async function editSensor({ config_dev, scope, account }: ServiceParams) {
   const site_dev = await getDevice(account, site_id);
 
   // getting previous id data
-  const [dev_data] = await org_dev.getData({ variables: "dev_id", qty: 1, groups: dev_id });
+  const [dev_data] = await org_dev.getData({ variables: "dev_name", qty: 1, groups: dev_id });
 
   if (dev_name) {
-    // deleting prev data in settings_device
-    await config_dev.deleteData({ groups: dev_id, variables: "dev_name" });
-    await org_dev.deleteData({ groups: dev_id, variables: "dev_name" });
-    await site_dev.deleteData({ groups: dev_id, variables: "dev_name" });
+    await DataResolver(config_dev)
+      .setVariable({ variable: "dev_name", value: dev_name, metadata: { ...dev_data.metadata, label: dev_name } })
+      .apply(dev_id);
 
-    // sending to settings new info
-    await config_dev.sendData({ ...dev_data, metadata: { ...dev_data.metadata, label: dev_name } });
-    await org_dev.sendData({ ...dev_data, metadata: { ...dev_data.metadata, label: dev_name } });
-    await site_dev.sendData({ variable: "dev_name", value: dev_name, metadata: { ...dev_data.metadata, label: dev_name } });
+    await DataResolver(org_dev)
+      .setVariable({ variable: "dev_name", value: dev_name, metadata: { ...dev_data.metadata, label: dev_name } })
+      .apply(dev_id);
+
+    await DataResolver(site_dev)
+      .setVariable({ variable: "dev_name", value: dev_name, metadata: { ...dev_data.metadata, label: dev_name } })
+      .apply(dev_id);
 
     // updating device name
     await account.devices.edit(dev_id, { name: dev_name });
 
     // updating asset list
-    await org_dev.deleteData({ variables: "asset_list", groups: dev_id });
-    await org_dev.sendData({ variable: "dev_name", value: dev_name, group: dev_id });
+    await DataResolver(org_dev).setVariable({ variable: "asset_list", value: dev_name }).apply(dev_id);
   }
 
   if (new_site_id_data) {

@@ -15,11 +15,18 @@ const registerAlertModel = z.object({
       ),
     }),
   }),
-  condition_option: z.object({
+  condition_value: z.object({
     value: z.number({ required_error: "Condition Option field is empty" }),
   }),
   type: z.object({
     value: z.string({ required_error: "Type field is empty" }),
+    metadata: z.object({
+      sentValues: z.array(
+        z.object({
+          value: z.string(),
+        })
+      ),
+    }),
   }),
   users: z.object({
     value: z.string({ required_error: "Users field is empty" }),

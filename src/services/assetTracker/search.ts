@@ -1,55 +1,59 @@
-import { Device } from "@tago-io/sdk";
+import { Device, Utils } from "@tago-io/sdk";
 import { ServiceParams } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
+import { fetchDeviceList } from "../../lib/fetch-device-list";
+import { site_id } from "../../analysis/__tests__/mocks/getAssetInfoInside.mock";
 
 interface sentValue {
   label: string;
   value: string;
 }
 
-export default async ({ scope, account }: ServiceParams, org_dev: Device) => {
-  await org_dev.deleteData({ variables: ["asset_name", "asset_site", "asset_building", "asset_floor", "asset_room", "asset_link"], qty: 999 });
-
-  await account.dashboards.edit("5fc91ac2a0e14a002654fe99", {});
+async function searchAsset({ scope, account, context }: ServiceParams) {
+  const org_id = scope[0].device;
+  const org_dev = await Utils.getDevice(account, org_id);
+  await org_dev.deleteData({ variables: ["asset_name", "asset_site", "asset_building", "asset_floor", "asset_room", "asset_link"], qty: 9999 });
+  // get _dashboard_id key from enviroment
+  const dashboard = context.environment.find((x) => x.key === "_dashboard_id")?.value;
+  console.log("dashboard: ", dashboard);
 
   // Collecting data
   const find_asset = scope.find((x) => x.variable === "find_asset");
-
-  const metadata = find_asset.metadata as any;
-
+  const metadata = find_asset?.metadata as any;
   const sentValues = metadata.sentValues.map((x: sentValue) => x.value);
 
-  //const active_asset_list = (await org_dev.getData({ variables: "asset_active_info" })).filter((x) => sentValues.includes(x.value));
+  // getting all the devices in this org.
+  const active_info_list = await org_dev.getData({ variables: "dev_id" });
 
-  const active_info_list = await org_dev.getData({ variables: "asset_active_info" });
+  // filtering the list for only the devices we are searching for.
   const active_asset_list = active_info_list.filter((x) => sentValues.includes(x.value));
+  console.log("devices: ", active_asset_list);
 
   for (let i = 0; i < sentValues.length; i++) {
     const asset_info = active_asset_list.find((x) => x.value === sentValues[i]);
+    const asset_device = await Utils.getDevice(account, asset_info?.value as string);
+    const device_info = await asset_device.info();
+    const tags = device_info.tags || [];
 
+    const site_id = tags.find((x) => x.key === "site_id")?.value;
+    const device_dashboard_link = `https://admin.tago.io/dashboards/info/${dashboard}?tab=3&org_dev=${org_id}&site_dev=${site_id}&asset=${asset_info?.value}`;
+
+    console.log("device_dashboard_link: ", device_dashboard_link);
     if (asset_info) {
       await org_dev.sendData(
         parseTagoObject({
-          asset_name: asset_info.value,
-          asset_site: (asset_info.metadata as any).asset_site,
-          asset_building: (asset_info.metadata as any).asset_building,
-          asset_floor: (asset_info.metadata as any).asset_floor,
-          asset_room: (asset_info.metadata as any).asset_room,
-          asset_link: (asset_info.metadata as any).asset_link,
-        })
-      );
-    } else {
-      await org_dev.sendData(
-        parseTagoObject({
-          asset_name: sentValues[i],
-          asset_site: "Not Tracked",
-          asset_building: "Not Tracked",
-          asset_floor: "Not Tracked",
-          asset_room: "Not Tracked",
+          asset_name: device_info.name,
+          asset_site: site_id,
+          asset_building: (asset_info.metadata as any)?.asset_building ?? "Not Tracked",
+          asset_floor: (asset_info.metadata as any)?.asset_floor ?? "Not Tracked",
+          asset_room: (asset_info.metadata as any)?.asset_room ?? "Not Tracked",
+          asset_link: device_dashboard_link,
         })
       );
     }
   }
 
   return;
-};
+}
+
+export { searchAsset };

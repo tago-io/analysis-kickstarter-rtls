@@ -15,6 +15,7 @@ import { editSensor } from "../services/device/edit";
 import { createUser } from "../services/user/register";
 import { deleteUser } from "../services/user/remove";
 import { editUser } from "../services/user/edit";
+import { searchAsset } from "../services/assetTracker/search";
 
 async function analysisHandler(context: TagoContext, scope: Data[]): Promise<void> {
   // Convert environment variables to a JSON.
@@ -53,6 +54,8 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
   router.register(createUser).whenInputFormID("create-user");
   router.register(deleteUser).whenUserListIdentifier("delete-user");
   router.register(editUser).whenCustomBtnID("edit-user");
+
+  router.register(searchAsset).whenInputFormID("search-asset");
 
   const result = await router.exec();
 

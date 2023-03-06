@@ -50,6 +50,7 @@
     "@tago-io/sdk": "10.10.0",
     "async": "3.2.4",
     "dayjs": "1.11.7",
+    "luxon": "3.3.0",
     "moment-timezone": "0.5.40",
     "zod": "3.19.1"
   }

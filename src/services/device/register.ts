@@ -1,13 +1,14 @@
-import { Utils, Device, Account } from "@tago-io/sdk";
-import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
+import { Account, Device, Utils } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
-import validation from "../../lib/validation";
-import { ServiceParams, DeviceCreated } from "../../types";
-import { parseTagoObject } from "../../lib/data.logic";
-import getDevice from "../../lib/getDevice";
-import { getZodError } from "../../lib/get-zod-error";
-import { registerDeviceModel } from "./model/register.model";
+import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
+
 import { site_id } from "../../analysis/__tests__/mocks/getAssetInfoInside.mock";
+import { parseTagoObject } from "../../lib/data.logic";
+import { getZodError } from "../../lib/get-zod-error";
+import getDevice from "../../lib/getDevice";
+import validation from "../../lib/validation";
+import { DeviceCreated, ServiceParams } from "../../types";
+import { registerDeviceModel } from "./model/register.model";
 
 interface installDeviceParam {
   account: Account;
@@ -64,6 +65,8 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
       { key: "device_type", value: "device" },
       { key: "device_eui", value: new_device_eui },
       { key: "device_network", value: new_device_network },
+      { key: "equipment_id", value: "none" },
+      { key: "has_equip", value: "false" },
     ],
   });
 
@@ -132,9 +135,6 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
 
   // send to site device
   await site_dev.sendData(dev_data);
-
-  // Setting available asset list
-  await org_dev.sendData(parseTagoObject({ asset_list: new_dev_name.value }, dev_id));
 
   return validate("Device created successfully!", "success");
 }

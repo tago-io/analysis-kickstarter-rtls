@@ -3,8 +3,9 @@
 // * This file is global types, it's used to remove "implicitly has an 'any' type" errors.
 // ? ====================================================================================
 
-import { Types, Device, Account } from "@tago-io/sdk";
+import { Account, Device, Types } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
+import { RouterConstructor } from "@tago-io/sdk/out/modules/Utils/router/router.types";
 
 interface ServicesAnalysis {
   checkType: (scope: Data[] | InputScope[], environment: EnvironmentItemObject) => void;
@@ -62,4 +63,20 @@ interface DeviceCreated {
   device: Device;
 }
 
-export { ServicesAnalysis, ServiceParams, TagoContext, Token, AnalysisID, InputScope, EnvironmentItem, EnvironmentItemObject, Metadata, DeviceCreated };
+interface RouterConstructorCustomBtn extends Omit<RouterConstructor, "scope"> {
+  scope: { device: string; displayValue: string; property: string; value: string }[];
+}
+
+export {
+  RouterConstructorCustomBtn,
+  ServicesAnalysis,
+  ServiceParams,
+  TagoContext,
+  Token,
+  AnalysisID,
+  InputScope,
+  EnvironmentItem,
+  EnvironmentItemObject,
+  Metadata,
+  DeviceCreated,
+};

@@ -1,11 +1,13 @@
-import { Device, Account, Utils } from "@tago-io/sdk";
-import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
+import { Account, Device, Utils } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
-import validation from "../../lib/validation";
-import { ServiceParams, DeviceCreated } from "../../types";
+import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
+
 import { parseTagoObject } from "../../lib/data.logic";
-import getDevice from "../../lib/getDevice";
+import { TagResolver } from "../../lib/edit.tag";
 import { getZodError } from "../../lib/get-zod-error";
+import getDevice from "../../lib/getDevice";
+import validation from "../../lib/validation";
+import { DeviceCreated, ServiceParams } from "../../types";
 import { registerEquipModel } from "./model/equipment.model";
 
 interface installDeviceParam {
@@ -26,10 +28,13 @@ async function getNewEquipVariables(scope: Data[], validate: ReturnType<typeof v
 
   try {
     return registerEquipModel.parse({
-      new_equip_name,
-      new_equip_serie,
-      new_equip_img,
-      new_equip_asset,
+      name: new_equip_name?.value,
+      serieNumber: new_equip_serie?.value,
+      image: {
+        fileName: new_equip_img?.value,
+        url: new_equip_img?.metadata?.file?.url,
+      },
+      assetID: new_equip_asset?.value,
     });
   } catch (error) {
     const zodErrorMsg = getZodError(error);
@@ -76,14 +81,12 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
   const validate = validation("equip_validation", org_dev);
   await validate("Registering...", "warning");
   // Collecting data
-  const { new_equip_asset, new_equip_name, new_equip_img, new_equip_serie } = await getNewEquipVariables(scope, validate);
+  const { assetID, image, name: equipName, serieNumber } = await getNewEquipVariables(scope, validate);
 
   // deleteData
-  await org_dev.deleteData({ variables: "asset_list", values: new_equip_asset.value });
-  // await account.dashboards.edit("608aaa44e49d32001116715e", {});
   await account.dashboards.edit(environment.dash_org, {});
 
-  const [asset_name] = await org_dev.getData({ variables: "dev_name", values: new_equip_asset.value, qty: 1 });
+  const [asset_name] = await org_dev.getData({ variables: "dev_name", values: assetID, qty: 1 });
   const asset_id = asset_name?.group;
 
   if (!asset_id) {
@@ -100,39 +103,34 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
 
   const { device_id: equip_id } = await installDevice({
     account,
-    new_dev_name: new_equip_name.value,
+    new_dev_name: equipName,
     org_id,
     site_id: site_id,
     asset_id,
-    equip_serie: new_equip_serie.value,
-    equip_img: new_equip_img.metadata.file.url,
+    equip_serie: serieNumber,
+    equip_img: image.url,
   });
 
   const equip_data = parseTagoObject(
     {
-      equip_name: new_equip_name.value,
-      // equip_serie: new_equip_serie.value,
-      equip_img: new_equip_img.metadata.file.url,
-      equip_asset: new_equip_asset.value,
-      equip_serie: {
-        value: new_equip_serie.value,
-        metadata: {
-          label: new_equip_name.value,
-        },
-      },
+      equip_name: equipName,
+      equip_img: image.url,
+      equip_asset: assetID,
+      equip_serie: serieNumber,
     },
     equip_id
   );
 
-  const asset_dev_tags = (await account.devices.info(asset_id)).tags;
-
-  await account.devices.edit(asset_id, { tags: [...asset_dev_tags, { key: "equipment_id", value: equip_id }] });
+  const { tags: asset_dev_tags } = await account.devices.info(asset_id);
+  const tagResolver = TagResolver(asset_dev_tags);
+  tagResolver.setTag("equipment_id", equip_id);
+  tagResolver.setTag("has_equip", "true");
+  await tagResolver.apply(account, assetID);
 
   await org_dev.sendData(equip_data);
   await site_dev.sendData(equip_data);
 
   return validate("Equipment created successfully!", "success");
-  // DELETE ALSO THE IMAGE, ITS BEING KEPT!
 }
 
 export { createEquipment, getNewEquipVariables };

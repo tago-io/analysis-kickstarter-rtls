@@ -137,9 +137,8 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
     value: (x.value as string).toUpperCase(),
     sliced: (x.value as string).slice(6).toUpperCase(),
   }));
-
+  console.log("beacon_list", beacon_list); // deleta dps
   let beacons_received: Beacon[] = scope.reduce((final: any, data) => {
-    data.variable = data.variable.toUpperCase();
     const beacon_data = beacon_list.find((y) => y.value == data.variable || data.variable == y.sliced);
     if (!beacon_data) {
       return final;

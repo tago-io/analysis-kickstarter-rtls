@@ -1,11 +1,12 @@
-import { Account, Analysis, Services, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
 import axios from "axios";
 
-import { getImageBase64 } from "./lib/get-image-base64";
-import getDevice from "./lib/getDevice";
-import { footerTemplate, headerTemplate, html } from "./services/report/html";
-import { TagoContext } from "./types";
+import { Account, Analysis, Services, Utils } from "@tago-io/sdk";
+import { Data } from "@tago-io/sdk/out/common/common.types";
+
+import { getImageBase64 } from "../lib/get-image-base64";
+import getDevice from "../lib/getDevice";
+import { footerTemplate, headerTemplate, html } from "../services/report/html";
+import { TagoContext } from "../types";
 
 async function handler(context: TagoContext, scope: Data[]) {
   // data must come through Device test 1

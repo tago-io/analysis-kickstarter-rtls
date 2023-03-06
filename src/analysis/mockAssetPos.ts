@@ -1,7 +1,8 @@
-import { Analysis, Utils, Device, Account } from "@tago-io/sdk";
-import { parseTagoObject } from "./lib/data.logic";
-import getDevice from "./lib/getDevice";
-import { TagoContext } from "./types";
+import { Account, Analysis, Device, Utils } from "@tago-io/sdk";
+
+import { parseTagoObject } from "../lib/data.logic";
+import getDevice from "../lib/getDevice";
+import { TagoContext } from "../types";
 
 async function handler(context: TagoContext) {
   context.log("Running Analysis");

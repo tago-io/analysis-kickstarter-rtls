@@ -56,7 +56,7 @@ async function createUser({ context, scope, account, config_dev }: ServiceParams
   });
 
   if (user_exists) {
-    return validate("User already exists!", "danger");
+    return await validate("User already exists!", "danger");
   }
 
   // creating user
@@ -93,7 +93,7 @@ async function createUser({ context, scope, account, config_dev }: ServiceParams
   };
 
   // registering user
-  const userNumber = await inviteUser(context, account, new_user_data, "https://rtls.tago.run/");
+  const userNumber = await inviteUser(context, account, new_user_data, "rtls.tago.run/");
 
   const user_data = {
     user_name: {
@@ -115,7 +115,7 @@ async function createUser({ context, scope, account, config_dev }: ServiceParams
 
   await org_dev.sendData(parseTagoObject(user_data, userNumber));
   await config_dev.sendData(parseTagoObject(user_data, userNumber));
-  return validate("User successfully invited! An email will be sent with the credentials to the new user.", "success");
+  return await validate("User successfully invited! An email will be sent with the credentials to the new user.", "success");
 }
 
 export { createUser, getNewUserVariables };

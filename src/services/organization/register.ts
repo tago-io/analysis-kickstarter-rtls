@@ -69,6 +69,10 @@ async function createOrganization({ config_dev, scope, account, environment }: S
     throw await validate("Organization name already exists", "danger");
   }
 
+  if (new_org_name.length < 3) {
+    throw await validate("Organization name must be at least 3 characters long", "danger");
+  }
+
   // need device id to configure serie in parseTagoObject
   // creating new device
   const { device_id, device } = await installDevice({ account, new_org_name: new_org_name, new_org_address: new_org_address.value });
@@ -89,7 +93,7 @@ async function createOrganization({ config_dev, scope, account, environment }: S
   // send to admin device (settings_device) which will send to bucket
   await config_dev.sendData(parseTagoObject(org_data, device_id));
 
-  return validate("Organization created", "success");
+  return await validate("Organization created", "success");
 }
 
 export { createOrganization, getNewOrgVariables };

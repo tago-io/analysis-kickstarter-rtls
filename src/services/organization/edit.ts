@@ -26,6 +26,7 @@ async function editOrganization({ config_dev, scope, account }: ServiceParams) {
   const org_id = scope[0].device;
   const validate = validation("org_validation", config_dev);
   // Collecting data
+  await validate("Editing...", "warning");
   const { name: org_name, address: org_address } = await getOrgVariables(scope, validate);
   if (org_name) {
     // getting previous id data
@@ -46,7 +47,7 @@ async function editOrganization({ config_dev, scope, account }: ServiceParams) {
       value: org_address.value,
     });
   }
-  return;
+  return await validate("Organization edited", "success");
 }
 
 export { editOrganization, getOrgVariables };

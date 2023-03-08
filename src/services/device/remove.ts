@@ -1,4 +1,5 @@
 import getDevice from "../../lib/getDevice";
+import { sendNotificationFeedback } from "../../lib/send-notification";
 import { ServiceParams } from "../../types";
 
 async function deleteSensor({ config_dev, scope, account, environment }: ServiceParams) {
@@ -26,5 +27,11 @@ async function deleteSensor({ config_dev, scope, account, environment }: Service
   if (equip_id) {
     await account.devices.delete(equip_id);
   }
+  await sendNotificationFeedback({
+    account,
+    environment,
+    message: `Sensor deleted`,
+    title: `Sensor deleted`,
+  });
 }
 export { deleteSensor };

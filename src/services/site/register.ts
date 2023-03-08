@@ -74,6 +74,10 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
     throw await validate("Site name already exists", "danger");
   }
 
+  if (new_site_name.length < 3) {
+    throw await validate("Site name must be at least 3 characters long", "danger");
+  }
+
   // need device id to configure serie in parseTagoObject
   // creating new device
   const { device_id: site_id, device: site_dev } = await installDevice({ account, site_name: new_site_name, site_address: new_site_address.value, org_id });
@@ -115,7 +119,7 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
   // send to site device
   await site_dev.sendData(parseTagoObject(site_data, site_id));
 
-  return validate("Site successfully created!", "success");
+  return await validate("Site successfully created!", "success");
 }
 
 export { createSite, getNewSiteVariables };

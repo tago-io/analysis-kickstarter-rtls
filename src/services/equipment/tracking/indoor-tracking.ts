@@ -1,6 +1,7 @@
 import { Account, Device } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DeviceInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
+import { eachOfSeries } from "async";
 
 import { parseTagoObject } from "../../../lib/data.logic";
 import getDevice from "../../../lib/getDevice";
@@ -29,6 +30,7 @@ function getAssetInfoInside(
   site_id: string,
   equipment: DeviceInfo,
   layer: Data,
+  room: Data,
   site_name: string
 ) {
   return parseTagoObject(
@@ -43,6 +45,7 @@ function getAssetInfoInside(
           floor_name: layer.value,
           site_id,
           layer_id: layer.id,
+          room_name: room.value,
           url: `https://admin.tago.io/dashboards/info/${enviroment.dash_site}?site_dev=${site_id}&asset_dev=${scope[0].device}`,
         },
       },
@@ -52,7 +55,7 @@ function getAssetInfoInside(
   );
 }
 
-function getAssetHistoryInside(strongest_beacon: BeaconPosition, equipment: DeviceInfo, layer: Data, site_name: string) {
+function getAssetHistoryInside(strongest_beacon: BeaconPosition, equipment: DeviceInfo, layer: Data, room: Data, site_name: string) {
   return parseTagoObject({
     asset_history: {
       value: equipment.name,
@@ -62,6 +65,7 @@ function getAssetHistoryInside(strongest_beacon: BeaconPosition, equipment: Devi
         y: strongest_beacon.y,
         site: site_name,
         floor: layer.value,
+        room: room.value,
         layer_id: layer.id,
       },
     },
@@ -77,6 +81,8 @@ function getAssetHistoryInside(strongest_beacon: BeaconPosition, equipment: Devi
  */
 async function getBeaconList(siteDev: Device, scope: Data[]) {
   const beaconListRaw = await siteDev.getData({ variables: "beacon_id", qty: 9999 });
+  console.log("scope", scope);
+  console.log("beaconListRaw", beaconListRaw);
 
   const beaconListFromSite = beaconListRaw.map((x) => ({
     ...x,
@@ -84,7 +90,7 @@ async function getBeaconList(siteDev: Device, scope: Data[]) {
     // we slice the MAC because usually the payload only report first 6 letters of the MAC
     sliced: (x.value as string).slice(6).toUpperCase(),
   }));
-
+  console.log("beaconListFromSite", beaconListFromSite);
   const beaconFromScope = scope.find((data) => data.variable === "beacons")?.metadata;
   if (!beaconFromScope || Object.keys(beaconFromScope).length === 0) {
     return [];
@@ -112,10 +118,17 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
   }
 
   const layers_list = await siteDev.getData({ variables: "layers", qty: 9999 });
+  const room_list = await siteDev.getData({ variables: "beacon_room", qty: 9999 });
 
   // Find layer with the most strongest beacon
   const fixed_position_key = `${siteID}${strongest_beacon.group}`;
   const layer = layers_list.find((x) => x?.metadata?.fixed_position?.[fixed_position_key]);
+  const room = room_list.find((x) => x.group == strongest_beacon.group);
+
+  if (!room) {
+    return console.error("No beacon found in the room!");
+  }
+
   if (!layer) {
     return console.error("No beacon found in the layer!");
   }
@@ -130,8 +143,8 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
 
   const { name: site_name } = await siteDev.info();
 
-  const assetInfo = getAssetInfoInside(scope, beaconPosition, enviroment, siteID, equipmentInfo, layer, site_name);
-  const assetHistory = getAssetHistoryInside(beaconPosition, equipmentInfo, layer, site_name);
+  const assetInfo = getAssetInfoInside(scope, beaconPosition, enviroment, siteID, equipmentInfo, layer, room, site_name);
+  const assetHistory = getAssetHistoryInside(beaconPosition, equipmentInfo, layer, room, site_name);
 
   // const plotBasicImageMarker = getPlotBasicImageMarker(scope, layer);
 
@@ -139,6 +152,7 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
   await siteDev.sendData(assetInfo.concat(assetHistory));
   // await site_dev.sendData(assetHistory);
 
+  console.log("assetInfo", assetInfo);
   await orgDev.deleteData({ variables: ["equipment_location"], groups: equipmentID, qty: 9999 });
   await orgDev.sendData(assetInfo);
 
@@ -148,4 +162,4 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
   return;
 }
 
-export { getIndoorPos };
+export { getIndoorPos, getAssetHistoryInside, getAssetInfoInside };

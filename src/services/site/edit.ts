@@ -79,9 +79,9 @@ async function editSite({ config_dev, scope, account }: ServiceParams) {
     editQueue.error((error: any) => console.log(error));
 
     if (device_list) {
-      device_list.forEach((device) => {
+      for (const device of device_list) {
         void editQueue.push(device);
-      });
+      }
     }
 
     await editQueue.drain();

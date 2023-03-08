@@ -1,8 +1,6 @@
-import { Device, Utils } from "@tago-io/sdk";
+import { Utils } from "@tago-io/sdk";
 import { ServiceParams } from "../../types";
 import { parseTagoObject } from "../../lib/data.logic";
-import { fetchDeviceList } from "../../lib/fetch-device-list";
-import { site_id } from "../../analysis/__tests__/mocks/getAssetInfoInside.mock";
 
 interface sentValue {
   label: string;
@@ -12,7 +10,7 @@ interface sentValue {
 async function searchAsset({ scope, account, context }: ServiceParams) {
   const org_id = scope[0].device;
   const org_dev = await Utils.getDevice(account, org_id);
-  await org_dev.deleteData({ variables: ["asset_name", "asset_site", "asset_building", "asset_floor", "asset_room", "asset_link"], qty: 9999 });
+  await org_dev.deleteData({ variables: ["asset_name", "asset_site", "asset_floor", "asset_room", "asset_link"], qty: 9999 });
   // get _dashboard_id key from enviroment
   const dashboard = context.environment.find((x) => x.key === "_dashboard_id")?.value;
   console.log("dashboard: ", dashboard);
@@ -38,15 +36,23 @@ async function searchAsset({ scope, account, context }: ServiceParams) {
     const site_id = tags.find((x) => x.key === "site_id")?.value;
     const device_dashboard_link = `https://admin.tago.io/dashboards/info/${dashboard}?tab=3&org_dev=${org_id}&site_dev=${site_id}&asset=${asset_info?.value}`;
 
+    // getting equipement_idz
+    const equipment_id = tags.find((x) => x.key === "equipment_id")?.value;
+
+    // geting data from org device
+    const [info] = await org_dev.getData({ variables: "equipment_location", groups: equipment_id });
+    console.log("info: ", info);
+
+    console.log("asset_info: ", asset_info);
+
     console.log("device_dashboard_link: ", device_dashboard_link);
     if (asset_info) {
       await org_dev.sendData(
         parseTagoObject({
           asset_name: device_info.name,
           asset_site: site_id,
-          asset_building: (asset_info.metadata as any)?.asset_building ?? "Not Tracked",
-          asset_floor: (asset_info.metadata as any)?.asset_floor ?? "Not Tracked",
-          asset_room: (asset_info.metadata as any)?.asset_room ?? "Not Tracked",
+          asset_floor: info?.metadata?.floor_name ?? "Not Tracked",
+          asset_room: info?.metadata?.room_name ?? "Not Tracked",
           asset_link: device_dashboard_link,
         })
       );

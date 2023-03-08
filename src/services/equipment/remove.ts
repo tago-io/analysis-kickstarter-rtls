@@ -1,7 +1,8 @@
 import { Account } from "@tago-io/sdk";
 
 import { TagResolver } from "../../lib/edit.tag";
-import { InputScope, RouterConstructorCustomBtn, ServiceParams } from "../../types";
+import { sendNotificationFeedback } from "../../lib/send-notification";
+import { RouterConstructorCustomBtn } from "../../types";
 
 async function updateAssetDevice(account: Account, assetID: string) {
   const { tags: asset_dev_tags } = await account.devices.info(assetID);
@@ -11,7 +12,7 @@ async function updateAssetDevice(account: Account, assetID: string) {
   await tagResolver.apply(account, assetID);
 }
 
-async function deleteEquipment({ scope, account }: RouterConstructorCustomBtn) {
+async function deleteEquipment({ scope, environment, account }: RouterConstructorCustomBtn) {
   if (!account) {
     return;
   }
@@ -37,6 +38,13 @@ async function deleteEquipment({ scope, account }: RouterConstructorCustomBtn) {
     throw "Asset ID not found";
   }
   await updateAssetDevice(account, assetID);
+
+  await sendNotificationFeedback({
+    account,
+    environment,
+    message: `Equipment deleted`,
+    title: `Equipment deleted`,
+  });
 }
 
 export { deleteEquipment };

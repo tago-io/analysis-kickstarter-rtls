@@ -1,8 +1,9 @@
 import { queue } from "async";
 import { fetchDeviceList } from "../../lib/fetch-device-list";
+import { sendNotificationFeedback } from "../../lib/send-notification";
 import { ServiceParams } from "../../types";
 
-async function deleteOrganization({ config_dev, scope, account }: ServiceParams) {
+async function deleteOrganization({ config_dev, scope, account, environment }: ServiceParams) {
   if (!scope[0].device) {
     throw "Organization not found!";
   }
@@ -15,7 +16,9 @@ async function deleteOrganization({ config_dev, scope, account }: ServiceParams)
   // deleting users (organization's user)
   const user_accounts = await account.run.listUsers({ filter: { tags: [{ key: "organization_id", value: org_id }] } });
   if (user_accounts) {
-    user_accounts.forEach((user) => account.run.userDelete(user.id as string));
+    for (const user of user_accounts) {
+      void account.run.userDelete(user.id as string);
+    }
   }
 
   // deleting organization's device
@@ -28,12 +31,18 @@ async function deleteOrganization({ config_dev, scope, account }: ServiceParams)
   const deleteQueue = queue(deleteData, 5);
   deleteQueue.error((error: any) => console.log(error));
   if (devices) {
-    devices.forEach((device) => {
+    for (const device of devices) {
       void deleteQueue.push(device);
-    });
+    }
   }
 
   await deleteQueue.drain();
+  await sendNotificationFeedback({
+    account,
+    environment,
+    message: `Organization deleted`,
+    title: `Organization deleted`,
+  });
   return;
 }
 

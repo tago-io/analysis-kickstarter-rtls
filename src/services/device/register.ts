@@ -87,6 +87,10 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   await validate("Registering...", "warning");
   const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, new_dev_network } = await getNewDeviceVariables(scope, validate);
 
+  if (new_dev_name.value.length < 3) {
+    throw await validate("Device name must be at least 3 characters long", "danger");
+  }
+
   new_dev_eui.value = new_dev_eui.value.toUpperCase();
 
   const [dev_exists] = await org_dev.getData({
@@ -96,7 +100,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   });
 
   if (dev_exists) {
-    throw validate("Device already exists", "danger");
+    throw await validate("Device already exists", "danger");
   }
   // need device id to configure serie in parseTagoObject
   // creating new device
@@ -136,7 +140,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   // send to site device
   await site_dev.sendData(dev_data);
 
-  return validate("Device created successfully!", "success");
+  return await validate("Device created successfully!", "success");
 }
 
 export { createSensor, getNewDeviceVariables };

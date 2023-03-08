@@ -2,8 +2,9 @@ import { queue } from "async";
 import { Utils } from "@tago-io/sdk";
 import { ServiceParams } from "../../types";
 import { fetchDeviceList } from "../../lib/fetch-device-list";
+import { sendNotificationFeedback } from "../../lib/send-notification";
 
-async function deleteSite({ config_dev, scope, account }: ServiceParams) {
+async function deleteSite({ config_dev, environment, scope, account }: ServiceParams) {
   if (!scope[0].device) {
     throw "Site not found!";
   }
@@ -22,11 +23,11 @@ async function deleteSite({ config_dev, scope, account }: ServiceParams) {
   // deleting users (site's user)
   const user_accounts = await account.run.listUsers({ filter: { tags: [{ key: "site_id", value: site_id }] } });
   if (user_accounts) {
-    user_accounts.forEach(async (user) => {
+    for (const user of user_accounts) {
       await account.run.userDelete(user.id as string);
       await org_dev.deleteData({ groups: user.id, qty: 9999 });
       await config_dev.deleteData({ groups: user.id, qty: 9999 });
-    });
+    }
   }
 
   // deleting site's device
@@ -42,12 +43,18 @@ async function deleteSite({ config_dev, scope, account }: ServiceParams) {
   deleteQueue.error((error: any) => console.log(error));
 
   if (devices) {
-    devices.forEach(async (device) => {
+    for (const device of devices) {
       void deleteQueue.push(device);
-    });
+    }
   }
 
   await deleteQueue.drain();
+  await sendNotificationFeedback({
+    account,
+    environment,
+    message: `Site deleted`,
+    title: `Site deleted`,
+  });
   return;
 }
 

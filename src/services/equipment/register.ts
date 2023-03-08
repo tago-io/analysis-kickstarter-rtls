@@ -83,10 +83,16 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
   // Collecting data
   const { assetID, image, name: equipName, serieNumber } = await getNewEquipVariables(scope, validate);
 
+  if (equipName.length < 3) {
+    await validate("Equipment name must be at least 3 characters long", "danger");
+  }
+
   // deleteData
   await account.dashboards.edit(environment.dash_org, {});
 
-  const [asset_name] = await org_dev.getData({ variables: "dev_name", values: assetID, qty: 1 });
+  console.log("assetID", assetID);
+  const [asset_name] = await org_dev.getData({ variables: "dev_name", groups: assetID, qty: 1 });
+  console.log("asset_name", asset_name);
   const asset_id = asset_name?.group;
 
   if (!asset_id) {

@@ -10,8 +10,8 @@ function getAssetInfoOutside(equipment: DeviceInfo, outdoor_data: Data, equip_im
       equipment_outside_location: {
         value: equipment.name,
         location: {
-          lat: outdoor_data?.location?.coordinates[0],
-          lng: outdoor_data?.location?.coordinates[1],
+          lat: outdoor_data?.location?.coordinates[1],
+          lng: outdoor_data?.location?.coordinates[0],
         },
         metadata: {
           img_pin: equip_img,
@@ -47,7 +47,6 @@ async function outdoorData(account: Account, scope: Data[], site_dev: Device, eq
   const assetInfo = getAssetInfoOutside(equipmentInfo, outdoor_data, equip_img);
 
   // const assetHistory = getAssetHistoryOutside(equipmentInfo);
-
   await site_dev.deleteData({ variables: ["equipment_outside_location", "equipment_location"], groups: equipmentID });
   // await site_dev.sendData(assetInfo.concat(assetHistory));
   await site_dev.sendData(assetInfo);
@@ -55,4 +54,4 @@ async function outdoorData(account: Account, scope: Data[], site_dev: Device, eq
   return true;
 }
 
-export { outdoorData };
+export { outdoorData, getAssetInfoOutside };

@@ -1,4 +1,5 @@
-import { getAssetHistoryOutside, getAssetInfoOutside, getPlotBasicImageMarker, getAssetHistoryInside, getAssetInfoInside } from "../analysisAssetTracking";
+import { getAssetInfoOutside } from "../../services/equipment/tracking/outdoor-tracking";
+import { getAssetHistoryInside, getAssetInfoInside } from "../../services/equipment/tracking/indoor-tracking";
 import { scope, strongest_beacon, enviroment, site_id, equipment, layer, site_name, equip_icon, equip_img } from "./mocks/getAssetInfoInside.mock";
 
 test("getAssetInfoInside", () => {

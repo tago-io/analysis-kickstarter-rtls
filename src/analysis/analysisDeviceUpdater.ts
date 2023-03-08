@@ -41,7 +41,7 @@ async function handler(context: TagoContext): Promise<void> {
   const sensorList = await fetchDeviceList(account, { tags: [{ key: "device_type", value: "device" }] });
   const resolveQueue = queue(resolveSensorQueue, 5);
 
-  sensorList.forEach((device) => {
+  for (const device of sensorList) {
     const orgID = device.tags.find((tag) => tag.key === "organization_id")?.value;
     const deviceID = device.tags.find((tag) => tag.key === "device_id")?.value;
     if (!orgID) {
@@ -52,7 +52,7 @@ async function handler(context: TagoContext): Promise<void> {
     }
     const data = { context, account, deviceID };
     void resolveQueue.push({ data });
-  });
+  }
 
   await resolveQueue.drain();
 }

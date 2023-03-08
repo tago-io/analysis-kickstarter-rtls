@@ -2,7 +2,7 @@ import { Utils, Analysis } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { TagoContext } from "@tago-io/sdk/out/modules/Analysis/analysis.types";
 
-async function alertTrigger(context: TagoContext, scope: Data[]): Promise<void> {
+async function alertTrigger(): Promise<void> {
   console.log("ANALYSIS TRIGGERED");
 }
 
@@ -30,7 +30,7 @@ async function startAnalysis(context: TagoContext, scope: Data[]): Promise<void>
     return context.log('Invalid "account_token" in the environment variable');
   }
 
-  await alertTrigger(context, scope);
+  await alertTrigger();
 }
 
 if (!process.env.T_TEST) {

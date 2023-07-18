@@ -91,7 +91,7 @@ async function getBeaconList(siteDev: Device, scope: Data[]) {
     sliced: (x.value as string).slice(6).toUpperCase(),
   }));
   console.log("beaconListFromSite", beaconListFromSite);
-  const beaconFromScope = scope.find((data) => data.variable === "beacons")?.metadata;
+  const beaconFromScope = scope.find((data) => data.variable === "beacons" || data.variable === "ble_scan" || data.variable === "wifi_scan")?.metadata; // might need to add ble_scan here
   if (!beaconFromScope || Object.keys(beaconFromScope).length === 0) {
     return [];
   }

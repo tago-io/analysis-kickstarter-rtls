@@ -36,26 +36,26 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
   // Register routes based on variable, action or widget.
 
   // Organization Routing - Using Device List Widget
-  router.register(createOrganization).whenInputFormID("create-org");
-  router.register(deleteOrganization).whenDeviceListIdentifier("delete-org");
-  router.register(editOrganization).whenCustomBtnID("edit-org");
+  router.register(createOrganization as any).whenInputFormID("create-org");
+  router.register(deleteOrganization as any).whenDeviceListIdentifier("delete-org");
+  router.register(editOrganization as any).whenCustomBtnID("edit-org");
 
-  router.register(createSite).whenInputFormID("create-site");
-  router.register(deleteSite).whenDeviceListIdentifier("delete-site");
-  router.register(editSite).whenCustomBtnID("edit-site");
+  router.register(createSite as any).whenInputFormID("create-site");
+  router.register(deleteSite as any).whenDeviceListIdentifier("delete-site");
+  router.register(editSite as any).whenCustomBtnID("edit-site");
 
-  router.register(createEquipment).whenInputFormID("create-equip");
-  router.register(deleteEquipment).whenDeviceListIdentifier("delete-equip");
+  router.register(createEquipment as any).whenInputFormID("create-equip");
+  router.register(deleteEquipment as any).whenDeviceListIdentifier("delete-equip");
 
-  router.register(createSensor).whenInputFormID("create-dev");
-  router.register(deleteSensor).whenDeviceListIdentifier("delete-dev");
-  router.register(editSensor).whenCustomBtnID("edit-dev");
+  router.register(createSensor as any).whenInputFormID("create-dev");
+  router.register(deleteSensor as any).whenDeviceListIdentifier("delete-dev");
+  router.register(editSensor as any).whenCustomBtnID("edit-dev");
 
-  router.register(createUser).whenInputFormID("create-user");
-  router.register(deleteUser).whenUserListIdentifier("delete-user");
-  router.register(editUser).whenCustomBtnID("edit-user");
+  router.register(createUser as any).whenInputFormID("create-user");
+  router.register(deleteUser as any).whenUserListIdentifier("delete-user");
+  router.register(editUser as any).whenCustomBtnID("edit-user");
 
-  router.register(searchAsset).whenInputFormID("search-asset");
+  router.register(searchAsset as any).whenInputFormID("search-asset");
 
   const result = await router.exec();
 

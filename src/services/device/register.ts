@@ -4,6 +4,7 @@ import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types
 
 import { site_id } from "../../analysis/__tests__/mocks/getAssetInfoInside.mock";
 import { parseTagoObject } from "../../lib/data.logic";
+import { ParamResolver } from "../../lib/edit.params";
 import { getZodError } from "../../lib/get-zod-error";
 import getDevice from "../../lib/getDevice";
 import validation from "../../lib/validation";
@@ -23,6 +24,7 @@ interface installDeviceParam {
 async function getNewDeviceVariables(scope: Data[], validate: ReturnType<typeof validation>) {
   const new_dev_name = scope.find((x) => x.variable === "new_dev_name");
   const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
+  const new_dev_beacon_mode = scope.find((x) => x.variable === "new_dev_beacon_mode");
   const new_dev_network = scope.find((x) => x.variable === "new_dev_network");
   const new_dev_eui = scope.find((x) => x.variable === "new_dev_eui");
   const new_dev_site = scope.find((x) => x.variable === "new_dev_site");
@@ -31,6 +33,7 @@ async function getNewDeviceVariables(scope: Data[], validate: ReturnType<typeof 
     return registerDeviceModel.parse({
       new_dev_name,
       new_dev_type,
+      new_dev_beacon_mode,
       new_dev_network,
       new_dev_eui,
       new_dev_site,
@@ -85,7 +88,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   // Collecting data
   const validate = validation("dev_validation", org_dev);
   await validate("Registering...", "warning");
-  const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, new_dev_network } = await getNewDeviceVariables(scope, validate);
+  const { new_dev_name, new_dev_type, new_dev_beacon_mode, new_dev_eui, new_dev_site, new_dev_network } = await getNewDeviceVariables(scope, validate);
 
   if (new_dev_name.value.length < 3) {
     throw await validate("Device name must be at least 3 characters long", "danger");
@@ -140,6 +143,12 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   // send to site device
   await site_dev.sendData(dev_data);
 
+  // if the new device is a seeed sensecap t1000-A/B, add its beacon_mode parameter.
+  if (new_dev_type.value == "6499864a3498840008651b68") {
+    const paramList = await account.devices.paramList(dev_id);
+    const paramResolver = ParamResolver(paramList);
+    await paramResolver.setParam("beacon_mode", new_dev_beacon_mode.value, false).apply(account, dev_id);
+  }
   return await validate("Device created successfully!", "success");
 }
 

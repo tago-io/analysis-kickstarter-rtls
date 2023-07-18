@@ -22,7 +22,7 @@ async function resolveDevice(context: TagoContext, account: Account, device_id: 
   // adding battery parameter
   const paramList = await account.devices.paramList(device_id);
   const paramResolver = ParamResolver(paramList);
-  paramResolver.setParam("battery", battery?.value as string);
+  await paramResolver.setParam("battery", battery?.value as string).apply(account, device_id);
 }
 
 async function handler(context: TagoContext): Promise<void> {

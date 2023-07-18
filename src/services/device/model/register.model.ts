@@ -10,12 +10,6 @@ const registerDeviceModel = z.object({
       label: z.string(),
     }),
   }),
-  new_dev_beacon_mode: z.object({
-    value: z.string({ required_error: "Beacon mode field is empty" }),
-    metadata: z.object({
-      label: z.string(),
-    }),
-  }),
   new_dev_network: z.object({
     value: z.string({ required_error: "Network field is empty" }),
     metadata: z.object({

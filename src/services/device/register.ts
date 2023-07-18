@@ -24,7 +24,6 @@ interface installDeviceParam {
 async function getNewDeviceVariables(scope: Data[], validate: ReturnType<typeof validation>) {
   const new_dev_name = scope.find((x) => x.variable === "new_dev_name");
   const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
-  const new_dev_beacon_mode = scope.find((x) => x.variable === "new_dev_beacon_mode");
   const new_dev_network = scope.find((x) => x.variable === "new_dev_network");
   const new_dev_eui = scope.find((x) => x.variable === "new_dev_eui");
   const new_dev_site = scope.find((x) => x.variable === "new_dev_site");
@@ -33,7 +32,6 @@ async function getNewDeviceVariables(scope: Data[], validate: ReturnType<typeof 
     return registerDeviceModel.parse({
       new_dev_name,
       new_dev_type,
-      new_dev_beacon_mode,
       new_dev_network,
       new_dev_eui,
       new_dev_site,
@@ -88,7 +86,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   // Collecting data
   const validate = validation("dev_validation", org_dev);
   await validate("Registering...", "warning");
-  const { new_dev_name, new_dev_type, new_dev_beacon_mode, new_dev_eui, new_dev_site, new_dev_network } = await getNewDeviceVariables(scope, validate);
+  const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, new_dev_network } = await getNewDeviceVariables(scope, validate);
 
   if (new_dev_name.value.length < 3) {
     throw await validate("Device name must be at least 3 characters long", "danger");
@@ -147,7 +145,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   if (new_dev_type.value == "6499864a3498840008651b68") {
     const paramList = await account.devices.paramList(dev_id);
     const paramResolver = ParamResolver(paramList);
-    await paramResolver.setParam("beacon_mode", new_dev_beacon_mode.value, false).apply(account, dev_id);
+    await paramResolver.setParam("beacon_mode", "simple", false).apply(account, dev_id);
   }
   return await validate("Device created successfully!", "success");
 }

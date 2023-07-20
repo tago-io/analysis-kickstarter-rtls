@@ -46,7 +46,7 @@ async function getNewDeviceVariables(scope: Data[], validate: ReturnType<typeof 
 async function installDevice({ account, new_dev_name, org_id, site_id, connector, new_device_eui, new_device_network }: installDeviceParam) {
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
-    network: "5ed7ccd5427104001cf00183",
+    network: new_device_network,
     serie_number: new_device_eui,
     connector,
     type: "immutable",
@@ -145,7 +145,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   if (new_dev_type.value == "6499864a3498840008651b68") {
     const paramList = await account.devices.paramList(dev_id);
     const paramResolver = ParamResolver(paramList);
-    await paramResolver.setParam("beacon_mode", "simple", false).apply(account, dev_id);
+    await paramResolver.setParam("beacon_decoder", "simple", false).apply(account, dev_id);
   }
   return await validate("Device created successfully!", "success");
 }

@@ -1,7 +1,6 @@
 import { Account, Device } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DeviceInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
-import { eachOfSeries } from "async";
 
 import { parseTagoObject } from "../../../lib/data.logic";
 import getDevice from "../../../lib/getDevice";
@@ -47,6 +46,8 @@ function getAssetInfoInside(
           layer_id: layer.id,
           room_name: room.value,
           url: `https://admin.tago.io/dashboards/info/${enviroment.dash_site}?site_dev=${site_id}&asset_dev=${scope[0].device}`,
+          temperature: " 24.3",
+          light: " 22",
         },
       },
       // equipment_site: site_id,
@@ -111,10 +112,9 @@ async function getBeaconList(siteDev: Device, scope: Data[]) {
 
 async function getIndoorPos(account: Account, scope: Data[], enviroment: any, orgDev: Device, siteDev: Device, siteID: string, equipmentID: string) {
   const beaconsReceived = await getBeaconList(siteDev, scope);
-
   const [strongest_beacon] = beaconsReceived.sort((a, b) => b.rssi - a.rssi);
   if (!strongest_beacon) {
-    return console.error("No beacon found in the data sent by the device!");
+    throw console.error("No beacon found in the data sent by the device!");
   }
 
   const layers_list = await siteDev.getData({ variables: "layers", qty: 9999 });
@@ -126,16 +126,16 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
   const room = room_list.find((x) => x.group == strongest_beacon.group);
 
   if (!room) {
-    return console.error("No beacon found in the room!");
+    throw console.error("No beacon found in the room!");
   }
 
   if (!layer) {
-    return console.error("No beacon found in the layer!");
+    throw console.error("No beacon found in the layer!");
   }
 
   const beaconPosition = layer?.metadata?.fixed_position?.[fixed_position_key];
   if (!beaconPosition) {
-    return console.error("No beacon found in the layer!");
+    throw console.error("No beacon found in the layer!");
   }
 
   const equipmentInfo = await account.devices.info(equipmentID);
@@ -157,9 +157,10 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
   await orgDev.sendData(assetInfo);
 
   const device = await getDevice(account, scope[0].device);
-  await device.deleteData({ variables: "layers" });
+  //await device.deleteData({ variables: "layers" });
   await device.sendData(assetInfo.concat(assetHistory));
-  return;
+
+  return { coordinates: { lat: Number(beaconPosition.x), lng: Number(beaconPosition.y) }, device_id: scope[0].device };
 }
 
 export { getIndoorPos, getAssetHistoryInside, getAssetInfoInside };

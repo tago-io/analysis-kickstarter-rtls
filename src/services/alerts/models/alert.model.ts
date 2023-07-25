@@ -1,6 +1,9 @@
 import z from "zod";
 
 const registerAlertModel = z.object({
+  name: z.object({
+    value: z.string({ required_error: "Name field is empty" }),
+  }),
   condition: z.object({
     value: z.string({ required_error: "Condition field is empty" }),
   }),
@@ -16,7 +19,7 @@ const registerAlertModel = z.object({
     }),
   }),
   condition_value: z.object({
-    value: z.number({ required_error: "Condition Option field is empty" }),
+    value: z.string({ required_error: "Condition value field is empty" }).or(z.number({ required_error: "Condition value field is empty" })),
   }),
   type: z.object({
     value: z.string({ required_error: "Type field is empty" }),

@@ -14,6 +14,8 @@ function getAssetInfoOutside(equipment: DeviceInfo, outdoor_data: Data, equip_im
           lng: outdoor_data?.location?.coordinates[0],
         },
         metadata: {
+          temperature: " 31.8",
+          light: " 90",
           img_pin: equip_img,
         },
       },
@@ -22,23 +24,11 @@ function getAssetInfoOutside(equipment: DeviceInfo, outdoor_data: Data, equip_im
   );
 }
 
-// function getAssetHistoryOutside(equipment: Data) {
-//   return parseTagoObject({
-//     asset_history: {
-//       value: equipment.metadata?.label,
-//       metadata: {
-//         site: "Equipment is Outdoor",
-//         floor: "Equipment is Outdoor",
-//       },
-//     },
-//   });
-// }
-
 async function outdoorData(account: Account, scope: Data[], site_dev: Device, equipmentID: string) {
   const outdoor_data = scope.find((x) => x?.location) as any; //as any tagoIO issue -> location coordinates/lat,lng
 
   if (!outdoor_data && !outdoor_data?.location?.coordinates[0]) {
-    return false;
+    return;
   }
 
   const equipmentInfo = await account.devices.info(equipmentID);
@@ -51,7 +41,10 @@ async function outdoorData(account: Account, scope: Data[], site_dev: Device, eq
   // await site_dev.sendData(assetInfo.concat(assetHistory));
   await site_dev.sendData(assetInfo);
 
-  return true;
+  return {
+    coordinates: { lat: Number(outdoor_data?.location?.coordinates[1]), lng: Number(outdoor_data?.location?.coordinates[0]) },
+    device_id: scope[0].device,
+  };
 }
 
 export { outdoorData, getAssetInfoOutside };

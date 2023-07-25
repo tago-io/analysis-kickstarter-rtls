@@ -1,15 +1,19 @@
 import { Account, Utils } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DataToSend } from "@tago-io/sdk/out/modules/Device/device.types";
+
 import { parseTagoObject } from "../../lib/data.logic";
+import { fetchDeviceList } from "../../lib/fetch-device-list";
 import { findAnalysisByExportID } from "../../lib/findResource";
 import { getZodError } from "../../lib/get-zod-error";
 import validation from "../../lib/validation";
 import { ServiceParams } from "../../types";
+import { geofenceAlertCreate } from "./GeofenceAlert";
 import { registerAlertModel } from "./models/alert.model";
 
 interface ActionStructureParams {
-  org_id: string;
+  name: string;
+  site_id: string;
   type: string;
   group_id?: string;
   trigger_value: string | number;
@@ -22,17 +26,29 @@ interface ActionStructureParams {
   send_to: string;
 }
 
+async function getGroupDevices(account: Account, group_id: string, groupKey: string = "group_id") {
+  const list = await fetchDeviceList(account, {
+    tags: [
+      { key: groupKey, value: group_id },
+      { key: "device_type", value: "device" },
+    ],
+  });
+
+  return list.map((x) => x.id);
+}
+
 function generateActionStructure(structure: ActionStructureParams, device_ids: string[]) {
   const action_structure: any = {
     active: true,
-    name: `Application alert trigger ${structure.group_id ? "GROUP" : "DEVICE"}`,
+    name: structure.name,
     tags: [
       { key: "group_id", value: structure.group_id || "N/A" },
-      { key: "organization_id", value: structure.org_id },
+      { key: "site_id", value: structure.site_id },
       { key: "device", value: structure.device },
       { key: "description", value: structure.description || "" },
       { key: "send_to", value: structure.send_to.replaceAll(" ", "") },
       { key: "action_type", value: structure.type.replaceAll(" ", "") },
+      { key: "type", value: structure.trigger_value },
     ],
     type: "condition",
     trigger: [],
@@ -58,7 +74,7 @@ function generateActionStructure(structure: ActionStructureParams, device_ids: s
         value_type,
         variable,
         device: device_id,
-        second_value: structure.trigger_value2,
+        second_value: "",
       });
 
       if (structure.type !== "><") {
@@ -67,26 +83,6 @@ function generateActionStructure(structure: ActionStructureParams, device_ids: s
           unlock: true,
           value: String(structure.trigger_value),
           value_type,
-          variable,
-          device: device_id,
-          second_value: structure.trigger_value2 || "",
-        });
-      } else {
-        action_structure.trigger.push({
-          is: "<",
-          unlock: true,
-          value: String(structure.trigger_value),
-          value_type: "number",
-          variable,
-          device: device_id,
-          second_value: "",
-        });
-
-        action_structure.trigger.push({
-          is: ">",
-          unlock: true,
-          value: String(structure.trigger_value2),
-          value_type: "number",
           variable,
           device: device_id,
           second_value: "",
@@ -111,30 +107,6 @@ function generateActionStructure(structure: ActionStructureParams, device_ids: s
   return action_structure;
 }
 
-async function getNewAlertVariables(scope: Data[], validate: ReturnType<typeof validation>) {
-  const condition = scope.find((x) => x.variable === "alert_condition"); // Battery or Geofence
-  const equipments = scope.find((x) => x.variable === "alert_equip");
-  const condition_value = scope.find((x) => x.variable === "alert_value"); // Battery -> number, Geofence -> [string]
-  const type = scope.find((x) => x.variable === "alert_type");
-  const users = scope.find((x) => x.variable === "alert_users");
-  const message = scope.find((x) => x.variable === "alert_message");
-
-  try {
-    return registerAlertModel.parse({
-      condition,
-      equipments,
-      condition_value,
-      type,
-      users,
-      message,
-    });
-  } catch (error) {
-    const zodErrorMsg = getZodError(error);
-    await validate(zodErrorMsg, "danger");
-    throw error;
-  }
-}
-
 function reverseCondition(condition: string) {
   switch (condition) {
     case "=":
@@ -150,6 +122,32 @@ function reverseCondition(condition: string) {
   }
 }
 
+async function getNewAlertVariables(scope: Data[], validate: ReturnType<typeof validation>) {
+  const name = scope.find((x) => x.variable === "new_alert_name");
+  const condition = scope.find((x) => x.variable === "new_alert_condition"); // Battery or Geofence
+  const equipments = scope.find((x) => x.variable === "new_alert_equip" && x.metadata);
+  const condition_value = scope.find((x) => x.variable === "new_alert_value" && x.metadata); // Battery number or geofence leave/enter
+  const type = scope.find((x) => x.variable === "new_alert_type" && x.metadata);
+  const users = scope.find((x) => x.variable === "new_alert_send_to");
+  const message = scope.find((x) => x.variable === "new_alert_message");
+
+  try {
+    return registerAlertModel.parse({
+      name,
+      condition,
+      equipments,
+      condition_value,
+      type,
+      users,
+      message,
+    });
+  } catch (error) {
+    const zodErrorMsg = getZodError(error);
+    await validate(zodErrorMsg, "danger");
+    throw error;
+  }
+}
+
 async function getDeviceIds(account: Account, equipment_list: string[]) {
   const device_list = [];
   for (const equipment_id of equipment_list) {
@@ -162,33 +160,27 @@ async function getDeviceIds(account: Account, equipment_list: string[]) {
 }
 
 async function createAlert({ scope, account }: ServiceParams) {
-  const defaultCondition = "<";
-  const devToStoreAlert = await Utils.getDevice(account, scope[0].device);
-  await devToStoreAlert.sendData({ variable: "action_validation", value: "#VAL.CREATING_ALERT#", metadata: { type: "warning" } });
-  // getting org_id and group_id from the scope
-  const organization_id = scope[0].device;
-  const org_dev = await Utils.getDevice(account, organization_id);
-  // creating validation field
-  const validate = validation("alert_validation", org_dev);
+  const site_dev = await Utils.getDevice(account, scope[0].device);
+  await site_dev.sendData({ variable: "action_validation", value: "#VAL.CREATING_ALERT#", metadata: { type: "warning" } });
+  const validate = validation("alert_validation", site_dev);
   await validate("Registering...", "warning");
-  // getting scope data
-  const { condition, equipments, condition_value, type, users, message } = await getNewAlertVariables(scope, validate);
-  // getting the organization_id_list from the scope
+  const { name, condition, equipments, condition_value, type, users, message } = await getNewAlertVariables(scope, validate);
+
   const equipment_list = equipments.metadata.sentValues.map((equipment) => equipment.value);
-  console.debug("Equipment_id List: ", equipment_list);
-  // geting device id of each equipment
   const device_list = await getDeviceIds(account, equipment_list);
-  console.debug("Device_id List: ", device_list);
-  // creating the alert
-  console.debug("Data from form: ", condition, equipments, condition_value, type, users, message);
-  // getting script
   const script_id = await findAnalysisByExportID(account, "[TagoIO] - AlertTrigger");
-  // creating action name
-  const action_name = `Action checks ${condition?.value} condition for ${equipments?.value} equipments`;
-  console.log("Action name: ", action_name);
-  // Create the action structure.
+
+  const action_description = `Action checks ${condition?.value} condition for ${equipments?.value} equipments`;
+  let defaultCondition = "<";
+  if (condition?.value == "geofence") {
+    defaultCondition = "=";
+  }
+
+  console.log("name", name?.value);
+
   const structure: ActionStructureParams = {
-    org_id: organization_id,
+    name: name?.value,
+    site_id: scope[0].device,
     trigger_value: condition_value?.value,
     condition: defaultCondition,
     group_id: undefined,
@@ -196,11 +188,11 @@ async function createAlert({ scope, account }: ServiceParams) {
     variable: condition?.value,
     device: scope[0].device,
     message: message?.value,
-    description: action_name,
+    description: action_description,
     script: script_id,
     send_to: users.value,
   };
-  // creating action for each device
+
   const action_structure = await generateActionStructure(structure, device_list as string[]);
   const { action: action_id } = await account.actions.create(action_structure).catch((error) => {
     void validate(error, "danger");
@@ -211,25 +203,26 @@ async function createAlert({ scope, account }: ServiceParams) {
   // It's very important that the group is the action ID, so we can use it to edit/delete later.
   const data_to_tago: DataToSend[] = parseTagoObject(
     {
-      action_list_variable: { value: condition?.value, metadata: structure },
-      action_list_condition: defaultCondition,
-      action_list_value: `${condition_value?.value}`,
-      action_list_type: { value: type?.value, metadata: type?.metadata },
-      action_list_sendto: { value: users.value, metadata: users.metadata },
-      action_list_message: message?.value,
+      alert_name: { value: name?.value },
+      alert_condition: condition?.value,
+      alert_equip: equipments?.value,
+      alert_value: `${condition_value?.value}`,
+      alert_type: { value: type?.value, metadata: type?.metadata },
+      alert_sendto: { value: users.value, metadata: users.metadata },
+      alert_message: message?.value,
     },
     action_id
   );
 
-  data_to_tago.push({ variable: "action_list_devices", value: device_list.values.toString(), group: action_id });
+  const list_of_devices = JSON.stringify(device_list.map((device) => device));
+  data_to_tago.push({ variable: "action_list_devices", value: list_of_devices, group: action_id });
 
-  await devToStoreAlert.sendData(data_to_tago);
-  await devToStoreAlert.sendData({ variable: "action_validation", value: "#ALC.CREATE_SUCCESS#", metadata: { type: "success" } });
+  await site_dev.sendData(data_to_tago);
+  await site_dev.sendData({ variable: "action_validation", value: "#ALC.CREATE_SUCCESS#", metadata: { type: "success" } });
   if (structure.variable === "geofence") {
-    await geofenceAlertCreate(account, devToStoreAlert, action_id, structure);
-  } else if (structure.variable === "checkin") {
-    await checkinAlertSet(account, action_id, structure.trigger_value as number, device_list);
+    await geofenceAlertCreate(site_dev, action_id, structure);
   }
+  await validate("Alert created!", "success");
 }
 
-export { createAlert, generateActionStructure, ActionStructureParams };
+export { createAlert, generateActionStructure, ActionStructureParams, getGroupDevices };

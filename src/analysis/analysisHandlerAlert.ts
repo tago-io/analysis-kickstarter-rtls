@@ -1,7 +1,10 @@
-import { Utils, Account, Device, Analysis } from "@tago-io/sdk";
+import { Account, Analysis, Device, Utils } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { TagoContext } from "@tago-io/sdk/out/modules/Analysis/analysis.types";
+
+import { editAlert } from "../services/alerts/edit";
 import { createAlert } from "../services/alerts/register";
+import { deleteAlert } from "../services/alerts/remove";
 
 async function analysisHandlerAlert(context: TagoContext, scope: Data[]): Promise<void> {
   // Convert environment variables to a JSON.
@@ -20,7 +23,9 @@ async function analysisHandlerAlert(context: TagoContext, scope: Data[]): Promis
   const router = new Utils.AnalysisRouter({ scope, context, environment, account, config_dev });
 
   // Register routes based on variable, action or widget.
-  router.register(createAlert).whenInputFormID("create-alert");
+  router.register(createAlert as any).whenInputFormID("create-alert");
+  router.register(deleteAlert).whenWidgetExec("delete");
+  router.register(editAlert).whenWidgetExec("edit");
 
   // Organization Routing - Using Device List Widget
 

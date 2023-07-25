@@ -2,6 +2,7 @@ import { Account, Analysis, Utils } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 
 import getDevice from "../lib/getDevice";
+import { geofenceAlertTrigger, IGeofenceAlert } from "../services/alerts/GeofenceAlert";
 import { getIndoorPos } from "../services/equipment/tracking/indoor-tracking";
 import { outdoorData } from "../services/equipment/tracking/outdoor-tracking";
 import { TagoContext } from "../types";
@@ -43,12 +44,14 @@ async function startAnalysis(context: TagoContext, scope: Data[]) {
 
   const siteDev = await getDevice(account, siteID);
 
-  if (await outdoorData(account, scope, siteDev, equipmentID)) {
+  let locationData: IGeofenceAlert | undefined = await outdoorData(account, scope, siteDev, equipmentID);
+  if (locationData) {
+    await geofenceAlertTrigger(account, context, locationData);
     return;
   }
 
-  await getIndoorPos(account, scope, environment, orgDev, siteDev, siteID, equipmentID);
-
+  locationData = await getIndoorPos(account, scope, environment, orgDev, siteDev, siteID, equipmentID);
+  await geofenceAlertTrigger(account, context, locationData);
   context.log("Analysis Finished");
 }
 

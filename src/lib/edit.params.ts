@@ -30,7 +30,7 @@ function ParamResolver(rawParams: ConfigurationParams[], debug: boolean = false)
         throw "[ParamResolver] key is not a string";
       }
       if (typeof value !== "string") {
-        throw "[ParamResolver] key is not a string";
+        throw "[ParamResolver] value is not a string";
       }
       const oldParam = rawParams.find((x) => x.key === key);
       paramList.push({ ...oldParam, key, value, sent });

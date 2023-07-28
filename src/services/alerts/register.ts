@@ -176,7 +176,7 @@ async function createAlert({ scope, account }: ServiceParams) {
     defaultCondition = "=";
   }
 
-  console.log("name", name?.value);
+  console.debug("Action: ", name?.value);
 
   const structure: ActionStructureParams = {
     name: name?.value,
@@ -215,7 +215,7 @@ async function createAlert({ scope, account }: ServiceParams) {
   );
 
   const list_of_devices = JSON.stringify(device_list.map((device) => device));
-  data_to_tago.push({ variable: "action_list_devices", value: list_of_devices, group: action_id });
+  data_to_tago.push({ variable: "alert_list_devices", value: list_of_devices, group: action_id });
 
   await site_dev.sendData(data_to_tago);
   await site_dev.sendData({ variable: "action_validation", value: "#ALC.CREATE_SUCCESS#", metadata: { type: "success" } });

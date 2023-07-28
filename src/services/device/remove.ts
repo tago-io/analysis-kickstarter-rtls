@@ -24,8 +24,8 @@ async function deleteSensor({ config_dev, scope, account, environment }: Service
 
   await account.dashboards.edit(environment.dash_org, {});
   await account.devices.delete(dev_id);
-  if (equip_id) {
-    await account.devices.delete(equip_id);
+  if (equip_id != "none") {
+    await account.devices.delete(equip_id as string);
   }
   await sendNotificationFeedback({
     account,

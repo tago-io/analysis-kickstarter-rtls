@@ -44,14 +44,16 @@ async function startAnalysis(context: TagoContext, scope: Data[]) {
 
   const siteDev = await getDevice(account, siteID);
 
-  let locationData: IGeofenceAlert | undefined = await outdoorData(account, scope, siteDev, equipmentID);
+  ///let locationData: IGeofenceAlert | undefined = await outdoorData(account, scope, siteDev, equipmentID);
+  const locationData: IGeofenceAlert | undefined = await outdoorData(account, scope, siteDev, equipmentID);
   if (locationData) {
-    await geofenceAlertTrigger(account, context, locationData);
+    await geofenceAlertTrigger(account, context, locationData, false);
     return;
   }
 
-  locationData = await getIndoorPos(account, scope, environment, orgDev, siteDev, siteID, equipmentID);
-  await geofenceAlertTrigger(account, context, locationData);
+  //locationData = await getIndoorPos(account, scope, environment, orgDev, siteDev, siteID, equipmentID);
+  //await geofenceAlertTrigger(account, context, locationData, true);
+  await getIndoorPos(account, scope, environment, orgDev, siteDev, siteID, equipmentID);
   context.log("Analysis Finished");
 }
 

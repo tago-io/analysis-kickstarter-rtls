@@ -53,3 +53,4 @@ yarn.lock
 *.local.*
 .tago-lock.dev.lock
 .tagoio
+exportBackup

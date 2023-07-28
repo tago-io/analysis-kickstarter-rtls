@@ -3,6 +3,7 @@ import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DeviceInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 
 import { parseTagoObject } from "../../../lib/data.logic";
+import { DataResolver } from "../../../lib/edit.data";
 import getDevice from "../../../lib/getDevice";
 
 interface Beacon {
@@ -146,21 +147,32 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
   const assetInfo = getAssetInfoInside(scope, beaconPosition, enviroment, siteID, equipmentInfo, layer, room, site_name);
   const assetHistory = getAssetHistoryInside(beaconPosition, equipmentInfo, layer, room, site_name);
 
-  // const plotBasicImageMarker = getPlotBasicImageMarker(scope, layer);
-
-  await siteDev.deleteData({ variables: ["equipment_location", "equipment_outside_location"], groups: equipmentID, qty: 9999 });
-  await siteDev.sendData(assetInfo.concat(assetHistory));
-  // await site_dev.sendData(assetHistory);
-
-  console.log("assetInfo", assetInfo);
-  await orgDev.deleteData({ variables: ["equipment_location"], groups: equipmentID, qty: 9999 });
-  await orgDev.sendData(assetInfo);
+  // checking if device was previously inside
+  const [previously_inside] = await siteDev.getData({ variables: "equipment_location", qty: 1, groups: equipmentID });
+  // if it already was inside, just edit the previous variables metadata, else delete the previous location and sends a new one
+  if (previously_inside) {
+    await DataResolver(siteDev)
+      .setVariable({
+        variable: "equipment_location",
+        metadata: { ...previously_inside.metadata, x: beaconPosition.x, y: beaconPosition.y },
+      })
+      .apply(equipmentID);
+  } else {
+    // remove previous outside location data, add new inside location data
+    await siteDev.deleteData({ variables: ["equipment_outside_location"], groups: equipmentID, qty: 1 });
+    await orgDev.deleteData({ variables: ["equipment_outside_location"], groups: equipmentID, qty: 1 });
+    await siteDev.sendData(assetInfo);
+    await orgDev.sendData(assetInfo);
+  }
+  //always send assethistory
+  await siteDev.sendData(assetHistory);
 
   const device = await getDevice(account, scope[0].device);
   //await device.deleteData({ variables: "layers" });
   await device.sendData(assetInfo.concat(assetHistory));
 
-  return { coordinates: { lat: Number(beaconPosition.x), lng: Number(beaconPosition.y) }, device_id: scope[0].device };
+  return;
+  //return { coordinates: { lat: Number(beaconPosition.x), lng: Number(beaconPosition.y) }, device_id: scope[0].device };
 }
 
 export { getIndoorPos, getAssetHistoryInside, getAssetInfoInside };

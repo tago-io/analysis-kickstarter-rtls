@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/restrict-plus-operands */
 import { isPointWithinRadius } from "geolib";
+import { z } from "zod";
 
 import { Account, Device, Utils } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
@@ -9,6 +10,28 @@ import { TagoContext } from "@tago-io/sdk/out/modules/Analysis/analysis.types";
 
 import { ActionStructureParams } from "./register";
 import { IAlertTrigger, sendAlert } from "./sendAlert";
+
+type ILatitude = number;
+type ILongitude = number;
+interface IGeofenceMetadata {
+  event: string;
+  geolocation: {
+    type: string;
+    radius: number;
+    coordinates: [ILongitude, ILatitude];
+  };
+  id: string;
+  eventColor: string;
+  eventDescription: string;
+}
+interface ILocationData {
+  lat: ILatitude;
+  lng: ILongitude;
+}
+interface IGeofenceAlert {
+  coordinates: ILocationData;
+  device_id: string;
+}
 
 /**
  * The function checks if our device is inside a polygon geofence
@@ -33,20 +56,6 @@ function insidePolygon(point: [number, number], geofence: Data["metadata"]) {
     }
   }
   return inside;
-}
-
-type ILatitude = number;
-type ILongitude = number;
-interface IGeofenceMetadata {
-  event: string;
-  geolocation: {
-    type: string;
-    radius: number;
-    coordinates: [ILongitude, ILatitude];
-  };
-  id: string;
-  eventColor: string;
-  eventDescription: string;
 }
 
 function getGeofenceResult(check_list: boolean[], geofence_list: Data["metadata"][]): IGeofenceMetadata[] {
@@ -153,15 +162,6 @@ async function getAlertList(account: Account, outsideZones: IGeofenceMetadata[],
   return alerts;
 }
 
-interface ILocationData {
-  lat: ILatitude;
-  lng: ILongitude;
-}
-interface IGeofenceAlert {
-  coordinates: ILocationData;
-  device_id: string;
-}
-
 /**
  * Add this function to the analysis that is receiving the location variable somehow.
  * It can be used on statusUpdater or uplinkHandler, depending on how often you want to check the alert.
@@ -169,21 +169,28 @@ interface IGeofenceAlert {
  * @param context Context of the analysis, to retrieve the token
  * @param locationData lat and lng of device current position
  */
-async function geofenceAlertTrigger(account: Account, context: TagoContext, locationData: IGeofenceAlert) {
+async function geofenceAlertTrigger(account: Account, context: TagoContext, locationData: IGeofenceAlert, isInside: boolean) {
   const { coordinates, device_id } = locationData;
+  console.log("geofenceAlertTrigger, Location data: ", locationData);
 
-  console.log("geofenceAlertTrigger", context, locationData);
+  // get param last_geofence
+  const params = await account.devices.paramList(device_id);
+  const last_geofence = params.find((param) => param.key === "last_geofence")?.value as string;
 
+  // get site device so that we can get the geofence variables
   const { tags } = await account.devices.info(device_id);
   const site_id = tags.find((tag) => tag.key === "site_id")?.value as string;
   let geofences: Data[] = [];
-
   let site_dev: Device;
+
+  // check if inside or outside
   if (site_id) {
     site_dev = await Utils.getDevice(account, site_id);
     let geofence_list = await site_dev.getData({ variables: "geofence_outdoor", qty: 100 });
-
-    console.debug("outdoor map geofence_list", geofence_list);
+    if (isInside) {
+      geofence_list = await site_dev.getData({ variables: "geofence", qty: 100 });
+    }
+    console.debug(`${isInside == true ? "indoor" : "outdoor"} geofence_list`, geofence_list);
 
     geofence_list = geofence_list.map((x) => ({ ...x, metadata: { ...x.metadata, device: site_id } }));
     geofences = geofences.concat(geofence_list);
@@ -193,52 +200,14 @@ async function geofenceAlertTrigger(account: Account, context: TagoContext, loca
   const geofenceMetadaList = geofences.map((geofences) => geofences.metadata) as IGeofenceMetadata[];
 
   const zones = checkZones([coordinates.lng, coordinates.lat], geofenceMetadaList);
+  console.debug(`Sensor ${device_id} is inside the following ${isInside == true ? "indoor" : "outdoor"} geofences: \n ${zones}`);
 
-  console.debug(`Sensor ${device_id} is inside the following geofences:`);
-  console.debug(zones);
+  // check if equipement is inside of any geofence or if none.
+  const insideGeofences = geofenceMetadaList.filter((x) => zones.find((y) => y.event === x.event)); // zones the sensor is inside of
+  console.debug("Sensor is inside of geofences:", insideGeofences);
 
-  const outsideZones = geofenceMetadaList.filter((x) => !zones.find((y) => y.event === x.event));
-  const insideZones = geofenceMetadaList.filter((x) => zones.find((y) => y.event === x.event));
-
-  console.debug("Sensor is outside of geofences", outsideZones);
-  console.debug("Sensor is inside of geofences:", insideZones);
-
-  const alertsToReset = geofenceMetadaList.filter((x) => !outsideZones.find((y) => y.event === x.event) && !insideZones.find((y) => y.event === x.event));
-
-  console.debug("Alerts to reset:", alertsToReset);
-
-  const deviceParams = await account.devices.paramList(device_id);
-  for (const alert of alertsToReset) {
-    const param = deviceParams.find((param) => param.key.includes(alert.event));
-    if (!param) {
-      continue;
-    }
-
-    await account.devices.paramSet(device_id, { ...param, sent: false });
-  }
-
-  let alerts: IAlertToBeSent[] = [];
-  if (outsideZones.length > 0) {
-    alerts = alerts.concat(await getAlertList(account, outsideZones, deviceParams, device_id));
-  }
-
-  if (insideZones.length > 0) {
-    alerts = alerts.concat(await getAlertList(account, insideZones, deviceParams, device_id));
-  }
-
-  console.log("Alerts to be sent:", alerts);
-
-  for (const alert of alerts) {
-    const mockData: any = {
-      variable: "location",
-      value: `${coordinates.lat},${coordinates.lng}`,
-      device: device_id,
-      time: new Date(),
-    };
-
-    // I should send the geofence variable here
-    await sendAlert(account, context, { ...alert, data: mockData });
-  }
+  // get geofence metadata.event (Action ID or group)
+  return;
 }
 
 /**

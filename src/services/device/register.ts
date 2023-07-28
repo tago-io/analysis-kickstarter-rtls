@@ -141,12 +141,13 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   // send to site device
   await site_dev.sendData(dev_data);
 
+  const paramList = await account.devices.paramList(dev_id);
+  const paramResolver = ParamResolver(paramList);
   // if the new device is a seeed sensecap t1000-A/B, add its beacon_mode parameter.
   if (new_dev_type.value == "6499864a3498840008651b68") {
-    const paramList = await account.devices.paramList(dev_id);
-    const paramResolver = ParamResolver(paramList);
-    await paramResolver.setParam("beacon_decoder", "simple", false).apply(account, dev_id);
+    paramResolver.setParam("beacon_decoder", "simple", false);
   }
+  await paramResolver.setParam("last_geofence", "null", false).apply(account, dev_id);
   return await validate("Device created successfully!", "success");
 }
 

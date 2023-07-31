@@ -59,7 +59,7 @@ function getInsideGeofence(point: [number, number], geofence_list: Geofence[]) {
     // Here we check if our device is inside any Point geofence using a third party library called geolib.
     const pass_check = circles.map((x) => {
       const coordinates = x.coordinates as GeofenceCoordinates;
-      return checkRadius(point[0], point[1], coordinates.x, coordinates.y, x.radius);
+      return checkRadius(point[0], point[1], coordinates.x, coordinates.y, x.radius as number);
     });
 
     const index = pass_check.findIndex((x) => x);

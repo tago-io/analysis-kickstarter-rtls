@@ -216,7 +216,7 @@ async function createAlert({ scope, account }: ServiceParams) {
 
   if (condition.value === "geofence") {
     const type = condition_value.value as string;
-    const color = type.includes("Enter") && type.includes("Leave") ? "blue" : type.includes("Enter") ? "green" : "pink";
+    const color = type.includes("enter geofence") && type.includes("leave geofence") ? "blue" : type.includes("enter geofence") ? "green" : "pink";
     data_to_tago.geofence_events = { value: name.value, metadata: { color } };
   }
 

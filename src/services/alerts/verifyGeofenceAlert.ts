@@ -14,7 +14,7 @@ async function notificationMessages(account: Account, users_info: UserInfo[], me
   }
 }
 
-async function emailMessages(context: TagoContext, users_info: UserInfo[], device_info: any, message: string) {
+async function emailMessages(context: TagoContext, deviceInfo: DeviceInfo, users_info: UserInfo[], message: string) {
   const email = new Services({ token: context.token }).email;
 
   void email.send({
@@ -22,7 +22,7 @@ async function emailMessages(context: TagoContext, users_info: UserInfo[], devic
     template: {
       name: "email_alert",
       params: {
-        device_name: device_info.name,
+        device_name: deviceInfo.name,
         alert_message: message,
       },
     },
@@ -57,7 +57,7 @@ async function _dispachMessages({ type, account, context, usersInfo, message, de
   if (type.includes("notification")) {
     await notificationMessages(account, usersInfo, message);
   } else if (type.includes("email")) {
-    await emailMessages(context, usersInfo, deviceInfo, message);
+    await emailMessages(context, deviceInfo, usersInfo, message);
   } else if (type.includes("sms")) {
     await smsMessages(context, usersInfo, message);
   }
@@ -69,29 +69,49 @@ async function _getUsers(account: Account, send_to: string[]) {
   return (await Promise.all(func_list)).filter((x) => x) as UserInfo[];
 }
 
-async function _sendEnteredAlert(account: Account, context: TagoContext, myCurrentGeofence: Geofence | null, alert: any) {
+async function _sendEnteredAlert(
+  account: Account,
+  context: TagoContext,
+  deviceID: string,
+  myCurrentGeofence: Geofence | null,
+  alert: any,
+  usersInfo: UserInfo[],
+  deviceInfo: DeviceInfo
+) {
   if (!myCurrentGeofence) {
     // The asset is not inside any geofence
     return;
   }
 
-  const usersInfo = await _getUsers(account, alert.send_to?.replace(/;/g, ",").split(","));
-  const deviceInfo = await account.devices.info(alert.device);
+  if (!alert?.trigger_value?.includes("enter geofence")) {
+    // Alert doesn't include an Entered event to trigger.
+    return;
+  }
 
   await _dispachMessages({ type: alert.type, account, context, usersInfo, message: alert.message, deviceInfo });
 }
 
-// async function _sendLeaveAlert(account: Account, context: TagoContext, lastALert: any, lastGeofenceParam: ConfigurationParams) {
-//   if (!lastGeofenceParam?.value) {
-//     // The asset was not previously inside any geofence
-//     return;
-//   }
+async function _sendLeaveAlert(
+  account: Account,
+  context: TagoContext,
+  deviceID: string,
+  lastALert: any,
+  lastGeofenceParam: ConfigurationParams,
+  usersInfo: UserInfo[],
+  deviceInfo: DeviceInfo
+) {
+  if (!lastGeofenceParam?.value) {
+    // The asset was not previously inside any geofence
+    return;
+  }
 
-//   const usersInfo = await _getUsers(account, lastALert.send_to?.replace(/;/g, ",").split(","));
-//   const deviceInfo = await account.devices.info(lastALert.device);
+  if (!lastALert?.trigger_value?.includes("leave geofence")) {
+    // Alert doesn't include an Leave event to trigger.
+    return;
+  }
 
-//   await _dispachMessages({ type: lastALert.type, account, context, usersInfo, message: lastALert.message, deviceInfo });
-// }
+  await _dispachMessages({ type: lastALert.type, account, context, usersInfo, message: lastALert.message, deviceInfo });
+}
 
 interface GeofenceAlarmCheck {
   pos_x: number;
@@ -113,24 +133,34 @@ async function verifyGeofenceAlarm(account: Account, context: TagoContext, siteD
   // the .event is the alert id that is linked to the geofence
   let alert: any;
   if (myCurrentGeofence && myCurrentGeofence.event) {
+    // console.log(await siteDev.info());
     const [alertRaw] = await siteDev.getData({ variables: "alert_id", groups: myCurrentGeofence.event });
     alert = alertRaw?.metadata as any;
+  }
+
+  if (!alert) {
+    return;
   }
 
   const paramList = await account.devices.paramList(deviceID);
   const lastGeofenceParam = paramList.find((x) => x.key === "last_geofence") || { key: "last_geofence", value: "", sent: false };
 
+  const usersInfo = await _getUsers(account, alert.send_to?.replace(/;/g, ",").split(","));
+  const deviceInfo = await account.devices.info(deviceID);
+
+  console.log(myCurrentGeofence?.id, lastGeofenceParam.value);
+
   if (myCurrentGeofence && myCurrentGeofence.id !== lastGeofenceParam.value) {
     // The asset is inside a geofence, but is not inside the last geofence
-    await _sendEnteredAlert(account, context, myCurrentGeofence, alert);
+    await _sendEnteredAlert(account, context, deviceID, myCurrentGeofence, alert, usersInfo, deviceInfo);
   }
 
-  // if (myCurrentGeofence && lastGeofenceParam.value && lastGeofenceParam.value !== myCurrentGeofence.id) {
-  //   // The asset is inside a geofence, but is inside a different geofence than the last time
-  //   const [lastAlertRaw] = await siteDev.getData({ variables: "alert_id", groups: lastGeofenceParam.value });
-  //   const lastAlert = lastAlertRaw?.metadata as any;
-  //   await _sendLeaveAlert(account, context, lastAlert, lastGeofenceParam);
-  // }
+  if (myCurrentGeofence && lastGeofenceParam.value && lastGeofenceParam.value !== myCurrentGeofence.id) {
+    // The asset is inside a geofence, but is inside a different geofence than the last time
+    const [lastAlertRaw] = await siteDev.getData({ variables: "alert_id", groups: lastGeofenceParam.value });
+    const lastAlert = lastAlertRaw?.metadata as any;
+    await _sendLeaveAlert(account, context, lastAlert, deviceID, lastGeofenceParam, usersInfo, deviceInfo);
+  }
 
   if (!myCurrentGeofence || lastGeofenceParam.value !== myCurrentGeofence?.id) {
     // The asset is not inside any geofence, or is inside a different geofence than the last time

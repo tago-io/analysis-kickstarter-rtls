@@ -176,8 +176,6 @@ async function createAlert({ scope, account }: ServiceParams) {
     defaultCondition = "=";
   }
 
-  console.debug("Action: ", name?.value);
-
   const structure: ActionStructureParams = {
     name: name?.value,
     site_id: scope[0].device,
@@ -201,23 +199,33 @@ async function createAlert({ scope, account }: ServiceParams) {
 
   // Store the data in the device, so we can see and edit it in the Dynamic Table.
   // It's very important that the group is the action ID, so we can use it to edit/delete later.
-  const data_to_tago: DataToSend[] = parseTagoObject(
-    {
-      alert_name: { value: name?.value },
-      alert_condition: condition?.value,
-      alert_equip: equipments?.value,
-      alert_value: `${condition_value?.value}`,
-      alert_type: { value: type?.value, metadata: type?.metadata },
-      alert_sendto: { value: users.value, metadata: users.metadata },
-      alert_message: message?.value,
+  const data_to_tago: { [key: string]: any } = {
+    alert_name: { value: name?.value },
+    alert_condition: condition?.value,
+    alert_value: `${condition_value?.value}`,
+    alert_equip: equipments?.value,
+    alert_type: { value: type?.value, metadata: type?.metadata },
+    alert_send_to: { value: users.value, metadata: users.metadata },
+    alert_message: message?.value,
+    alert_id: {
+      value: condition.value,
+      group: action_id,
+      metadata: structure,
     },
-    action_id
-  );
+  };
+
+  if (condition.value === "geofence") {
+    const type = condition_value.value as string;
+    const color = type.includes("enter geofence") && type.includes("leave geofence") ? "blue" : type.includes("enter geofence") ? "green" : "pink";
+    data_to_tago.geofence_events = { value: name.value, metadata: { color } };
+  }
+
+  const to_tago = parseTagoObject(data_to_tago, action_id);
 
   const list_of_devices = JSON.stringify(device_list.map((device) => device));
-  data_to_tago.push({ variable: "alert_list_devices", value: list_of_devices, group: action_id });
+  to_tago.push({ variable: "alert_list_devices", value: list_of_devices, group: action_id });
 
-  await site_dev.sendData(data_to_tago);
+  await site_dev.sendData(to_tago);
   await site_dev.sendData({ variable: "action_validation", value: "#ALC.CREATE_SUCCESS#", metadata: { type: "success" } });
   if (structure.variable === "geofence") {
     await geofenceAlertCreate(site_dev, action_id, structure);

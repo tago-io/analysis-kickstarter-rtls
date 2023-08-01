@@ -51,9 +51,8 @@ async function startAnalysis(context: TagoContext, scope: Data[]) {
     return;
   }
 
-  //locationData = await getIndoorPos(account, scope, environment, orgDev, siteDev, siteID, equipmentID);
-  //await geofenceAlertTrigger(account, context, locationData, true);
-  await getIndoorPos(account, scope, environment, orgDev, siteDev, siteID, equipmentID);
+  await getIndoorPos(account, context, scope, environment, orgDev, siteDev, siteID, equipmentID);
+
   context.log("Analysis Finished");
 }
 

@@ -5,6 +5,9 @@ import { DeviceInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import { parseTagoObject } from "../../../lib/data.logic";
 import { DataResolver } from "../../../lib/edit.data";
 import getDevice from "../../../lib/getDevice";
+import { TagoContext } from "../../../types";
+import { verifyGeofenceAlarm } from "../../alerts/verifyGeofenceAlert";
+import { Geofence } from "../../device/is-inside-geofence";
 
 interface Beacon {
   id: string;
@@ -111,7 +114,16 @@ async function getBeaconList(siteDev: Device, scope: Data[]) {
   return beaconsReceived;
 }
 
-async function getIndoorPos(account: Account, scope: Data[], enviroment: any, orgDev: Device, siteDev: Device, siteID: string, equipmentID: string) {
+async function getIndoorPos(
+  account: Account,
+  context: TagoContext,
+  scope: Data[],
+  enviroment: any,
+  orgDev: Device,
+  siteDev: Device,
+  siteID: string,
+  equipmentID: string
+) {
   const beaconsReceived = await getBeaconList(siteDev, scope);
   const [strongest_beacon] = beaconsReceived.sort((a, b) => b.rssi - a.rssi);
   if (!strongest_beacon) {
@@ -171,8 +183,14 @@ async function getIndoorPos(account: Account, scope: Data[], enviroment: any, or
   //await device.deleteData({ variables: "layers" });
   await device.sendData(assetInfo.concat(assetHistory));
 
-  return;
-  //return { coordinates: { lat: Number(beaconPosition.x), lng: Number(beaconPosition.y) }, device_id: scope[0].device };
+  const geofence_list = (await siteDev.getData({ variables: "geofence", qty: 9999 })).map((x) => ({ ...x.metadata, id: x.group })) as Geofence[];
+
+  await verifyGeofenceAlarm(account, context, siteDev, {
+    deviceID: scope[0].device,
+    pos_x: Number(beaconPosition.x),
+    pos_y: Number(beaconPosition.y),
+    geofence_list,
+  });
 }
 
 export { getIndoorPos, getAssetHistoryInside, getAssetInfoInside };

@@ -86,8 +86,6 @@ function getAssetHistoryInside(strongest_beacon: BeaconPosition, equipment: Devi
  */
 async function getBeaconList(siteDev: Device, scope: Data[]) {
   const beaconListRaw = await siteDev.getData({ variables: "beacon_id", qty: 9999 });
-  console.log("scope", scope);
-  console.log("beaconListRaw", beaconListRaw);
 
   const beaconListFromSite = beaconListRaw.map((x) => ({
     ...x,
@@ -95,7 +93,7 @@ async function getBeaconList(siteDev: Device, scope: Data[]) {
     // we slice the MAC because usually the payload only report first 6 letters of the MAC
     sliced: (x.value as string).slice(6).toUpperCase(),
   }));
-  console.log("beaconListFromSite", beaconListFromSite);
+
   const beaconFromScope = scope.find((data) => data.variable === "beacons" || data.variable === "ble_scan" || data.variable === "wifi_scan")?.metadata; // might need to add ble_scan here
   if (!beaconFromScope || Object.keys(beaconFromScope).length === 0) {
     return [];
@@ -147,6 +145,7 @@ async function getIndoorPos(
   }
 
   const beaconPosition = layer?.metadata?.fixed_position?.[fixed_position_key];
+
   if (!beaconPosition) {
     throw console.error("No beacon found in the layer!");
   }
@@ -159,23 +158,11 @@ async function getIndoorPos(
   const assetInfo = getAssetInfoInside(scope, beaconPosition, enviroment, siteID, equipmentInfo, layer, room, site_name);
   const assetHistory = getAssetHistoryInside(beaconPosition, equipmentInfo, layer, room, site_name);
 
-  // checking if device was previously inside
-  const [previously_inside] = await siteDev.getData({ variables: "equipment_location", qty: 1, groups: equipmentID });
-  // if it already was inside, just edit the previous variables metadata, else delete the previous location and sends a new one
-  if (previously_inside) {
-    await DataResolver(siteDev)
-      .setVariable({
-        variable: "equipment_location",
-        metadata: { ...previously_inside.metadata, x: beaconPosition.x, y: beaconPosition.y },
-      })
-      .apply(equipmentID);
-  } else {
-    // remove previous outside location data, add new inside location data
-    await siteDev.deleteData({ variables: ["equipment_outside_location"], groups: equipmentID, qty: 1 });
-    await orgDev.deleteData({ variables: ["equipment_outside_location"], groups: equipmentID, qty: 1 });
-    await siteDev.sendData(assetInfo);
-    await orgDev.sendData(assetInfo);
-  }
+  // remove previous outside location data, add new inside location data
+  await siteDev.deleteData({ variables: ["equipment_outside_location"], groups: equipmentID, qty: 1 });
+  await orgDev.deleteData({ variables: ["equipment_outside_location"], groups: equipmentID, qty: 1 });
+  await siteDev.sendData(assetInfo);
+  await orgDev.sendData(assetInfo);
   //always send assethistory
   await siteDev.sendData(assetHistory);
 
@@ -189,6 +176,7 @@ async function getIndoorPos(
     deviceID: scope[0].device,
     pos_x: Number(beaconPosition.x),
     pos_y: Number(beaconPosition.y),
+    layerBeacon: layer.group as string,
     geofence_list,
   });
 }

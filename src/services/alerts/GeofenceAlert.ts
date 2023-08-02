@@ -9,7 +9,7 @@ import { ConfigurationParams } from "@tago-io/sdk/out/modules/Account/devices.ty
 import { TagoContext } from "@tago-io/sdk/out/modules/Analysis/analysis.types";
 
 import { ActionStructureParams } from "./register";
-import { IAlertTrigger, sendAlert } from "./sendAlert";
+import { IAlertTrigger } from "./sendAlert";
 
 type ILatitude = number;
 type ILongitude = number;
@@ -109,58 +109,58 @@ function checkZones(point: [number, number], geofence_list: Data["metadata"][]):
   return geofences;
 }
 
-type IAlertToBeSent = Omit<IAlertTrigger, "data">;
-/**
- * The function returns the list of alerts that are outside the geofence zone
- * @param account Account instanced class
- * @param outsideZones Zones that are outside the geofence
- * @param deviceParams Configuration parameter of the device
- * @param device_id Device id
- */
-async function getAlertList(account: Account, outsideZones: IGeofenceMetadata[], deviceParams: ConfigurationParams[], device_id: string) {
-  const alerts: IAlertToBeSent[] = [];
+// type IAlertToBeSent = Omit<IAlertTrigger, "data">;
+// /**
+//  * The function returns the list of alerts that are outside the geofence zone
+//  * @param account Account instanced class
+//  * @param outsideZones Zones that are outside the geofence
+//  * @param deviceParams Configuration parameter of the device
+//  * @param device_id Device id
+//  */
+// async function getAlertList(account: Account, outsideZones: IGeofenceMetadata[], deviceParams: ConfigurationParams[], device_id: string) {
+//   const alerts: IAlertToBeSent[] = [];
 
-  for (const item of outsideZones) {
-    const action_info: ActionInfo = await account.actions.info(item.event);
-    if (!action_info) {
-      console.debug(`Action not found ${item.event}`);
-      continue;
-    }
-    if (!action_info.trigger || !action_info.tags) {
-      throw "Invalid action";
-    }
+//   for (const item of outsideZones) {
+//     const action_info: ActionInfo = await account.actions.info(item.event);
+//     if (!action_info) {
+//       console.debug(`Action not found ${item.event}`);
+//       continue;
+//     }
+//     if (!action_info.trigger || !action_info.tags) {
+//       throw "Invalid action";
+//     }
 
-    const devices = action_info.trigger.map((x: any) => x.device).filter((x) => x);
+//     const devices = action_info.trigger.map((x: any) => x.device).filter((x) => x);
 
-    if (!devices.includes(device_id)) {
-      continue;
-    }
+//     if (!devices.includes(device_id)) {
+//       continue;
+//     }
 
-    const alertParam = deviceParams.find((param) => param.key === item.event);
-    if (alertParam?.sent) {
-      continue;
-    }
+//     const alertParam = deviceParams.find((param) => param.key === item.event);
+//     if (alertParam?.sent) {
+//       continue;
+//     }
 
-    const send_to = action_info.tags
-      .find((x) => x.key === "send_to")
-      ?.value?.replace(/;/g, ",")
-      .split(",");
-    const action_type = action_info.tags
-      .find((x) => x.key === "action_type")
-      ?.value?.replace(/;/g, ",")
-      .split(",");
+//     const send_to = action_info.tags
+//       .find((x) => x.key === "send_to")
+//       ?.value?.replace(/;/g, ",")
+//       .split(",");
+//     const action_type = action_info.tags
+//       .find((x) => x.key === "action_type")
+//       ?.value?.replace(/;/g, ",")
+//       .split(",");
 
-    if (!send_to || !action_type) {
-      throw "Invalid action type and send to";
-    }
-    const action_device = action_info.tags.find((x) => x.key === "device")?.value as string;
+//     if (!send_to || !action_type) {
+//       throw "Invalid action type and send to";
+//     }
+//     const action_device = action_info.tags.find((x) => x.key === "device")?.value as string;
 
-    await account.devices.paramSet(device_id, { ...alertParam, key: item.event, value: "geofence", sent: true });
-    alerts.push({ action_id: item.event, send_to, type: action_type, device: action_device });
-  }
+//     await account.devices.paramSet(device_id, { ...alertParam, key: item.event, value: "geofence", sent: true });
+//     alerts.push({ action_id: item.event, send_to, type: action_type, device: action_device });
+//   }
 
-  return alerts;
-}
+//   return alerts;
+// }
 
 /**
  * Add this function to the analysis that is receiving the location variable somehow.

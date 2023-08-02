@@ -147,7 +147,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   if (new_dev_type.value == "6499864a3498840008651b68") {
     paramResolver.setParam("beacon_decoder", "simple", false);
   }
-  await paramResolver.setParam("last_geofence", " ", false).apply(account, dev_id);
+  await paramResolver.setParam("last_geofence", "", false).apply(account, dev_id);
   return await validate("Device created successfully!", "success");
 }
 

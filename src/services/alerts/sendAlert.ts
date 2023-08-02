@@ -1,26 +1,68 @@
-import { Account, Services, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
+import { Account, Services } from "@tago-io/sdk";
+import { DeviceInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import { UserInfo } from "@tago-io/sdk/out/modules/Account/run.types";
 import { TagoContext } from "@tago-io/sdk/out/modules/Analysis/analysis.types";
 
-interface IMessageDetail {
-  device_name: string;
-  device_id: string;
-  sensor_type: string;
-  value: string;
-  variable: string;
+async function _notificationMessages(account: Account, users_info: UserInfo[], message: string) {
+  for (const user of users_info) {
+    void account.run.notificationCreate(user.id, {
+      message,
+      title: "Alert Trigger",
+    });
+  }
 }
-/**
- * Function that replace the message variables
- * @param message Message that will be replaced
- * @param replace_details Object with the variables that will be replaced
- */
-function replaceMessage(message: string, replace_details: IMessageDetail) {
-  for (const key of Object.keys(replace_details)) {
-    message = message.replace(new RegExp(`#${key}#`, "g"), (replace_details as any)[key]);
+
+async function _emailMessages(context: TagoContext, deviceInfo: DeviceInfo, users_info: UserInfo[], message: string) {
+  const email = new Services({ token: context.token }).email;
+
+  void email.send({
+    to: users_info.map((x) => x.email).join(","),
+    template: {
+      name: "email_alert",
+      params: {
+        device_name: deviceInfo.name,
+        alert_message: message,
+      },
+    },
+  });
+}
+
+async function _smsMessages(context: TagoContext, users_info: UserInfo[], message: string) {
+  for (const user of users_info) {
+    const smsService = new Services({ token: context.token }).sms;
+    if (!user.phone) {
+      throw "user.phone not found";
+    }
+    void smsService
+      .send({
+        message,
+        to: user.phone,
+      })
+      .catch((error) => console.debug(error));
+  }
+}
+
+interface sourceDispatchMessages {
+  type: string[];
+  account: Account;
+  context: TagoContext;
+  usersInfo: UserInfo[];
+  message: string;
+  deviceInfo: DeviceInfo;
+}
+
+async function _dispatchMessages(source: sourceDispatchMessages) {
+  if (source.type.includes("push")) {
+    await _notificationMessages(source.account, source.usersInfo, source.message);
   }
 
-  return message;
+  if (source.type.includes("email")) {
+    await _emailMessages(source.context, source.deviceInfo, source.usersInfo, source.message);
+  }
+
+  if (source.type.includes("sms")) {
+    await _smsMessages(source.context, source.usersInfo, source.message);
+  }
 }
 
 /**
@@ -28,18 +70,25 @@ function replaceMessage(message: string, replace_details: IMessageDetail) {
  * @param account Account instanced class
  * @param send_to List of users that will receive the alert
  */
-async function getUsers(account: Account, send_to: string[]) {
+async function _getUsers(account: Account, send_to: string[]) {
   const func_list = send_to.map((user_id) => account.run.userInfo(user_id).catch(() => null));
 
   return (await Promise.all(func_list)).filter((x) => x) as UserInfo[];
 }
 
 interface IAlertTrigger {
-  action_id: string;
-  data: Data;
-  send_to: string[];
-  type: string[];
+  name: string;
+  site_id: string;
+  type: string;
+  group_id?: string;
+  trigger_value: string | number;
+  variable: string;
+  condition: string;
+  message: string;
+  script?: string;
   device: string;
+  description?: string;
+  send_to: string;
 }
 
 /**
@@ -49,15 +98,9 @@ interface IAlertTrigger {
  * @param org_id Organization ID that will be used to charge the usage
  * @param alert Alert that will be sent
  */
-async function sendAlert(account: Account, context: TagoContext, alert: IAlertTrigger) {
-  const { data, action_id: alert_id, send_to, type } = alert;
-  const groupWithAlert = await Utils.getDevice(account, alert.device);
-
+async function sendAlert(account: Account, context: TagoContext, alert: IAlertTrigger, deviceID: string) {
   // Get action message
-  const [message_var] = await groupWithAlert.getData({ variables: ["alert_message", "alert_message"], groups: alert_id, qty: 1 });
-
-  const device_id = data.device;
-  const device_info = await account.devices.info(device_id);
+  const device_info = await account.devices.info(deviceID);
   if (!device_info.tags) {
     throw new Error("Device tags not found");
   }
@@ -65,56 +108,18 @@ async function sendAlert(account: Account, context: TagoContext, alert: IAlertTr
   if (!sensor_type) {
     throw new Error("Sensor type not found");
   }
-  const replace_details: IMessageDetail = {
-    device_name: device_info?.name,
-    device_id: device_info?.id,
-    sensor_type: sensor_type,
-    value: String(data?.value),
-    variable: data?.variable,
-  };
 
-  const message = replaceMessage(message_var.value as string, replace_details);
+  const users_info = await _getUsers(account, alert.send_to?.replace(/;/g, ",").split(","));
+  const type = alert.type.replaceAll(";", ",").split(",");
 
-  const users_info = await getUsers(account, send_to);
-
-  if (type.includes("notification_run")) {
-    users_info.forEach((user) => {
-      void account.run.notificationCreate(user.id, {
-        message,
-        title: "Alert Trigger",
-      });
-    });
-  }
-
-  if (type.includes("email")) {
-    const email = new Services({ token: context.token }).email;
-
-    await email.send({
-      to: users_info.map((x) => x.email).join(","),
-      template: {
-        name: "email_alert",
-        params: {
-          device_name: device_info.name,
-          alert_message: message,
-        },
-      },
-    });
-  }
-
-  if (type.includes("sms")) {
-    users_info.forEach((user) => {
-      const smsService = new Services({ token: context.token }).sms;
-      if (!user.phone) {
-        throw new Error("User phone not found");
-      }
-      void smsService
-        .send({
-          message,
-          to: user.phone,
-        })
-        .then((msg) => console.debug(msg));
-    });
-  }
+  await _dispatchMessages({
+    type,
+    account,
+    context,
+    usersInfo: users_info,
+    message: alert.message,
+    deviceInfo: device_info,
+  });
 }
 
 export { sendAlert, IAlertTrigger };

@@ -66,9 +66,24 @@ async function listDeviceAction(account: Account, { device_id, action_id, group_
   return account.actions.list({ amount: qty, fields: ["id", "tags"], filter });
 }
 
+async function updateVariableAlertID(device: Device, scope: Data[]) {
+  const alertType = scope.find((x) => x.variable === "alert_type")?.value;
+  const alertSendTo = scope.find((x) => x.variable === "alert_send_to")?.value;
+  if (!alertType && !alertSendTo) {
+    return;
+  }
+  const [alertID] = await device.getData({ variables: "alert_id", qty: 1, groups: scope[0].group });
+  if (alertID?.metadata) {
+    alertID.metadata.type = alertType || alertID.metadata.type;
+    alertID.metadata.send_to = alertSendTo || alertID.metadata.send_to;
+    await device.deleteData({ variables: "alert_id", qty: 1, groups: scope[0].group });
+    await device.sendData(alertID);
+  }
+}
+
 async function undoChanges(device: Device, scope: Data[]) {
-  await device.deleteData({ variables: scope.map((data) => data.variable), groups: scope[0].device });
-  await device.sendData(scope.map((data) => ({ ...data, value: data?.metadata?.old_value })));
+  await device.deleteData({ variables: scope.map((data) => data.variable), groups: scope[0].group, qty: 1 });
+  await device.sendData(scope.map((data) => ({ ...data })));
 }
 /**
  * Main edit alert function
@@ -97,7 +112,7 @@ async function editAlert({ account, scope }: any) {
   const action_value = scope.find((x: any) => ["action_list_value", "action_group_value"].includes(x.variable));
 
   const action_type = scope.find((x: any) => ["action_list_type", "action_group_type"].includes(x.variable));
-  const action_sendto = scope.find((x: any) => ["action_list_sendto", "action_group_sendto"].includes(x.variable));
+  const action_send_to = scope.find((x: any) => ["action_list_send_to", "action_group_send_to"].includes(x.variable));
 
   if (!action_variable) {
     const info = await org_dev.info();
@@ -109,6 +124,8 @@ async function editAlert({ account, scope }: any) {
     console.debug("[Error] Update action: action_variable not found");
     await undoChanges(org_dev, scope);
   }
+
+  await updateVariableAlertID(org_dev, scope);
 
   // if (action_variable.value === "geofence" && (action_value || action_condition)) {
   //   console.debug("[Error] Updating geofence value or condition is not allowed");
@@ -146,8 +163,8 @@ async function editAlert({ account, scope }: any) {
   if (action_type) {
     structure.type = action_type.value as string;
   }
-  if (action_sendto) {
-    structure.send_to = action_sendto.value as string;
+  if (action_send_to) {
+    structure.send_to = action_send_to.value as string;
   }
 
   if (structure.condition === "><" && (action_value.value as string)?.split(";").length !== 2) {

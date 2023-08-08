@@ -11,7 +11,7 @@ async function _sendEnteredAlert(account: Account, context: TagoContext, myCurre
     return;
   }
 
-  if (alert.trigger_value !== "enter geofence") {
+  if (alert?.trigger_value !== "enter geofence") {
     // Alert doesn't include an Entered event to trigger.
     return;
   }
@@ -25,7 +25,7 @@ async function _sendLeaveAlert(account: Account, context: TagoContext, lastALert
     return;
   }
 
-  if (lastALert.trigger_value !== "leave geofence") {
+  if (lastALert?.trigger_value !== "leave geofence") {
     // Alert doesn't include an Leave event to trigger.
     return;
   }
@@ -69,10 +69,10 @@ async function verifyGeofenceAlarm(
     await _sendEnteredAlert(account, context, myCurrentGeofence, alert, deviceID);
   }
 
-  if (!myCurrentGeofence && lastGeofenceParam?.value) {
+  if ((!myCurrentGeofence && lastGeofenceParam?.value) || lastGeofenceParam.value !== myCurrentGeofence?.id) {
     // The asset is inside a geofence, but is inside a different geofence than the last time
     const geofence = geofence_list.find((x) => x.id === lastGeofenceParam.value) as Geofence;
-    const [lastAlertRaw] = await siteDev.getData({ variables: "alert_id", groups: geofence.event, qty: 1 });
+    const [lastAlertRaw] = await siteDev.getData({ variables: "alert_id", groups: geofence?.event || lastGeofenceParam.value, qty: 1 });
     const lastAlert = lastAlertRaw?.metadata as any;
     await _sendLeaveAlert(account, context, lastAlert, lastGeofenceParam, deviceID);
   }

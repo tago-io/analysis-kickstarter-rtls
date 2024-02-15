@@ -1,5 +1,5 @@
-import { Account } from "@tago-io/sdk";
-import { ConfigurationParams } from "@tago-io/sdk/out/modules/Account/devices.types";
+import { Resources } from "@tago-io/sdk";
+import { ConfigurationParams } from "@tago-io/sdk/lib/types";
 
 /**
  * Creates a resolver to add/update configuration params on the devices.
@@ -8,7 +8,6 @@ import { ConfigurationParams } from "@tago-io/sdk/out/modules/Account/devices.ty
  * const paramList = await account.devices.list(deviceID);
  * const editParam = ParamResolver(paramList);
  * editParam.setParam("device_status", "ON");
- * await editParam.apply(account, deviceID);
  *
  * @param {ConfigurationParams[]} rawParams param list if you already have in your code.
  * @param debug
@@ -30,7 +29,7 @@ function ParamResolver(rawParams: ConfigurationParams[], debug: boolean = false)
         throw "[ParamResolver] key is not a string";
       }
       if (typeof value !== "string") {
-        throw "[ParamResolver] value is not a string";
+        throw "[ParamResolver] key is not a string";
       }
       const oldParam = rawParams.find((x) => x.key === key);
       paramList.push({ ...oldParam, key, value, sent });
@@ -39,19 +38,22 @@ function ParamResolver(rawParams: ConfigurationParams[], debug: boolean = false)
 
     /**
      * Apply the changes to the configuration parameters.
-     * @param {Account} account
      * @param {string} deviceID
      * @returns
      */
-    apply: async function (account: Account, deviceID: string) {
-      if (!(account instanceof Account)) {
-        throw "[ParamResolver] account is not an instance of TagoIO Account";
-      }
-
+    apply: async function (deviceID: string) {
       if (debug) {
         return paramList;
       }
-      await account.devices.paramSet(deviceID, paramList);
+      await Resources.devices.paramSet(deviceID, paramList);
+    },
+
+    /**
+     * Check if there is any change to be applied.
+     * @returns {boolean} true if there is any change to be applied.
+     */
+    hasChanged: function () {
+      return paramList.length > 0;
     },
   };
 

@@ -1,10 +1,8 @@
 import axios from "axios";
 
-import { Account, Analysis, Services, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
+import { Analysis, Resources, Services, Utils } from "@tago-io/sdk";
+import { Data } from "@tago-io/sdk/lib/types";
 
-import { getImageBase64 } from "../lib/get-image-base64";
-import getDevice from "../lib/getDevice";
 import { footerTemplate, headerTemplate, html } from "../services/report/html";
 import { TagoContext } from "../types";
 
@@ -14,21 +12,13 @@ async function handler(context: TagoContext, scope: Data[]) {
   const environment = Utils.envToJson(context.environment);
   if (!environment) {
     return;
-  } else if (!environment.config_token) {
-    throw "Missing config_token environment var";
-  } else if (!environment.account_token) {
-    throw "Missing account_token environment var";
   } else if (!environment.email) {
     return context.log("email environment variable not found");
   }
 
-  const account = new Account({ token: environment.account_token });
+  const site_id = scope[0].device;
 
-  const dev_id = scope[0].device;
-
-  const site_dev = await getDevice(account, dev_id);
-
-  const [pdf_email_list] = await site_dev.getData({ variables: "pdf_email_list" });
+  const [pdf_email_list] = await Resources.devices.getDeviceData(site_id, { variables: "pdf_email_list" });
 
   if (!pdf_email_list) {
     return console.error("No email");

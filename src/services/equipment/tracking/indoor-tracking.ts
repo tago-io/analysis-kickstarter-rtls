@@ -1,10 +1,7 @@
-import { Account, Device } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-import { DeviceInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
+import { Resources } from "@tago-io/sdk";
+import { Data, DeviceInfo } from "@tago-io/sdk/lib/types";
 
-import { parseTagoObject } from "../../../lib/data.logic";
-import { DataResolver } from "../../../lib/edit.data";
-import getDevice from "../../../lib/getDevice";
+import { parseObjectToTago } from "../../../lib/parse-object-to-tagoio";
 import { TagoContext } from "../../../types";
 import { verifyGeofenceAlarm } from "../../alerts/verifyGeofenceAlert";
 import { Geofence } from "../../device/is-inside-geofence";
@@ -36,7 +33,7 @@ function getAssetInfoInside(
   room: Data,
   site_name: string
 ) {
-  return parseTagoObject(
+  return parseObjectToTago(
     {
       equipment_location: {
         value: equipment.name,
@@ -61,7 +58,7 @@ function getAssetInfoInside(
 }
 
 function getAssetHistoryInside(strongest_beacon: BeaconPosition, equipment: DeviceInfo, layer: Data, room: Data, site_name: string) {
-  return parseTagoObject({
+  return parseObjectToTago({
     asset_history: {
       value: equipment.name,
       metadata: {
@@ -84,8 +81,8 @@ function getAssetHistoryInside(strongest_beacon: BeaconPosition, equipment: Devi
  * }
  * }
  */
-async function getBeaconList(siteDev: Device, scope: Data[]) {
-  const beaconListRaw = await siteDev.getData({ variables: "beacon_id", qty: 9999 });
+async function getBeaconList(site_id: string, scope: Data[]) {
+  const beaconListRaw = await Resources.devices.getDeviceData(site_id, { variables: "beacon_id", qty: 9999 });
 
   const beaconListFromSite = beaconListRaw.map((x) => ({
     ...x,
@@ -112,24 +109,15 @@ async function getBeaconList(siteDev: Device, scope: Data[]) {
   return beaconsReceived;
 }
 
-async function getIndoorPos(
-  account: Account,
-  context: TagoContext,
-  scope: Data[],
-  enviroment: any,
-  orgDev: Device,
-  siteDev: Device,
-  siteID: string,
-  equipmentID: string
-) {
-  const beaconsReceived = await getBeaconList(siteDev, scope);
+async function getIndoorPos(context: TagoContext, scope: Data[], enviroment: any, org_id: string, siteID: string, equipmentID: string) {
+  const beaconsReceived = await getBeaconList(siteID, scope);
   const [strongest_beacon] = beaconsReceived.sort((a, b) => b.rssi - a.rssi);
   if (!strongest_beacon) {
     throw console.error("No beacon found in the data sent by the device!");
   }
 
-  const layers_list = await siteDev.getData({ variables: "layers", qty: 9999 });
-  const room_list = await siteDev.getData({ variables: "beacon_room", qty: 9999 });
+  const layers_list = await Resources.devices.getDeviceData(siteID, { variables: "layers", qty: 9999 });
+  const room_list = await Resources.devices.getDeviceData(siteID, { variables: "beacon_room", qty: 9999 });
 
   // Find layer with the most strongest beacon
   const fixed_position_key = `${siteID}${strongest_beacon.group}`;
@@ -150,29 +138,32 @@ async function getIndoorPos(
     throw console.error("No beacon found in the layer!");
   }
 
-  const equipmentInfo = await account.devices.info(equipmentID);
+  const equipmentInfo = await Resources.devices.info(equipmentID);
   // const equip_img = equipmentInfo.tags.find((x) => x.key === "equip_img")?.value;
 
-  const { name: site_name } = await siteDev.info();
+  const { name: site_name } = await Resources.devices.info(siteID);
 
   const assetInfo = getAssetInfoInside(scope, beaconPosition, enviroment, siteID, equipmentInfo, layer, room, site_name);
   const assetHistory = getAssetHistoryInside(beaconPosition, equipmentInfo, layer, room, site_name);
 
   // remove previous outside location data, add new inside location data
-  await siteDev.deleteData({ variables: ["equipment_outside_location"], groups: equipmentID, qty: 1 });
-  await orgDev.deleteData({ variables: ["equipment_outside_location"], groups: equipmentID, qty: 1 });
-  await siteDev.sendData(assetInfo);
-  await orgDev.sendData(assetInfo);
+  await Resources.devices.deleteDeviceData(siteID, { variables: ["equipment_outside_location"], groups: equipmentID, qty: 1 });
+  await Resources.devices.deleteDeviceData(org_id, { variables: ["equipment_outside_location"], groups: equipmentID, qty: 1 });
+  await Resources.devices.sendDeviceData(siteID, assetInfo);
+  await Resources.devices.sendDeviceData(org_id, assetInfo);
   //always send assethistory
-  await siteDev.sendData(assetHistory);
+  await Resources.devices.sendDeviceData(siteID, assetHistory);
 
-  const device = await getDevice(account, scope[0].device);
-  //await device.deleteData({ variables: "layers" });
-  await device.sendData(assetInfo.concat(assetHistory));
+  const dev_id = scope[0].device;
+  //await device.deleteDeviceData({ variables: "layers" });
+  await Resources.devices.sendDeviceData(dev_id, assetInfo.concat(assetHistory));
 
-  const geofence_list = (await siteDev.getData({ variables: "geofence", qty: 9999 })).map((x) => ({ ...x.metadata, id: x.group })) as Geofence[];
+  const geofence_list = (await Resources.devices.getDeviceData(siteID, { variables: "geofence", qty: 9999 })).map((x) => ({
+    ...x.metadata,
+    id: x.group,
+  })) as Geofence[];
 
-  await verifyGeofenceAlarm(account, context, siteDev, {
+  await verifyGeofenceAlarm(context, siteID, {
     deviceID: scope[0].device,
     pos_x: Number(beaconPosition.x),
     pos_y: Number(beaconPosition.y),

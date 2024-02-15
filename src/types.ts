@@ -3,14 +3,9 @@
 // * This file is global types, it's used to remove "implicitly has an 'any' type" errors.
 // ? ====================================================================================
 
-import { Account, Device, Types } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-import { RouterConstructor } from "@tago-io/sdk/out/modules/Utils/router/router.types";
-
-interface ServicesAnalysis {
-  checkType: (scope: Data[] | InputScope[], environment: EnvironmentItemObject) => void;
-  controller: (params: ServiceParams) => void;
-}
+import { Device, Types } from "@tago-io/sdk";
+import { RouterConstructor } from "@tago-io/sdk/lib/modules/Utils/router/router.types";
+import { Data } from "@tago-io/sdk/lib/types";
 
 interface Metadata {
   [key: string]: string | number | boolean | Metadata | void;
@@ -44,15 +39,14 @@ type AnalysisID = string;
 interface TagoContext {
   token: Token;
   analysis_id: AnalysisID;
-  environment: Types.Analysis.Analysis.AnalysisEnvironment[];
+  environment: Types.AnalysisEnvironment;
   log: (...args: any[]) => void;
 }
 
 interface ServiceParams {
   context: TagoContext;
-  account: Account; // ! We need migrate SDK to better hightlight
-  config_dev: Device; // ! We need migrate SDK to better hightlight
-  notification: any; // ! We need migrate SDK to better hightlight
+  config_dev: Device;
+  notification: any;
   scope: Data[];
   environment: EnvironmentItemObject;
 }
@@ -69,7 +63,6 @@ interface RouterConstructorCustomBtn extends Omit<RouterConstructor, "scope"> {
 
 export {
   RouterConstructorCustomBtn,
-  ServicesAnalysis,
   ServiceParams,
   TagoContext,
   Token,

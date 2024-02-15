@@ -1,17 +1,14 @@
-import { Account, Device, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
+import { Device, Resources } from "@tago-io/sdk";
+import { Data, DeviceCreateInfo } from "@tago-io/sdk/lib/types";
 
-import { parseTagoObject } from "../../lib/data.logic";
 import { TagResolver } from "../../lib/edit.tag";
 import { getZodError } from "../../lib/get-zod-error";
-import getDevice from "../../lib/getDevice";
-import validation from "../../lib/validation";
+import { parseObjectToTago } from "../../lib/parse-object-to-tagoio";
+import { initializeValidation } from "../../lib/validation";
 import { DeviceCreated, ServiceParams } from "../../types";
 import { registerEquipModel } from "./model/equipment.model";
 
 interface installDeviceParam {
-  account: Account;
   new_dev_name: string;
   org_id: string;
   site_id: string;
@@ -20,7 +17,7 @@ interface installDeviceParam {
   equip_img: string;
 }
 
-async function getNewEquipVariables(scope: Data[], validate: ReturnType<typeof validation>) {
+async function getNewEquipVariables(scope: Data[], validate: ReturnType<typeof initializeValidation>) {
   const new_equip_name = scope.find((x) => x.variable === "new_equip_name");
   const new_equip_serie = scope.find((x) => x.variable === "new_equip_serie");
   const new_equip_img = scope.find((x) => x.variable === "new_equip_img");
@@ -43,7 +40,7 @@ async function getNewEquipVariables(scope: Data[], validate: ReturnType<typeof v
   }
 }
 
-async function installDevice({ account, new_dev_name, org_id, site_id, asset_id, equip_serie, equip_img }: installDeviceParam) {
+async function installDevice({ new_dev_name, org_id, site_id, asset_id, equip_serie, equip_img }: installDeviceParam) {
   // structuring data
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
@@ -53,10 +50,10 @@ async function installDevice({ account, new_dev_name, org_id, site_id, asset_id,
   };
 
   // creating new device
-  const new_dev = await account.devices.create(device_data);
+  const new_dev = await Resources.devices.create(device_data);
 
   // inserting device id -> so we can reference this later
-  await account.devices.edit(new_dev.device_id, {
+  await Resources.devices.edit(new_dev.device_id, {
     tags: [
       { key: "device_id", value: new_dev.device_id },
       { key: "asset_id", value: asset_id },
@@ -75,10 +72,9 @@ async function installDevice({ account, new_dev_name, org_id, site_id, asset_id,
   return { ...new_dev, device: new_org_dev } as DeviceCreated;
 }
 
-async function createEquipment({ scope, account, environment }: ServiceParams) {
+async function createEquipment({ scope, environment }: ServiceParams) {
   const org_id = scope[0].device;
-  const org_dev = await Utils.getDevice(account, org_id);
-  const validate = validation("equip_validation", org_dev);
+  const validate = initializeValidation("equip_validation", org_id);
   await validate("Registering...", "warning");
   // Collecting data
   const { assetID, image, name: equipName, serieNumber } = await getNewEquipVariables(scope, validate);
@@ -88,10 +84,10 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
   }
 
   // deleteData
-  await account.dashboards.edit(environment.dash_org, {});
+  await Resources.dashboards.edit(environment.dash_org, {});
 
   console.log("assetID", assetID);
-  const [asset_name] = await org_dev.getData({ variables: "dev_name", groups: assetID, qty: 1 });
+  const [asset_name] = await Resources.devices.getDeviceData(org_id, { variables: "dev_name", groups: assetID, qty: 1 });
   console.log("asset_name", asset_name);
   const asset_id = asset_name?.group;
 
@@ -99,16 +95,13 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
     throw "Asset id not found";
   }
 
-  const site_id = (await account.devices.info(asset_id)).tags.find((x) => x.key === "site_id")?.value;
+  const site_id = (await Resources.devices.info(asset_id)).tags.find((x) => x.key === "site_id")?.value;
 
   if (!site_id) {
     throw "Site id not found!";
   }
 
-  const site_dev = await getDevice(account, site_id);
-
   const { device_id: equip_id } = await installDevice({
-    account,
     new_dev_name: equipName,
     org_id,
     site_id: site_id,
@@ -117,7 +110,7 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
     equip_img: image.url,
   });
 
-  const equip_data = parseTagoObject(
+  const equip_data = parseObjectToTago(
     {
       equip_name: equipName,
       equip_img: image.url,
@@ -127,14 +120,14 @@ async function createEquipment({ scope, account, environment }: ServiceParams) {
     equip_id
   );
 
-  const { tags: asset_dev_tags } = await account.devices.info(asset_id);
+  const { tags: asset_dev_tags } = await Resources.devices.info(asset_id);
   const tagResolver = TagResolver(asset_dev_tags);
   tagResolver.setTag("equipment_id", equip_id);
   tagResolver.setTag("has_equip", "true");
-  await tagResolver.apply(account, assetID);
+  await tagResolver.apply(assetID);
 
-  await org_dev.sendData(equip_data);
-  await site_dev.sendData(equip_data);
+  await Resources.devices.sendDeviceData(org_id, equip_data);
+  await Resources.devices.sendDeviceData(site_id, equip_data);
 
   return validate("Equipment created successfully!", "success");
 }

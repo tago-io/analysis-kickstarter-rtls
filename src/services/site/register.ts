@@ -1,20 +1,19 @@
-import { Device, Account, Utils } from "@tago-io/sdk";
-import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-import validation from "../../lib/validation";
-import { ServiceParams, DeviceCreated } from "../../types";
-import { parseTagoObject } from "../../lib/data.logic";
+import { Device, Resources } from "@tago-io/sdk";
+import { Data, DeviceCreateInfo } from "@tago-io/sdk/lib/types";
+
 import { getZodError } from "../../lib/get-zod-error";
+import { parseObjectToTago } from "../../lib/parse-object-to-tagoio";
+import { initializeValidation } from "../../lib/validation";
+import { DeviceCreated, ServiceParams } from "../../types";
 import { registerSiteModel } from "./model/site.model";
 
 interface installDeviceParam {
-  account: Account;
   site_name: string;
   site_address: string;
   org_id: string;
 }
 
-async function getNewSiteVariables(scope: Data[], validate: ReturnType<typeof validation>) {
+async function getNewSiteVariables(scope: Data[], validate: ReturnType<typeof initializeValidation>) {
   const name = scope.find((x) => x.variable === "new_site_name")?.value;
   const address = scope.find((x) => x.variable === "new_site_address");
 
@@ -30,7 +29,7 @@ async function getNewSiteVariables(scope: Data[], validate: ReturnType<typeof va
   }
 }
 
-async function installDevice({ account, site_name, site_address, org_id }: installDeviceParam) {
+async function installDevice({ site_name, site_address, org_id }: installDeviceParam) {
   // structuring data
   const device_data: DeviceCreateInfo = {
     name: site_name,
@@ -40,10 +39,10 @@ async function installDevice({ account, site_name, site_address, org_id }: insta
   };
 
   // creating new device
-  const new_site = await account.devices.create(device_data);
+  const new_site = await Resources.devices.create(device_data);
 
   // inserting device id -> so we can reference this later
-  await account.devices.edit(new_site.device_id, {
+  await Resources.devices.edit(new_site.device_id, {
     tags: [
       { key: "site_id", value: new_site.device_id },
       { key: "organization_id", value: org_id },
@@ -59,16 +58,17 @@ async function installDevice({ account, site_name, site_address, org_id }: insta
   return { ...new_site, device: new_org_dev } as DeviceCreated;
 }
 
-async function createSite({ config_dev, scope, account, environment }: ServiceParams) {
+async function createSite({ scope, environment }: ServiceParams) {
   // getting Organization device
+  const config_id = environment.config_id;
   const org_id = scope[0].device;
-  const org_dev = await Utils.getDevice(account, org_id);
-  const validate = validation("site_validation", org_dev);
+
+  const validate = initializeValidation("site_validation", org_id);
   // Collecting data
   await validate("Registering...", "warning");
   const { name: new_site_name, address: new_site_address } = await getNewSiteVariables(scope, validate);
 
-  const [site_exists] = await org_dev.getData({ variables: "site_name", values: new_site_name, qty: 1 });
+  const [site_exists] = await Resources.devices.getDeviceData(org_id, { variables: "site_name", values: new_site_name, qty: 1 });
 
   if (site_exists) {
     throw await validate("Site name already exists", "danger");
@@ -80,7 +80,7 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
 
   // need device id to configure serie in parseTagoObject
   // creating new device
-  const { device_id: site_id, device: site_dev } = await installDevice({ account, site_name: new_site_name, site_address: new_site_address.value, org_id });
+  const { device_id: site_id, device: site_dev } = await installDevice({ site_name: new_site_name, site_address: new_site_address.value, org_id });
   const site_data = {
     site_id: {
       value: site_id,
@@ -97,7 +97,7 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
     site_address: { value: new_site_address.value, location: new_site_address.location },
   };
 
-  const dashboard_info = await account.dashboards.list();
+  const dashboard_info = await Resources.dashboards.list();
   const site_dashboard = dashboard_info.find((dashboard) => dashboard.label === "Site");
   const site_dashboard_id = site_dashboard?.id;
 
@@ -108,16 +108,16 @@ async function createSite({ config_dev, scope, account, environment }: ServicePa
     value: `https://admin.tago.io/dashboards/info/${site_dashboard_id}/?org_dev=${org_id}&site_dev=${site_id}`,
   });
 
-  await account.devices.edit(site_id, { tags });
+  await Resources.devices.edit(site_id, { tags });
 
   // send to admin device (settings_device) which will send to bucket
-  await config_dev.sendData(parseTagoObject(site_data, site_id));
+  await Resources.devices.sendDeviceData(config_id, parseObjectToTago(site_data, site_id));
 
   // send to organization device
-  await org_dev.sendData(parseTagoObject(site_data, site_id));
+  await Resources.devices.sendDeviceData(org_id, parseObjectToTago(site_data, site_id));
 
   // send to site device
-  await site_dev.sendData(parseTagoObject(site_data, site_id));
+  await Resources.devices.sendDeviceData(site_id, parseObjectToTago(site_data, site_id));
 
   return await validate("Site successfully created!", "success");
 }

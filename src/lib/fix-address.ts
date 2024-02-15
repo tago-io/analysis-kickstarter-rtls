@@ -1,14 +1,31 @@
-import { Data } from "@tago-io/sdk/out/common/common.types";
+import { DataToSend } from "@tago-io/sdk/lib/types";
 
 /**
- * Convert a data { location, value } to "lat,lng;label"
+ * Convert a TagoIO Data { location, value } to "lat,lng;label"
+ * @example
+ * ```
+ * const data = {
+ *  location: { coordinates: [37.7749, -122.4194], type: "point" },
+ *  value: "123 Main St"
+ * };
+ * const result = convertLocationDataToString(data);
+ * console.log(result); // "-122.4194,37.7749;123 Main St"
+ * ```
  */
-function convertLocationDataToString(data?: Data) {
-  if (!data?.location || !data?.location?.coordinates) {
+function convertLocationDataToString(data?: Partial<DataToSend> | { [key: string]: any }) {
+  if (!data?.location) {
     return "";
   }
 
-  return `${data.location.coordinates[1]},${data.location.coordinates[0]};${data.value}`;
+  if (!("coordinates" in data.location) && !("lat" in data.location)) {
+    return "";
+  }
+
+  if ("coordinates" in data.location) {
+    return `${data.location.coordinates[1]},${data.location.coordinates[0]};${data.value}`;
+  }
+
+  return `${data.location.lat},${data.location.lng};${data.value}`;
 }
 
 /**

@@ -1,15 +1,10 @@
 /* eslint-disable @typescript-eslint/restrict-plus-operands */
 import { isPointWithinRadius } from "geolib";
-import { z } from "zod";
 
-import { Account, Device, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-import { ActionInfo } from "@tago-io/sdk/out/modules/Account/actions.types";
-import { ConfigurationParams } from "@tago-io/sdk/out/modules/Account/devices.types";
-import { TagoContext } from "@tago-io/sdk/out/modules/Analysis/analysis.types";
+import { Device, Resources } from "@tago-io/sdk";
+import { Data } from "@tago-io/sdk/lib/types";
 
 import { ActionStructureParams } from "./register";
-import { IAlertTrigger } from "./sendAlert";
 
 type ILatitude = number;
 type ILongitude = number;
@@ -165,30 +160,23 @@ function checkZones(point: [number, number], geofence_list: Data["metadata"][]):
 /**
  * Add this function to the analysis that is receiving the location variable somehow.
  * It can be used on statusUpdater or uplinkHandler, depending on how often you want to check the alert.
- * @param account Account instanced class
  * @param context Context of the analysis, to retrieve the token
  * @param locationData lat and lng of device current position
  */
-async function geofenceAlertTrigger(account: Account, context: TagoContext, locationData: IGeofenceAlert, isInside: boolean) {
+async function geofenceAlertTrigger(locationData: IGeofenceAlert, isInside: boolean) {
   const { coordinates, device_id } = locationData;
   console.log("geofenceAlertTrigger, Location data: ", locationData);
 
-  // get param last_geofence
-  const params = await account.devices.paramList(device_id);
-  const last_geofence = params.find((param) => param.key === "last_geofence")?.value as string;
-
   // get site device so that we can get the geofence variables
-  const { tags } = await account.devices.info(device_id);
+  const { tags } = await Resources.devices.info(device_id);
   const site_id = tags.find((tag) => tag.key === "site_id")?.value as string;
   let geofences: Data[] = [];
-  let site_dev: Device;
 
   // check if inside or outside
   if (site_id) {
-    site_dev = await Utils.getDevice(account, site_id);
-    let geofence_list = await site_dev.getData({ variables: "geofence_outdoor", qty: 100 });
+    let geofence_list = await Resources.devices.getDeviceData(site_id, { variables: "geofence_outdoor", qty: 100 });
     if (isInside) {
-      geofence_list = await site_dev.getData({ variables: "geofence", qty: 100 });
+      geofence_list = await Resources.devices.getDeviceData(site_id, { variables: "geofence", qty: 100 });
     }
     console.debug(`${isInside == true ? "indoor" : "outdoor"} geofence_list`, geofence_list);
 
@@ -216,9 +204,9 @@ async function geofenceAlertTrigger(account: Account, context: TagoContext, loca
  * @param action_id Id of the action
  * @param structure structure of the action
  */
-async function geofenceAlertCreate(devToStoreAlert: Device, action_id: string, structure: ActionStructureParams) {
+async function geofenceAlertCreate(devToStoreAlert: string, action_id: string, structure: ActionStructureParams) {
   const condition = structure.trigger_value as string;
-  await devToStoreAlert.sendData({
+  await Resources.devices.sendDeviceData(devToStoreAlert, {
     variable: "alert_geofence",
     value: structure.name,
     metadata: { color: condition.includes("Sair") || condition.includes("leave") ? "red" : "green" },
@@ -232,8 +220,8 @@ async function geofenceAlertCreate(devToStoreAlert: Device, action_id: string, s
  * @param action_id Id of the action
  * @param structure structure of the action
  */
-async function geofenceAlertEdit(devToStoreAlert: Device, action_id: string, structure: ActionStructureParams) {
-  await devToStoreAlert.deleteData({ variables: "alert_geofence", groups: action_id });
+async function geofenceAlertEdit(devToStoreAlert: string, action_id: string, structure: ActionStructureParams) {
+  await Resources.devices.deleteDeviceData(devToStoreAlert, { variables: "alert_geofence", groups: action_id });
   await geofenceAlertCreate(devToStoreAlert, action_id, structure);
 }
 

@@ -1,5 +1,5 @@
-import { Account } from "@tago-io/sdk";
-import { TagsObj } from "@tago-io/sdk/out/common/common.types";
+import { Resources } from "@tago-io/sdk";
+import { TagsObj } from "@tago-io/sdk/lib/types";
 
 /**
  * Creates a resolver to add/update tags on the devices.
@@ -8,7 +8,7 @@ import { TagsObj } from "@tago-io/sdk/out/common/common.types";
  * const { tags } = await account.devices.info(deviceID);
  * const editTags = TagResolver(tags);
  * editTags.setTag("device_status", "ON");
- * await editTags.apply(account, deviceID);
+ * await editTags.apply(deviceID);
  *
  * @param {TagsObj[]} rawTags list of your device existing Tags
  * @param debug
@@ -16,6 +16,7 @@ import { TagsObj } from "@tago-io/sdk/out/common/common.types";
  */
 function TagResolver(rawTags: TagsObj[], debug: boolean = false) {
   const tags = JSON.parse(JSON.stringify(rawTags)) as TagsObj[];
+  const newTags: TagsObj[] = [];
 
   const tagResolver = {
     /**
@@ -32,28 +33,41 @@ function TagResolver(rawTags: TagsObj[], debug: boolean = false) {
         throw "[TagResolver] key is not a string";
       }
       const tagExist = tags.find((x) => x.key === key);
-      if (tagExist) {
-        tagExist.value = value;
-      } else {
-        tags.push({ key, value });
+      if (!tagExist || tagExist.value !== value) {
+        newTags.push({ key, value });
       }
       return this;
     },
 
     /**
      * Apply the changes to the tags
-     * @param {Account} account
      * @param {string} deviceID
      * @returns
      */
-    apply: async function (account: Account, deviceID: string) {
-      if (!(account instanceof Account)) {
-        throw "[TagResolver] account is not an instance of TagoIO Account";
-      }
+    apply: async function (deviceID: string) {
       if (debug) {
-        return tags;
+        return newTags;
       }
-      await account.devices.edit(deviceID, { tags });
+      // merge tags and newTags, replacing the old tags with the new ones.
+      for (const newTag of newTags) {
+        const oldTagIndex = tags.findIndex((x) => x.key === newTag.key);
+        if (oldTagIndex >= 0) {
+          tags[oldTagIndex] = newTag;
+        } else {
+          tags.push(newTag);
+        }
+      }
+
+      await Resources.devices.edit(deviceID, { tags });
+    },
+
+    /**
+     * Check if there is any change to be applied.
+     * @returns {boolean} true if there is any change to be applied.
+     * @memberof TagResolver
+     */
+    hasChanged: function () {
+      return newTags.length > 0;
     },
   };
 

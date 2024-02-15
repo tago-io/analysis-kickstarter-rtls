@@ -1,6 +1,8 @@
-import { Device } from "@tago-io/sdk";
 import { DateTime } from "luxon";
 
+import { Resources } from "@tago-io/sdk";
+
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type validation_type = "success" | "danger" | "warning" | string;
 interface IValidateOptions {
   show_markdown?: boolean;
@@ -15,26 +17,27 @@ interface IValidateOptions {
  * @param device device associated to the variable in the widget
  * @param show_markdown enable/disable markdown
  */
-export default function validation(validation_var: string, device: Device, opts?: IValidateOptions) {
+function initializeValidation(validationVariable: string, device_id: string, opts?: IValidateOptions) {
   let i = 0;
-  return async function _(message: string, type: validation_type) {
+  return async function _(message: string, type: validation_type = "success") {
     if (!message || !type) {
       throw "Missing message or type";
     }
 
     i += 1;
-    // clean the bucket
-    await device
-      .deleteData({
-        variables: validation_var,
+    // clean validation old entries
+    await Resources.devices
+      .deleteDeviceData(device_id, {
+        variables: validationVariable,
         qty: 999,
         end_date: DateTime.now().minus({ minutes: 1 }).toJSDate(),
       })
-      .catch(console.error);
+      .catch(console.log);
 
-    await device
-      .sendData({
-        variable: validation_var,
+    // inser the new entry
+    await Resources.devices
+      .sendDeviceData(device_id, {
+        variable: validationVariable,
         value: message,
         time: DateTime.now()
           .plus({ milliseconds: i * 200 })
@@ -51,3 +54,5 @@ export default function validation(validation_var: string, device: Device, opts?
     return message;
   };
 }
+
+export { initializeValidation };

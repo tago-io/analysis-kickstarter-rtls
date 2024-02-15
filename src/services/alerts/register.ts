@@ -1,12 +1,11 @@
-import { Account, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-import { DataToSend } from "@tago-io/sdk/out/modules/Device/device.types";
+import { Resources } from "@tago-io/sdk";
+import { Data } from "@tago-io/sdk/lib/types";
 
-import { parseTagoObject } from "../../lib/data.logic";
 import { fetchDeviceList } from "../../lib/fetch-device-list";
-import { findAnalysisByExportID } from "../../lib/findResource";
+import { getAnalysisByTagID } from "../../lib/find-resource";
 import { getZodError } from "../../lib/get-zod-error";
-import validation from "../../lib/validation";
+import { parseObjectToTago } from "../../lib/parse-object-to-tagoio";
+import { initializeValidation } from "../../lib/validation";
 import { ServiceParams } from "../../types";
 import { geofenceAlertCreate } from "./GeofenceAlert";
 import { registerAlertModel } from "./models/alert.model";
@@ -26,8 +25,8 @@ interface ActionStructureParams {
   send_to: string;
 }
 
-async function getGroupDevices(account: Account, group_id: string, groupKey: string = "group_id") {
-  const list = await fetchDeviceList(account, {
+async function getGroupDevices(group_id: string, groupKey: string = "group_id") {
+  const list = await fetchDeviceList({
     tags: [
       { key: groupKey, value: group_id },
       { key: "device_type", value: "device" },
@@ -122,7 +121,7 @@ function reverseCondition(condition: string) {
   }
 }
 
-async function getNewAlertVariables(scope: Data[], validate: ReturnType<typeof validation>) {
+async function getNewAlertVariables(scope: Data[], validate: ReturnType<typeof initializeValidation>) {
   const name = scope.find((x) => x.variable === "new_alert_name");
   const condition = scope.find((x) => x.variable === "new_alert_condition"); // Battery or Geofence
   const equipments = scope.find((x) => x.variable === "new_alert_equip" && x.metadata);
@@ -148,27 +147,26 @@ async function getNewAlertVariables(scope: Data[], validate: ReturnType<typeof v
   }
 }
 
-async function getDeviceIds(account: Account, equipment_list: string[]) {
+async function getDeviceIds(equipment_list: string[]) {
   const device_list = [];
   for (const equipment_id of equipment_list) {
-    const equipmentDevice = Utils.getDevice(account, equipment_id);
-    const equipmentTags = (await equipmentDevice).info();
+    const equipmentTags = Resources.devices.info(equipment_id);
     const equipmentDeviceId = (await equipmentTags).tags.find((tag) => tag.key === "asset_id");
     device_list.push(equipmentDeviceId?.value);
   }
   return device_list;
 }
 
-async function createAlert({ scope, account }: ServiceParams) {
-  const site_dev = await Utils.getDevice(account, scope[0].device);
-  await site_dev.sendData({ variable: "action_validation", value: "#VAL.CREATING_ALERT#", metadata: { type: "warning" } });
-  const validate = validation("alert_validation", site_dev);
+async function createAlert({ scope }: ServiceParams) {
+  const site_id = scope[0].device;
+  await Resources.devices.sendDeviceData(site_id, { variable: "action_validation", value: "#VAL.CREATING_ALERT#", metadata: { type: "warning" } });
+  const validate = initializeValidation("alert_validation", site_id);
   await validate("Registering...", "warning");
   const { name, condition, equipments, condition_value, type, users, message } = await getNewAlertVariables(scope, validate);
 
   const equipment_list = equipments.metadata.sentValues.map((equipment) => equipment.value);
-  const device_list = await getDeviceIds(account, equipment_list);
-  const script_id = await findAnalysisByExportID(account, "[TagoIO] - AlertTrigger");
+  const device_list = await getDeviceIds(equipment_list);
+  const script_id = await getAnalysisByTagID("[TagoIO] - AlertTrigger");
 
   const action_description = `Action checks ${condition?.value} condition for ${equipments?.value} equipments`;
   let defaultCondition = "<";
@@ -192,7 +190,7 @@ async function createAlert({ scope, account }: ServiceParams) {
   };
 
   const action_structure = await generateActionStructure(structure, device_list as string[]);
-  const { action: action_id } = await account.actions.create(action_structure).catch((error) => {
+  const { action: action_id } = await Resources.actions.create(action_structure).catch((error) => {
     void validate(error, "danger");
     throw error;
   });
@@ -220,15 +218,15 @@ async function createAlert({ scope, account }: ServiceParams) {
     data_to_tago.geofence_events = { value: name.value, metadata: { color } };
   }
 
-  const to_tago = parseTagoObject(data_to_tago, action_id);
+  const to_tago = parseObjectToTago(data_to_tago, action_id);
 
   const list_of_devices = JSON.stringify(device_list.map((device) => device));
   to_tago.push({ variable: "alert_list_devices", value: list_of_devices, group: action_id });
 
-  await site_dev.sendData(to_tago);
-  await site_dev.sendData({ variable: "action_validation", value: "#ALC.CREATE_SUCCESS#", metadata: { type: "success" } });
+  await Resources.devices.sendDeviceData(site_id, to_tago);
+  await Resources.devices.sendDeviceData(site_id, { variable: "action_validation", value: "#ALC.CREATE_SUCCESS#", metadata: { type: "success" } });
   if (structure.variable === "geofence") {
-    await geofenceAlertCreate(site_dev, action_id, structure);
+    await geofenceAlertCreate(site_id, action_id, structure);
   }
   await validate("Alert created!", "success");
 }

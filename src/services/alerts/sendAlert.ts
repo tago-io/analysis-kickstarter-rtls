@@ -1,11 +1,9 @@
-import { Account, Services } from "@tago-io/sdk";
-import { DeviceInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
-import { UserInfo } from "@tago-io/sdk/out/modules/Account/run.types";
-import { TagoContext } from "@tago-io/sdk/out/modules/Analysis/analysis.types";
+import { Resources, Services } from "@tago-io/sdk";
+import { DeviceInfo, TagoContext, UserInfo } from "@tago-io/sdk/lib/types";
 
-async function _notificationMessages(account: Account, users_info: UserInfo[], message: string) {
+async function _notificationMessages(users_info: UserInfo[], message: string) {
   for (const user of users_info) {
-    void account.run.notificationCreate(user.id, {
+    void Resources.run.notificationCreate(user.id, {
       message,
       title: "Alert Trigger",
     });
@@ -44,7 +42,6 @@ async function _smsMessages(context: TagoContext, users_info: UserInfo[], messag
 
 interface sourceDispatchMessages {
   type: string[];
-  account: Account;
   context: TagoContext;
   usersInfo: UserInfo[];
   message: string;
@@ -53,7 +50,7 @@ interface sourceDispatchMessages {
 
 async function _dispatchMessages(source: sourceDispatchMessages) {
   if (source.type.includes("push")) {
-    await _notificationMessages(source.account, source.usersInfo, source.message);
+    await _notificationMessages(source.usersInfo, source.message);
   }
 
   if (source.type.includes("email")) {
@@ -67,11 +64,10 @@ async function _dispatchMessages(source: sourceDispatchMessages) {
 
 /**
  * Function that get the users that will receive the alert
- * @param account Account instanced class
  * @param send_to List of users that will receive the alert
  */
-async function _getUsers(account: Account, send_to: string[]) {
-  const func_list = send_to.map((user_id) => account.run.userInfo(user_id).catch(() => null));
+async function _getUsers(send_to: string[]) {
+  const func_list = send_to.map((user_id) => Resources.run.userInfo(user_id).catch(() => null));
 
   return (await Promise.all(func_list)).filter((x) => x) as UserInfo[];
 }
@@ -93,14 +89,13 @@ interface IAlertTrigger {
 
 /**
  * Function that send the alert to the users
- * @param account Account instanced class
  * @param context Context is a variable sent by the analysis
  * @param org_id Organization ID that will be used to charge the usage
  * @param alert Alert that will be sent
  */
-async function sendAlert(account: Account, context: TagoContext, alert: IAlertTrigger, deviceID: string) {
+async function sendAlert(context: TagoContext, alert: IAlertTrigger, deviceID: string) {
   // Get action message
-  const device_info = await account.devices.info(deviceID);
+  const device_info = await Resources.devices.info(deviceID);
   if (!device_info.tags) {
     throw new Error("Device tags not found");
   }
@@ -109,12 +104,11 @@ async function sendAlert(account: Account, context: TagoContext, alert: IAlertTr
     throw new Error("Sensor type not found");
   }
 
-  const users_info = await _getUsers(account, alert.send_to?.replace(/;/g, ",").split(","));
+  const users_info = await _getUsers(alert.send_to?.replace(/;/g, ",").split(","));
   const type = alert.type.replaceAll(";", ",").split(",");
 
   await _dispatchMessages({
     type,
-    account,
     context,
     usersInfo: users_info,
     message: alert.message,

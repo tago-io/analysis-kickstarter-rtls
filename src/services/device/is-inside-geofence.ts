@@ -41,7 +41,7 @@ function checkRadius(point_x: number, point_y: number, circle_x: number, circle_
 }
 
 // This function checks if our device is inside any geofence
-function getInsideGeofence(point: [number, number], geofence_list: Geofence[], layerBeacon: string) {
+function getInsideGeofence(point: [number, number], geofence_list: Geofence[], layerBeacon?: string) {
   // The line below gets all Polygon geofences that we may have.
   const polygons = geofence_list.filter((x) => x.type === "polygon" && Array.isArray(x.coordinates));
   if (polygons.length > 0) {

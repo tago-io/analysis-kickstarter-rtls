@@ -1,0 +1,36 @@
+{
+  "dataScope": [
+    {
+      "id": "63766a54c8673a00276619b8",
+      "time": "2022-11-17T17:07:32.068Z",
+      "value": "Carrier 3",
+      "variable": "carrier_name",
+      "group": "C1668704851952",
+      "device": "63764f260e43360011be01f5",
+      "metadata": { "old_value": "Carrier 2" },
+      "origin": "63764f260e43360011be01f5"
+    },
+    {
+      "id": "63766a54c8673a00276619b8",
+      "time": "2022-11-17T17:07:32.068Z",
+      "value": "Raleighn",
+      "variable": "carrier_address",
+      "group": "C1668704851952",
+      "device": "63764f260e43360011be01f5",
+      "metadata": { "old_value": "California", "label": "Raleighn 01" },
+      "origin": "63764f260e43360011be01f5"
+    },
+    {
+      "id": "63766a54c8673a00276619b8",
+      "time": "2022-11-17T17:07:32.068Z",
+      "value": "shipper001",
+      "variable": "carrier_type",
+      "group": "C1668704851952",
+      "device": "63764f260e43360011be01f5",
+      "metadata": { "old_value": "receiver002" },
+      "origin": "63764f260e43360011be01f5"
+    }
+  ],
+  "deviceScope": [{"device":"637667b7c8673a002765c8f9","param.ship_scac":"00", "name": "test", "tags.shipper": "102012","old":{"param.ship_scac":"null", "name": "oldname", "tags.shipper": "" }}],
+  "userScope": [{"user":"6387ddfb92d9aa002cc65640","tags.access":"orgadmin","old":{"tags.access":"sadmin"}}]
+}

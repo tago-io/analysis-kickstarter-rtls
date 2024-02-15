@@ -1,31 +1,35 @@
 import { queue } from "async";
+
+import { Resources } from "@tago-io/sdk";
+
 import { fetchDeviceList } from "../../lib/fetch-device-list";
 import { sendNotificationFeedback } from "../../lib/send-notification";
 import { ServiceParams } from "../../types";
 
-async function deleteOrganization({ config_dev, scope, account, environment }: ServiceParams) {
+async function deleteOrganization({ scope, environment }: ServiceParams) {
   if (!scope[0].device) {
     throw "Organization not found!";
   }
+  const config_id = environment.config_id;
   // id of the org device
   const org_id = scope[0].device; // changed this from device to group... it was deleting all organizations, so i changed it back to device
 
   // delete from settings_device
-  await config_dev.deleteData({ groups: org_id, qty: 10_000 });
+  await Resources.devices.deleteDeviceData(config_id, { groups: org_id, qty: 10_000 });
 
   // deleting users (organization's user)
-  const user_accounts = await account.run.listUsers({ filter: { tags: [{ key: "organization_id", value: org_id }] } });
+  const user_accounts = await Resources.run.listUsers({ filter: { tags: [{ key: "organization_id", value: org_id }] } });
   if (user_accounts) {
     for (const user of user_accounts) {
-      void account.run.userDelete(user.id as string);
+      void Resources.run.userDelete(user.id);
     }
   }
 
   // deleting organization's device
-  const devices = await fetchDeviceList(account, { tags: [{ key: "organization_id", value: org_id }] });
+  const devices = await fetchDeviceList({ tags: [{ key: "organization_id", value: org_id }] });
 
   async function deleteData(device: any) {
-    await account.devices.delete(device.id);
+    await Resources.devices.delete(device.id);
   }
 
   const deleteQueue = queue(deleteData, 5);
@@ -38,7 +42,6 @@ async function deleteOrganization({ config_dev, scope, account, environment }: S
 
   await deleteQueue.drain();
   await sendNotificationFeedback({
-    account,
     environment,
     message: `Organization deleted`,
     title: `Organization deleted`,

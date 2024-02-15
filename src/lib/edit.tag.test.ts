@@ -1,4 +1,3 @@
-import { Account } from "@tago-io/sdk";
 import { TagResolver } from "./edit.tag";
 
 describe("LIB | edit.tag Resolver", () => {
@@ -6,11 +5,11 @@ describe("LIB | edit.tag Resolver", () => {
     const tagResolver = TagResolver([{ key: "test", value: "1" }], true);
     tagResolver.setTag("test2", "23423");
     tagResolver.setTag("test", "5555");
-    const result = await tagResolver.apply(new Account({ token: "123" }), "");
+    const result = await tagResolver.apply("");
 
     expect(result).toStrictEqual([
-      { key: "test", value: "5555" },
       { key: "test2", value: "23423" },
+      { key: "test", value: "5555" },
     ]);
   });
 

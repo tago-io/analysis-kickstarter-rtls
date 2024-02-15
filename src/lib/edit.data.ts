@@ -1,12 +1,11 @@
-import { Device } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-import { DataToEdit, DataToSend } from "@tago-io/sdk/out/modules/Device/device.types";
+import { Resources } from "@tago-io/sdk";
+import { Data, DataToEdit, DataToSend } from "@tago-io/sdk/lib/types";
 
 /**
  * Creates a resolver to add/update data on the devices.
  * The function automatically identifies if the data already exists or not.
  * @example
- * const editData = DataResolver(device);
+ * const editData = DataResolver(deviceID);
  * editData.setVariable({ variable: "data-to-update", value: 1, group: "12312" });
  * await editData.apply();
  *
@@ -14,14 +13,10 @@ import { DataToEdit, DataToSend } from "@tago-io/sdk/out/modules/Device/device.t
  * @param debug
  * @returns
  */
-function DataResolver(device: Device, debug: boolean = false) {
+function DataResolver(deviceID: string, debug: boolean = false) {
   const variables: string[] = [];
   const newDataList: DataToSend[] = [];
   let oldDataList: Data[] = [];
-
-  if (!(device instanceof Device)) {
-    throw "[DataResolver] Device is not an instance of TagoIO Device";
-  }
 
   const addVariable = (variable: string) => {
     if (variables.includes(variable)) {
@@ -51,7 +46,7 @@ function DataResolver(device: Device, debug: boolean = false) {
      */
     apply: async function (groups?: string | string[]) {
       if (!debug) {
-        oldDataList = await device.getData({ variables, qty: 1, groups });
+        oldDataList = await Resources.devices.getDeviceData(deviceID, { variables, qty: 1, groups });
       }
 
       const toUpdate: DataToEdit[] = [];
@@ -60,7 +55,31 @@ function DataResolver(device: Device, debug: boolean = false) {
       for (const item of newDataList) {
         const oldData = oldDataList.find((x) => x.variable === item.variable);
         if (oldData) {
-          toUpdate.push({ ...item, id: oldData.id });
+          // check if any data has changed, like if a new key was added or it's value updated
+          const hasChanged = Object.keys(item).some((key) => {
+            if (key === "group") {
+              return item.group !== oldData.group;
+            }
+            if (key === "unit") {
+              return item.unit !== oldData.unit;
+            }
+            if (key === "time") {
+              return item.time !== oldData.time;
+            }
+            if (key === "location") {
+              return JSON.stringify(item.location) !== JSON.stringify(oldData.location);
+            }
+            if (key === "metadata") {
+              return JSON.stringify(item.metadata) !== JSON.stringify(oldData.metadata);
+            }
+            if (key === "value") {
+              return item.value !== oldData.value;
+            }
+            return false;
+          });
+          if (hasChanged) {
+            toUpdate.push({ ...item, id: oldData.id });
+          }
         } else {
           toAdd.push({ ...item, group: !Array.isArray(groups) ? groups : item.group });
         }
@@ -71,11 +90,11 @@ function DataResolver(device: Device, debug: boolean = false) {
       }
 
       if (toUpdate.length > 0) {
-        await device.editData(toUpdate);
+        await Resources.devices.editDeviceData(deviceID, toUpdate);
       }
 
       if (toAdd.length > 0) {
-        await device.sendData(toAdd);
+        await Resources.devices.sendDeviceData(deviceID, toAdd);
       }
     },
     /**
@@ -86,6 +105,14 @@ function DataResolver(device: Device, debug: boolean = false) {
     setOldData: function (dataList: Data[]) {
       oldDataList = dataList;
       return this;
+    },
+
+    /**
+     * Check if any data was set to be added/updated.
+     * @returns {boolean} true if there is any change to be applied.
+     */
+    hasChanged: function () {
+      return newDataList.length > 0;
     },
 
     _debug: function () {

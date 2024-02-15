@@ -1,18 +1,14 @@
-import { Account, Device, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-import { DeviceCreateInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
+import { Resources } from "@tago-io/sdk";
+import { Data, DeviceCreateInfo } from "@tago-io/sdk/lib/types";
 
-import { site_id } from "../../analysis/__tests__/mocks/getAssetInfoInside.mock";
-import { parseTagoObject } from "../../lib/data.logic";
 import { ParamResolver } from "../../lib/edit.params";
 import { getZodError } from "../../lib/get-zod-error";
-import getDevice from "../../lib/getDevice";
-import validation from "../../lib/validation";
-import { DeviceCreated, ServiceParams } from "../../types";
+import { parseObjectToTago } from "../../lib/parse-object-to-tagoio";
+import { initializeValidation } from "../../lib/validation";
+import { ServiceParams } from "../../types";
 import { registerDeviceModel } from "./model/register.model";
 
 interface installDeviceParam {
-  account: Account;
   new_dev_name: string;
   org_id: string;
   site_id: string;
@@ -21,7 +17,7 @@ interface installDeviceParam {
   new_device_network: string;
 }
 
-async function getNewDeviceVariables(scope: Data[], validate: ReturnType<typeof validation>) {
+async function getNewDeviceVariables(scope: Data[], validate: ReturnType<typeof initializeValidation>) {
   const new_dev_name = scope.find((x) => x.variable === "new_dev_name");
   const new_dev_type = scope.find((x) => x.variable === "new_dev_type");
   const new_dev_network = scope.find((x) => x.variable === "new_dev_network");
@@ -43,7 +39,7 @@ async function getNewDeviceVariables(scope: Data[], validate: ReturnType<typeof 
   }
 }
 
-async function installDevice({ account, new_dev_name, org_id, site_id, connector, new_device_eui, new_device_network }: installDeviceParam) {
+async function installDevice({ new_dev_name, org_id, site_id, connector, new_device_eui, new_device_network }: installDeviceParam) {
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
     network: new_device_network,
@@ -55,10 +51,10 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
   };
 
   // creating new device
-  const new_dev = await account.devices.create(device_data);
+  const new_dev = await Resources.devices.create(device_data);
 
   // inserting device id -> so we can reference this later
-  await account.devices.edit(new_dev.device_id, {
+  await Resources.devices.edit(new_dev.device_id, {
     tags: [
       { key: "device_id", value: new_dev.device_id },
       { key: "site_id", value: site_id },
@@ -71,20 +67,17 @@ async function installDevice({ account, new_dev_name, org_id, site_id, connector
     ],
   });
 
-  // instantiating new device
-  const new_org_dev = new Device({ token: new_dev.token });
-
   // token, device_id, bucket_id
-  return { ...new_dev, device: new_org_dev } as DeviceCreated;
+  return new_dev;
 }
 
-async function createSensor({ config_dev, scope, account }: ServiceParams) {
+async function createSensor({ scope, environment }: ServiceParams) {
   // getting organization device
   const org_id = scope[0].device;
-  const org_dev = await Utils.getDevice(account, org_id);
+  const config_id = environment.config_id;
 
   // Collecting data
-  const validate = validation("dev_validation", org_dev);
+  const validate = initializeValidation("dev_validation", org_id);
   await validate("Registering...", "warning");
   const { new_dev_name, new_dev_type, new_dev_eui, new_dev_site, new_dev_network } = await getNewDeviceVariables(scope, validate);
 
@@ -94,7 +87,7 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
 
   new_dev_eui.value = new_dev_eui.value.toUpperCase();
 
-  const [dev_exists] = await org_dev.getData({
+  const [dev_exists] = await Resources.devices.getDeviceData(org_id, {
     variables: ["dev_eui", "dev_name"],
     values: [new_dev_eui.value, new_dev_name.value],
     qty: 1,
@@ -106,7 +99,6 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
   // need device id to configure serie in parseTagoObject
   // creating new device
   const { device_id: dev_id } = await installDevice({
-    account,
     new_dev_name: new_dev_name.value,
     org_id,
     site_id: new_dev_site.value,
@@ -115,10 +107,10 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
     new_device_network: new_dev_network.value,
   });
 
-  const device_type_name = (await account.integration.connectors.info(new_dev_type.value)).name;
-  const device_network_name = (await account.integration.networks.info(new_dev_network.value)).name;
+  const device_type_name = (await Resources.integration.connectors.info(new_dev_type.value)).name;
+  const device_network_name = (await Resources.integration.networks.info(new_dev_network.value)).name;
 
-  const dev_data = parseTagoObject(
+  const dev_data = parseObjectToTago(
     {
       dev_id: dev_id,
       dev_name: new_dev_name.value,
@@ -130,24 +122,22 @@ async function createSensor({ config_dev, scope, account }: ServiceParams) {
     dev_id
   );
 
-  const site_dev = await getDevice(account, new_dev_site.value);
-
   // send to admin device (settings_device) which will send to bucket
-  await config_dev.sendData(dev_data);
+  await Resources.devices.sendDeviceData(config_id, dev_data);
 
   // send to organization device
-  await org_dev.sendData(dev_data);
+  await Resources.devices.sendDeviceData(org_id, dev_data);
 
   // send to site device
-  await site_dev.sendData(dev_data);
+  await Resources.devices.sendDeviceData(new_dev_site.value, dev_data);
 
-  const paramList = await account.devices.paramList(dev_id);
+  const paramList = await Resources.devices.paramList(dev_id);
   const paramResolver = ParamResolver(paramList);
   // if the new device is a seeed sensecap t1000-A/B, add its beacon_mode parameter.
   if (new_dev_type.value == "6499864a3498840008651b68") {
     paramResolver.setParam("beacon_decoder", "simple", false);
   }
-  await paramResolver.setParam("last_geofence", "", false).apply(account, dev_id);
+  await paramResolver.setParam("last_geofence", "", false).apply(dev_id);
   return await validate("Device created successfully!", "success");
 }
 

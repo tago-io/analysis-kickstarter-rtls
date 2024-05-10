@@ -1,5 +1,5 @@
 import { Analysis, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/lib/types";
+import { Data, TagoContext } from "@tago-io/sdk/lib/types";
 
 import { searchAsset } from "../services/assetTracker/search";
 import { editSensor } from "../services/device/edit";
@@ -10,13 +10,13 @@ import { deleteEquipment } from "../services/equipment/remove";
 import { editOrganization } from "../services/organization/edit";
 import { createOrganization } from "../services/organization/register";
 import { deleteOrganization } from "../services/organization/remove";
+import { sensorLevelReportCsv } from "../services/report/generateReport";
 import { editSite } from "../services/site/edit";
 import { createSite } from "../services/site/register";
 import { deleteSite } from "../services/site/remove";
 import { editUser } from "../services/user/edit";
 import { createUser } from "../services/user/register";
 import { deleteUser } from "../services/user/remove";
-import { TagoContext } from "../types";
 
 async function analysisHandler(context: TagoContext, scope: Data[]): Promise<void> {
   // Convert environment variables to a JSON.
@@ -26,7 +26,7 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
   environment._input_id = (scope as any).find((x: any) => x.device_list_button_id)?.device_list_button_id;
 
   // Instance the router classs of Utils.router
-  const router = new Utils.AnalysisRouter({ scope, context, environment });
+  const router = new Utils.AnalysisRouter({ scope, environment, context });
 
   // Register routes based on variable, action or widget.
 
@@ -52,6 +52,8 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
 
   router.register(searchAsset as any).whenInputFormID("search-asset");
 
+  router.register(sensorLevelReportCsv as any).whenInputFormID("create-report");
+
   const result = await router.exec();
 
   console.log("Services found:", result.services);
@@ -71,7 +73,7 @@ async function startAnalysis(context: TagoContext, scope: Data[]): Promise<void>
     return;
   }
   // Check if all tokens needed for the application were provided.
-  if (!environment.config_id) {
+  if (!environment.config_token) {
     throw new Error("Config id not found, add it to the analysis environment variables");
   }
 

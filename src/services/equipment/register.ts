@@ -15,6 +15,7 @@ interface installDeviceParam {
   asset_id: string;
   equip_serie: string;
   equip_img: string;
+  sensor_connector: string;
 }
 
 async function getNewEquipVariables(scope: Data[], validate: ReturnType<typeof initializeValidation>) {
@@ -40,7 +41,7 @@ async function getNewEquipVariables(scope: Data[], validate: ReturnType<typeof i
   }
 }
 
-async function installDevice({ new_dev_name, org_id, site_id, asset_id, equip_serie, equip_img }: installDeviceParam) {
+async function installDevice({ new_dev_name, org_id, site_id, asset_id, equip_serie, equip_img, sensor_connector }: installDeviceParam) {
   // structuring data
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
@@ -55,13 +56,14 @@ async function installDevice({ new_dev_name, org_id, site_id, asset_id, equip_se
   // inserting device id -> so we can reference this later
   await Resources.devices.edit(new_dev.device_id, {
     tags: [
-      { key: "device_id", value: new_dev.device_id },
-      { key: "asset_id", value: asset_id },
+      { key: "equipment_id", value: new_dev.device_id },
+      { key: "sensor_id", value: asset_id },
       { key: "site_id", value: site_id },
       { key: "organization_id", value: org_id },
       { key: "device_type", value: "equipment" },
       { key: "equip_serie", value: equip_serie },
       { key: "equip_img", value: equip_img },
+      { key: "connector_id", value: sensor_connector },
     ],
   });
 
@@ -95,7 +97,10 @@ async function createEquipment({ scope, environment }: ServiceParams) {
     throw "Asset id not found";
   }
 
-  const site_id = (await Resources.devices.info(asset_id)).tags.find((x) => x.key === "site_id")?.value;
+  const assetInfo = await Resources.devices.info(asset_id);
+
+  const site_id = assetInfo.tags.find((x) => x.key === "site_id")?.value;
+  const sensor_connector = assetInfo.connector;
 
   if (!site_id) {
     throw "Site id not found!";
@@ -108,6 +113,7 @@ async function createEquipment({ scope, environment }: ServiceParams) {
     asset_id,
     equip_serie: serieNumber,
     equip_img: image.url,
+    sensor_connector,
   });
 
   const equip_data = parseObjectToTago(

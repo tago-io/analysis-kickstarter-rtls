@@ -7,6 +7,10 @@ import { Device, Types } from "@tago-io/sdk";
 import { RouterConstructor } from "@tago-io/sdk/lib/modules/Utils/router/router.types";
 import { Data } from "@tago-io/sdk/lib/types";
 
+interface EnvironmentJSON {
+  [key: string]: string;
+}
+
 interface Metadata {
   [key: string]: string | number | boolean | Metadata | void;
 }
@@ -72,4 +76,5 @@ export {
   EnvironmentItemObject,
   Metadata,
   DeviceCreated,
+  EnvironmentJSON,
 };

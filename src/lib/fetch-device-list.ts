@@ -30,4 +30,4 @@ async function fetchDeviceList(filter: DeviceQuery["filter"]): Promise<FetchDevi
   return device_list;
 }
 
-export { fetchDeviceList };
+export { fetchDeviceList, FetchDeviceResponse };

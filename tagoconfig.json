@@ -1,17 +1,18 @@
 {
+    "$schema": "https://github.com/tago-io/tagoio-cli/blob/master/docs/schema.json",
     "analysisPath": "./src/analysis",
     "buildPath": "./build",
     "dev": {
         "analysisList": [
             {
-                "fileName": "analysisHandlerAlert.ts",
-                "name": "[TagoIO] - Alert Handler",
-                "id": "63fe06131fa96300095676f1"
+                "fileName": "alert-retry.ts",
+                "name": "[TagoIO] - Alert Retry",
+                "id": "66420d5ee4b9b4000860414f"
             },
             {
-                "fileName": "alertTrigger.ts",
-                "name": "[TagoIO] - AlertTrigger",
-                "id": "63fe5275b3238b000953deb6"
+                "fileName": "alert-trigger.ts",
+                "name": "[TagoIO] - Alert Trigger",
+                "id": "66420d6dcdcc0900089828c1"
             },
             {
                 "fileName": "analysisAssetTracking.ts",
@@ -19,9 +20,19 @@
                 "id": "5fe0fad942fbde001f84752a"
             },
             {
+                "fileName": "",
+                "name": "[TagoIO] - Device Emulator",
+                "id": "64023f09c0e31d0008fbc63b"
+            },
+            {
                 "fileName": "analysisDeviceUpdater.ts",
                 "name": "[TagoIO] - Device Updater",
                 "id": "6059dd815215200013ec75a3"
+            },
+            {
+                "fileName": "geofenceAlertTrigger.ts",
+                "name": "[TagoIO] - GeofenceAlertTrigger",
+                "id": "63fe5275b3238b000953deb6"
             },
             {
                 "fileName": "analysisHandler.ts",
@@ -30,7 +41,7 @@
             }
         ],
         "id": "5fc13907cf4e170027440a96",
-        "profileName": "RTLS",
+        "profileName": "RTLS/Marker Kickstarter",
         "email": "freddy.minuzzi@tago.io"
     }
 }

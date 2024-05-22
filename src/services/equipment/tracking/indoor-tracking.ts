@@ -1,10 +1,9 @@
 import { Resources } from "@tago-io/sdk";
-import { Data, DeviceInfo } from "@tago-io/sdk/lib/types";
+import { Data, DeviceInfo, TagoContext } from "@tago-io/sdk/lib/types";
 
 import { parseObjectToTago } from "../../../lib/parse-object-to-tagoio";
-import { TagoContext } from "../../../types";
 import { verifyGeofenceAlarm } from "../../alerts/verifyGeofenceAlert";
-import { Geofence } from "../../device/is-inside-geofence";
+import { Geofence } from "../../device/is-inside-indoor-geofence";
 
 interface Beacon {
   id: string;
@@ -163,13 +162,17 @@ async function getIndoorPos(context: TagoContext, scope: Data[], enviroment: any
     id: x.group,
   })) as Geofence[];
 
-  await verifyGeofenceAlarm(context, siteID, {
-    deviceID: scope[0].device,
-    pos_x: Number(beaconPosition.x),
-    pos_y: Number(beaconPosition.y),
-    layerBeacon: layer.group as string,
-    geofence_list,
-  });
+  await verifyGeofenceAlarm(
+    siteID,
+    {
+      deviceID: scope[0].device,
+      pos_x: Number(beaconPosition.x),
+      pos_y: Number(beaconPosition.y),
+      layerBeacon: layer.group as string,
+      geofence_list,
+    },
+    scope
+  );
 }
 
 export { getIndoorPos, getAssetHistoryInside, getAssetInfoInside };

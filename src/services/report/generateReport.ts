@@ -6,6 +6,7 @@ import { Analysis, Resources, Services } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/lib/types";
 
 import { getZodError } from "../../lib/get-zod-error";
+import { sendNotificationFeedback } from "../../lib/send-notification";
 import { initializeValidation } from "../../lib/validation";
 import { ServiceParams } from "../../types";
 import { registerReportModel } from "./models/report.model";
@@ -18,8 +19,6 @@ async function _generateCsv(siteID: string) {
 
   // Check if the site has indoor data, if it doesn't, then it's outdoor data or no data at all.
   if (siteDataIndoorData.length > 0) {
-    const siteDataIndoorData = await Resources.devices.getDeviceData(siteID, { variables: "equipment_location", qty: 10 });
-
     for (const data of siteDataIndoorData) {
       sensorData.push({
         Time: data.time.toISOString(),
@@ -32,21 +31,22 @@ async function _generateCsv(siteID: string) {
 
     const csv = await json2csv(sensorData, { delimiter: { field: "," }, emptyFieldValue: "", preventCsvInjection: true });
 
-    return `"${siteInfo.name.trim()}"\n\n${csv}`;
+    return `"${siteInfo.name.trim()} Indoor Location Data"\n\n${csv}`;
   } else {
-    const siteDataIndoorData = await Resources.devices.getDeviceData(siteID, { variables: "equipment_outside_location", qty: 10 });
+    const siteDataOutdoorData = await Resources.devices.getDeviceData(siteID, { variables: "equipment_outside_location", qty: 10 });
+    if (siteDataOutdoorData.length > 0) {
+      for (const data of siteDataOutdoorData) {
+        sensorData.push({
+          Time: data.time.toISOString(),
+          "Equipment Name": String(data.value),
+          Location: String(data.location?.coordinates[0]) + ", " + String(data.location?.coordinates[1]),
+        });
+      }
 
-    for (const data of siteDataIndoorData) {
-      sensorData.push({
-        Time: data.time.toISOString(),
-        "Equipment Name": String(data.value),
-        Location: String(data.location?.coordinates[0]) + ", " + String(data.location?.coordinates[1]),
-      });
+      const csv = await json2csv(sensorData, { delimiter: { field: "," }, emptyFieldValue: "", preventCsvInjection: true });
+
+      return `"${siteInfo.name.trim()} Outdoor Location Data"\n\n${csv}`;
     }
-
-    const csv = await json2csv(sensorData, { delimiter: { field: "," }, emptyFieldValue: "", preventCsvInjection: true });
-
-    return `"${siteInfo.name.trim()} Location Data"\n\n${csv}`;
   }
 }
 
@@ -87,7 +87,7 @@ async function getNewReportVariables(scope: Data[], validate: ReturnType<typeof 
  * @description Generate sensor level report CSV.
  * @param context - TagoIO Context.
  */
-async function sensorLevelReportCsv({ scope }: ServiceParams) {
+async function sensorLevelReportCsv({ scope, environment }: ServiceParams) {
   const siteID = scope[0].device;
   if (!siteID) {
     throw "[Error] No Site ID Found";
@@ -101,7 +101,14 @@ async function sensorLevelReportCsv({ scope }: ServiceParams) {
 
   const csv = await _generateCsv(siteID);
 
-  console.log("CSV", csv);
+  if (!csv) {
+    await sendNotificationFeedback({
+      environment,
+      message: `No Data to Report.`,
+      title: `The selected device has no data to report on.`,
+    });
+    return;
+  }
 
   for (const userID of userIDList) {
     await _sendCsvEmailToUsers(csv, userID);

@@ -74,7 +74,7 @@ async function startAnalysis(context: TagoContext, scope: Data[]): Promise<void>
   }
   // Check if all tokens needed for the application were provided.
   if (!environment.config_token) {
-    throw new Error("Config id not found, add it to the analysis environment variables");
+    throw new Error("Config token not found, add it to the analysis environment variables");
   }
 
   await analysisHandler(context, scope);

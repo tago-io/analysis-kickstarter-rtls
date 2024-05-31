@@ -12,13 +12,21 @@ import { queue } from "async";
 import { DateTime } from "luxon";
 
 import { Analysis, Resources, Utils } from "@tago-io/sdk";
-import { TagoContext } from "@tago-io/sdk/lib/types";
+import { DeviceListItem, TagoContext } from "@tago-io/sdk/lib/types";
 
-import { fetchDeviceList, FetchDeviceResponse } from "../lib/fetch-device-list";
+import { fetchDeviceList } from "../lib/fetch-device-list";
 import { getUsersFromGroup } from "../services/alerts/_get-group-users";
 import { sendNotificationsToUsers } from "../services/alerts/send-notification-to-users";
 
 let retryTimeInMinutes = 20;
+
+interface contactGroups extends Array<string> {}
+
+interface notificationType {
+  email: boolean;
+  sms: boolean;
+  push: boolean;
+}
 
 /**
  * Checks for unacknowledged alerts and performs retry logic.
@@ -27,7 +35,7 @@ let retryTimeInMinutes = 20;
  * @param environment - The environment configuration.
  * @returns {Promise<void>} - A promise that resolves when the retry logic is completed.
  */
-async function _checkNoAckAlert({ siteInfo }: { siteInfo: FetchDeviceResponse }) {
+async function _checkNoAckAlert({ siteInfo }: { siteInfo: DeviceListItem }) {
   const noAckDataList = await Resources.devices.getDeviceData(siteInfo.id, { variables: ["not_ack_alert"] });
 
   if (!noAckDataList || noAckDataList.length === 0) {
@@ -35,7 +43,7 @@ async function _checkNoAckAlert({ siteInfo }: { siteInfo: FetchDeviceResponse })
   }
 
   // get data using the groups from the noAckDataList
-  const alertLogGroups: any[] = noAckDataList.map((variable) => variable.group);
+  const alertLogGroups = noAckDataList.map((variable) => variable.group) as string[];
 
   if (alertLogGroups.length === 0) {
     return;
@@ -43,16 +51,12 @@ async function _checkNoAckAlert({ siteInfo }: { siteInfo: FetchDeviceResponse })
 
   const alertLog = await Resources.devices.getDeviceData(siteInfo.id, { variables: ["alert_log"], groups: alertLogGroups });
 
-  if (!noAckDataList || noAckDataList.length === 0) {
-    return;
-  }
-
   const curTime = DateTime.now();
   for (const noAckData of noAckDataList) {
     const lastAlertTime = DateTime.fromJSDate(noAckData.time);
     const diff = curTime.diff(lastAlertTime, "minutes").minutes;
 
-    const alertDetails = noAckData.metadata as { notificationParams: any; contactGroups: any; notificationType: any; orgID: any };
+    const alertDetails = noAckData.metadata as { notificationParams: any; contactGroups: contactGroups; notificationType: notificationType; orgID: string };
 
     if (!noAckData.value) {
       continue;
@@ -76,6 +80,8 @@ async function _checkNoAckAlert({ siteInfo }: { siteInfo: FetchDeviceResponse })
         id: alertLogData.id,
         metadata: { ...alertLogData.metadata, notificationIDList: newNotificationIDList },
       });
+    } else {
+      console.log("Alert eached maximum amount of notifications:", noAckData.group);
     }
   }
 }

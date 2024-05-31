@@ -26,10 +26,7 @@ interface ActionStructureParams {
   group_id?: string;
   org_id: string;
   site_id: string;
-
-  // Equipment ID, only useful for the c3web3 application.
   equipment_id: string;
-
   send_to: string[];
   // type: string;
   triggers: {
@@ -72,7 +69,7 @@ function generateActionStructure(structure: ActionStructureParams) {
 
     const action_structure: any = {
       active: trigger.isActive,
-      name: `Application alert trigger ${structure.group_id ? "GROUP" : "DEVICE"}`,
+      name: `Application alert trigger - Alert: ${structure.group_id}`,
       tags: [
         { key: "group_id", value: structure.group_id || "N/A" },
         { key: "organization_id", value: structure.org_id },
@@ -114,7 +111,7 @@ function generateActionStructure(structure: ActionStructureParams) {
             device: device_id,
             second_value: "",
           });
-        } else if (trigger.condition !== "><") {
+        } else if (trigger.condition !== "=") {
           action_structure.trigger.push({
             is: _reverseCondition(trigger.condition),
             unlock: true,
@@ -134,7 +131,6 @@ function generateActionStructure(structure: ActionStructureParams) {
             device: device_id,
             second_value: "",
           });
-
           action_structure.trigger.push({
             is: ">",
             unlock: true,

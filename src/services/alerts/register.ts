@@ -30,6 +30,9 @@ async function parseAlertScope(scope: Data[]) {
     throw new Error("Add Alert: Missing alert variable");
   }
 
+  // print the second element of the metadat array within the scope[0]
+  console.log(JSON.stringify(scope[0].metadata));
+
   const result = await alertModel.parseAsync({ ...alert.metadata, device: alert.value });
 
   return { ...result, group: alert.group, dataID: alert.id };
@@ -59,7 +62,13 @@ async function _getEquipmentSensorList(equipmentID: string) {
   const { tags } = await Resources.devices.info(equipmentID);
   const sensorIDList = tags?.filter((x) => x.key === "sensor_id").map((x) => x.value);
 
-  const sensorListInfo = await Promise.all(sensorIDList?.map((x) => Resources.devices.info(x)) || []);
+  const sensorListInfo = [];
+  if (sensorIDList) {
+    for (const x of sensorIDList) {
+      const info = await Resources.devices.info(x);
+      sensorListInfo.push(info);
+    }
+  }
 
   return sensorListInfo;
 }
@@ -111,7 +120,6 @@ async function registerAlert({ environment, scope }: RouterConstructor & { scope
       throw new Error("No sensor found for the selected equipment");
     }
     const alertSettings = await getAlertSettings(environment.config_id, alertScope.device);
-    console.log("ALERT SETTINGS:", alertSettings);
     const orgID = await _getOrgId(siteID);
 
     const triggers = _formatTriggerList(alertScope, alertSettings, equipmentSensorList);
@@ -128,7 +136,6 @@ async function registerAlert({ environment, scope }: RouterConstructor & { scope
 
     const actionList = generateActionStructure(actionStructure);
     for (const actionBody of actionList) {
-      console.log("ACTION BODY:", actionBody);
       const { action } = await Resources.actions.create(actionBody).catch((error) => {
         throw error;
       });
@@ -147,10 +154,8 @@ async function registerAlert({ environment, scope }: RouterConstructor & { scope
 
         // Adding the geofence to the widget event list so that the geofence event can be shown in the image marker
         const type = trigger.trigger_value as string;
-        console.log(type);
         const color = type.includes("leave") ? "blue" : type.includes("enter") ? "green" : "pink";
         await Resources.devices.sendDeviceData(siteID, { variable: "geofence_events", value: type, metadata: { color }, group: alertScope.group });
-        console.log("color", color);
       }
     }
   } catch (error: any) {

@@ -2,7 +2,7 @@
 
 import { json2csv } from "json-2-csv";
 
-import { Analysis, Resources, Services } from "@tago-io/sdk";
+import { Resources, Services } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/lib/types";
 
 import { getZodError } from "../../lib/get-zod-error";

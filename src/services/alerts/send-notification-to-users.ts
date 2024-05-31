@@ -1,10 +1,28 @@
-import { resourceUsage } from "process";
-
 import { Resources, Services } from "@tago-io/sdk";
 import { UserInfo } from "@tago-io/sdk/lib/types";
 
 import { getAnalysisByTagID } from "../../lib/find-resource";
 import { IAlertModel } from "./alert.model";
+
+interface NotificationParams {
+  equipment_name: string;
+  equipment_id: string;
+  sensor_type: string;
+  trigger_id: string;
+  value: string;
+  variable: string;
+  condition: string;
+  trigger_value: string;
+  alert_id: string;
+  time_string: string;
+  actionGroupID: string;
+  alert_type: string;
+  sensorID: string;
+  siteID: string;
+  pushMessage: string;
+  smsMessage: string;
+  [key: string]: string | number; // Allow additional properties with string keys and values of string, number, or Date
+}
 
 /**
  * Sends push notification messages to the specified user list with the given notification parameters
@@ -12,7 +30,7 @@ import { IAlertModel } from "./alert.model";
  * @param notificationParams Object containing the parameters for the push notification
  */
 
-async function pushNotificationMessage(userList: UserInfo[], ackAnalysisID: string, notificationParams: { [key: string]: any }) {
+async function pushNotificationMessage(userList: UserInfo[], ackAnalysisID: string, notificationParams: NotificationParams) {
   const notificationIDList: string[] = [];
   for (const user of userList) {
     if (!user.active) {
@@ -48,7 +66,7 @@ async function pushNotificationMessage(userList: UserInfo[], ackAnalysisID: stri
  * @param userList Array of UserInfo objects containing the email addresses of the users to receive the email
  * @param notificationParams Object containing the parameters for the email notification
  */
-async function emailMessages(userList: UserInfo[], notificationParams: { [key: string]: any }) {
+async function emailMessages(userList: UserInfo[], notificationParams: NotificationParams) {
   const email = new Services({ token: process.env.T_ANALYSIS_TOKEN }).email;
   userList = userList.filter((x) => x.active);
   let emailTemplate = "email_alert";
@@ -74,7 +92,7 @@ async function emailMessages(userList: UserInfo[], notificationParams: { [key: s
  * @param notificationParams Object containing the parameters for the SMS notification
  */
 
-async function smsMessages(userList: UserInfo[], notificationParams: { [key: string]: any }) {
+async function smsMessages(userList: UserInfo[], notificationParams: NotificationParams) {
   for (const user of userList) {
     if (!user.active) {
       continue;
@@ -99,7 +117,7 @@ async function smsMessages(userList: UserInfo[], notificationParams: { [key: str
  * @param notificationParams Object containing the parameters for the notification
  * @returns The generated notification message
  */
-async function generateNotificationmessage(notificationParams: { [key: string]: any }, notificationType: IAlertModel["notificationType"]) {
+async function generateNotificationMessage(notificationParams: NotificationParams, notificationType: IAlertModel["notificationType"]) {
   const runInfo = await Resources.run.info();
   const messages: any = {};
 
@@ -121,7 +139,7 @@ async function generateNotificationmessage(notificationParams: { [key: string]: 
     }
 
     for (const key in notificationParams) {
-      emailTemplate = emailTemplate.replaceAll(`$${key}$`, notificationParams[key]);
+      emailTemplate = emailTemplate.replaceAll(`$${key}$`, String(notificationParams[key]));
     }
 
     messages[`${type}Message`] = emailTemplate;
@@ -147,14 +165,16 @@ async function generateNotificationmessage(notificationParams: { [key: string]: 
 async function sendNotificationsToUsers(
   notificationType: IAlertModel["notificationType"],
   userList: UserInfo[],
-  notificationParams: { [key: string]: any } // TODO: notificationParams must be strongly typed
+  notificationParams: NotificationParams // TODO: notificationParams must be strongly typed
 ) {
-  console.debug(`Sending notifications to ${userList.length} `);
+  console.log("Sending notifications to users", notificationParams);
+
+  console.info(`Sending notifications to ${userList.length} users.`);
 
   // Capitalize the first letter of the alert type for better readability
   notificationParams.alert_type = notificationParams.alert_type.charAt(0).toUpperCase() + notificationParams.alert_type.slice(1);
 
-  const message = notificationType.push || notificationType.sms ? await generateNotificationmessage(notificationParams, notificationType) : null;
+  const message = notificationType.push || notificationType.sms ? await generateNotificationMessage(notificationParams, notificationType) : null;
   const smsMessage = message?.smsMessage;
   const pushMessage = message?.pushMessage;
 

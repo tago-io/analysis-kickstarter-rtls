@@ -48,6 +48,7 @@ async function installDevice({ site_name, site_address, org_id }: installDeviceP
       { key: "organization_id", value: org_id },
       { key: "device_type", value: "site" },
       { key: "site_address", value: site_address },
+      { key: "department_id", value: new_site.device_id },
     ],
   });
 

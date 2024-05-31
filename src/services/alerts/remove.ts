@@ -68,7 +68,6 @@ async function deleteAlert({ environment, scope, context }: RouterConstructor) {
 
   const actionlist = await Resources.actions.list({ amount: 99, filter: { tags: [{ key: "group_id", value: group }] } });
   for (const action of actionlist) {
-    await Resources.actions.delete(action.id);
     const sensor_id = action.tags?.find((x) => x.key === "device")?.value;
     const trigger_id = action.tags?.find((x) => x.key === "trigger_id")?.value;
 
@@ -80,7 +79,8 @@ async function deleteAlert({ environment, scope, context }: RouterConstructor) {
       throw new Error("Trigger not found");
     }
 
-    console.log(`Removing sensor ${sensor_id} from alert ${group}, trigger ${trigger_id}`);
+    console.info(`Removing sensor ${sensor_id} from alert ${group}, trigger ${trigger_id}`);
+    await Resources.actions.delete(action.id);
 
     // TODO: must identify if there are multiple door-open sensors in the alert, at the moment it will disable all door-open sensors related to the alert card.
     if (!trigger_id.includes("door-open")) {

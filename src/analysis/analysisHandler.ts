@@ -24,7 +24,8 @@ import { createUser } from "../services/user/register";
 import { deleteUser } from "../services/user/remove";
 
 function fixDashCustomBtnID(environment: { [key: string]: any }, scope: Data[]) {
-  const data = (scope as any).find((x: any) => x["dynamic_table_button_id"]);
+  const data = scope.find((x: any) => x["dynamic_table_button_id"]) as (Data & { dynamic_table_button_id: any }) | undefined;
+
   if (data) {
     environment._widget_exec = data.dynamic_table_button_id;
   }

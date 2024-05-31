@@ -66,9 +66,6 @@ async function getAlertSettings(configID: string, deviceID: string, connectorLis
     throw new Error("Device Config ID not found");
   }
 
-  console.log("deviceID", deviceID);
-  console.log("configID", configID);
-
   const alertSettings = await Resources.devices.getDeviceData(configID, { variables: "alert_settings", groups: connectorList });
 
   return alertSettings.flatMap((setting) => setting.metadata?.alertList.map((x: IAlertSettings) => ({ ...x, connector: setting.group })));

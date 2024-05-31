@@ -14,7 +14,34 @@ import { getTriggerDetails } from "./lib/getTriggerDetails";
 import { updateAlertStatus } from "./lib/updateAlertStatus";
 import { sendNotificationsToUsers } from "./send-notification-to-users";
 
-async function triggerAlert(deviceID: string, action_group: string, scope: any, geofenceType: "enter geofence" | "leave geofence") {
+interface Alert {
+  deviceName: string;
+  name: string;
+  triggers: {
+    id: string;
+    variable: string;
+    type: string;
+    label: string;
+    value: number | string;
+    formula: string;
+    condition: string;
+    sensorName: string;
+    alertActivation: boolean;
+    recurringAlarm: boolean;
+  }[];
+  notificationType: {
+    email: boolean;
+    sms: boolean;
+    push: boolean;
+  };
+  recipients: {
+    label: string;
+    value: string;
+  }[];
+  status: string;
+}
+
+async function triggerGeofenceAlert(deviceID: string, action_group: string, scope: any, geofenceType: "enter geofence" | "leave geofence") {
   const [action_id] = await Resources.actions.list({ filter: { tags: [{ key: "group_id", value: action_group }] } });
 
   const { variable, contactGroups, trigger, notificationType, orgID, siteID, equipmentID, alertGroup, alert_type } = await getAlertDetails(action_id.id);
@@ -28,6 +55,8 @@ async function triggerAlert(deviceID: string, action_group: string, scope: any, 
     sensor_type: equpmentDetails.sensor_type,
     trigger_id: trigger.id,
     ...triggerDetails,
+    condition: "",
+    trigger_value: geofenceType,
     time_string: DateTime.fromJSDate(triggerDetails.time).toFormat("yyyy-MM-dd HH:mm:ss"),
     actionGroupID: alertGroup,
     alert_type,
@@ -61,7 +90,7 @@ async function triggerAlert(deviceID: string, action_group: string, scope: any, 
   }
 }
 
-async function _sendEnteredAlert(myCurrentGeofence: Geofence | null, alert: any, deviceID: string, scope: Data[]) {
+async function _sendEnteredAlert(myCurrentGeofence: Geofence | null, alert: Alert, deviceID: string, scope: Data[]) {
   if (!myCurrentGeofence) {
     // The asset is not inside any geofence
     return;
@@ -73,7 +102,7 @@ async function _sendEnteredAlert(myCurrentGeofence: Geofence | null, alert: any,
   }
 
   // add alert-trigger.ts logic here
-  await triggerAlert(deviceID, myCurrentGeofence.event, scope, "enter geofence");
+  await triggerGeofenceAlert(deviceID, myCurrentGeofence.event, scope, "enter geofence");
 }
 
 async function _sendLeaveAlert(lastGeofenceParam: ConfigurationParams, alert: any, deviceID: string, scope: Data[], oldevent: string) {
@@ -88,7 +117,7 @@ async function _sendLeaveAlert(lastGeofenceParam: ConfigurationParams, alert: an
   }
 
   // add alert-trigger.ts logic here
-  await triggerAlert(deviceID, oldevent, scope, "leave geofence");
+  await triggerGeofenceAlert(deviceID, oldevent, scope, "leave geofence");
 }
 
 interface GeofenceAlarmCheck {
@@ -139,7 +168,7 @@ async function verifyGeofenceAlarm(site_id: string, { deviceID, pos_x, pos_y, la
   // entering geofence alert
   if (myCurrentGeofence && myCurrentGeofence.id !== lastGeofenceParam.value) {
     // The asset is inside a geofence, but is not inside the last geofence
-    console.log("Entering geofence");
+    console.info("Entering geofence");
     await _sendEnteredAlert(myCurrentGeofence, alert, deviceID, scope);
   }
 
@@ -153,7 +182,7 @@ async function verifyGeofenceAlarm(site_id: string, { deviceID, pos_x, pos_y, la
     const [possibleleaveAlert] = await Resources.devices.getDeviceData(site_id, { variables: "alert", groups: alert_id, qty: 1 });
     alert = possibleleaveAlert?.metadata as any;
 
-    console.log("Leaving geofence");
+    console.info("Leaving geofence");
     await _sendLeaveAlert(lastGeofenceParam, alert, deviceID, scope, alert_id);
   }
 

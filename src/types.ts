@@ -5,7 +5,7 @@
 
 import { Device, Types } from "@tago-io/sdk";
 import { RouterConstructor } from "@tago-io/sdk/lib/modules/Utils/router/router.types";
-import { Data } from "@tago-io/sdk/lib/types";
+import { Data, TagoContext } from "@tago-io/sdk/lib/types";
 
 interface EnvironmentJSON {
   [key: string]: string;
@@ -39,13 +39,6 @@ interface InputScope {
 
 type Token = string;
 type AnalysisID = string;
-
-interface TagoContext {
-  token: Token;
-  analysis_id: AnalysisID;
-  environment: Types.AnalysisEnvironment;
-  log: (...args: any[]) => void;
-}
 
 interface ServiceParams {
   context: TagoContext;

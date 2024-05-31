@@ -1,5 +1,4 @@
 import { Resources } from "@tago-io/sdk";
-import { UserInfo } from "@tago-io/sdk/lib/types";
 
 /**
  * Function that gets the users' information from a specific group
@@ -12,15 +11,18 @@ async function getUsersFromGroup(orgID: string, groupID: string) {
     return [];
   }
 
-  const func_list = userIdList.metadata.sentValues.map((user) =>
-    Resources.run.userInfo(user.value as string).catch((error) => {
-      console.debug(`Error fetching user info for ${user.value}: ${error.message}`);
-      return null;
-    })
-  );
-  const userList = await Promise.all(func_list);
+  const userList = [];
 
-  return userList.filter((x) => x && x.active) as UserInfo[];
+  for (const user of userIdList.metadata.sentValues) {
+    try {
+      const userInfo = await Resources.run.userInfo(user.value as string);
+      userList.push(userInfo);
+    } catch (error) {
+      console.debug(`Error fetching user info for ${user.value}: ${error}`);
+    }
+  }
+
+  return userList.filter((x) => x && x.active);
 }
 
 export { getUsersFromGroup };

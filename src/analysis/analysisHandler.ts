@@ -79,7 +79,6 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
   router.register(ackAlertNotificationBtn).whenCustomBtnID("alert-ack-notification");
   router.register(sensorLevelReportCsv as any).whenInputFormID("create-report");
 
-
   const result = await router.exec();
 
   console.log("Services found:", result.services);
@@ -99,8 +98,8 @@ async function startAnalysis(context: TagoContext, scope: Data[]): Promise<void>
     return;
   }
   // Check if all tokens needed for the application were provided.
-  if (!environment.config_token) {
-    throw new Error("Config token not found, add it to the analysis environment variables");
+  if (!environment.config_id) {
+    throw new Error("Config id not found, add it to the analysis environment variables");
   }
 
   await analysisHandler(context, scope);

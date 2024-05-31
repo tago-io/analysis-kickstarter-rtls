@@ -16,7 +16,7 @@ import { DeviceListItem, TagoContext } from "@tago-io/sdk/lib/types";
 
 import { fetchDeviceList } from "../lib/fetch-device-list";
 import { getUsersFromGroup } from "../services/alerts/_get-group-users";
-import { sendNotificationsToUsers } from "../services/alerts/send-notification-to-users";
+import { NotificationParams, sendNotificationsToUsers } from "../services/alerts/send-notification-to-users";
 
 let retryTimeInMinutes = 20;
 
@@ -56,7 +56,12 @@ async function _checkNoAckAlert({ siteInfo }: { siteInfo: DeviceListItem }) {
     const lastAlertTime = DateTime.fromJSDate(noAckData.time);
     const diff = curTime.diff(lastAlertTime, "minutes").minutes;
 
-    const alertDetails = noAckData.metadata as { notificationParams: any; contactGroups: contactGroups; notificationType: notificationType; orgID: string };
+    const alertDetails = noAckData.metadata as {
+      notificationParams: NotificationParams;
+      contactGroups: contactGroups;
+      notificationType: notificationType;
+      orgID: string;
+    };
 
     if (!noAckData.value) {
       continue;

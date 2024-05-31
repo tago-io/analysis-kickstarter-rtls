@@ -162,11 +162,7 @@ async function generateNotificationMessage(notificationParams: NotificationParam
  * @param userList Array of UserInfo objects containing the user information
  * @param notificationParams Object containing the parameters for the notifications
  */
-async function sendNotificationsToUsers(
-  notificationType: IAlertModel["notificationType"],
-  userList: UserInfo[],
-  notificationParams: NotificationParams // TODO: notificationParams must be strongly typed
-) {
+async function sendNotificationsToUsers(notificationType: IAlertModel["notificationType"], userList: UserInfo[], notificationParams: NotificationParams) {
   console.log("Sending notifications to users", notificationParams);
 
   console.info(`Sending notifications to ${userList.length} users.`);
@@ -195,4 +191,4 @@ async function sendNotificationsToUsers(
   return notificationIDList;
 }
 
-export { sendNotificationsToUsers };
+export { sendNotificationsToUsers, NotificationParams };

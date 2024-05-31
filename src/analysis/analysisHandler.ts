@@ -15,6 +15,7 @@ import { deleteEquipment } from "../services/equipment/remove";
 import { editOrganization } from "../services/organization/edit";
 import { createOrganization } from "../services/organization/register";
 import { deleteOrganization } from "../services/organization/remove";
+import { sensorLevelReportCsv } from "../services/report/generateReport";
 import { editSite } from "../services/site/edit";
 import { createSite } from "../services/site/register";
 import { deleteSite } from "../services/site/remove";
@@ -43,7 +44,7 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
   environment._input_id = (scope as any).find((x: any) => x.device_list_button_id)?.device_list_button_id;
 
   // Instance the router classs of Utils.router
-  const router = new Utils.AnalysisRouter({ scope, context, environment });
+  const router = new Utils.AnalysisRouter({ scope, environment, context });
 
   // Register routes based on variable, action or widget.
 
@@ -75,6 +76,8 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
   fixDashCustomBtnID(environment, scope);
   router.register(ackAlert).whenCustomBtnID("alert-ack");
   router.register(ackAlertNotificationBtn).whenCustomBtnID("alert-ack-notification");
+  router.register(sensorLevelReportCsv as any).whenInputFormID("create-report");
+
 
   const result = await router.exec();
 
@@ -95,8 +98,8 @@ async function startAnalysis(context: TagoContext, scope: Data[]): Promise<void>
     return;
   }
   // Check if all tokens needed for the application were provided.
-  if (!environment.config_id) {
-    throw new Error("Config id not found, add it to the analysis environment variables");
+  if (!environment.config_token) {
+    throw new Error("Config token not found, add it to the analysis environment variables");
   }
 
   await analysisHandler(context, scope);

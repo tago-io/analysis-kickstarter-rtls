@@ -1,62 +1,97 @@
-import { Device, Account } from "@tago-io/sdk";
-import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { Resources } from "@tago-io/sdk";
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  const user_id = scope[0].serie;
+import { getZodError } from "../../lib/get-zod-error";
+import { initializeValidation } from "../../lib/validation";
+import { ServiceParams } from "../../types";
+import { editUserModel } from "./model/edit.model";
 
-  const user_name = scope.find((x) => x.variable === "user_name");
-  const user_phone = scope.find((x) => x.variable === "user_phone");
+async function getUserVariables(scope: any, validate: ReturnType<typeof initializeValidation>) {
+  const user_name = scope[0]?.name;
+  const user_phone = scope[0]?.["tags.phone"];
+
+  try {
+    return editUserModel.parse({
+      user_name,
+      user_phone,
+    });
+  } catch (error) {
+    const zodErrorMsg = getZodError(error);
+    await validate(zodErrorMsg, "danger");
+    throw error;
+  }
+}
+
+async function editUser({ scope, environment }: ServiceParams) {
+  const user_id = scope[0].user;
+  const config_id = environment.config_id;
+  // validate variable
+  const validate = initializeValidation("user_validation", config_id);
+  // Collecting data
+  const { user_name, user_phone } = await getUserVariables(scope, validate);
+  // geting user Organization tag
+  const user_exists = await Resources.run.userInfo(user_id);
+  const tags = user_exists.tags;
+  const org_id = tags.find((tag) => tag.key === "organization_id")?.value;
+  // geting user Organization device
+
+  if (!org_id) {
+    return "User does not have an organization";
+  }
 
   const new_user_info: any = {};
-
-  // const user_to_edit = await account.run.userInfo(user_id);
-  // const [user_data] = await org_dev.getData({ variable: "user_id", qty: 1, serie: user_id });
-
   if (user_name) {
-    //fetching prev data
-    const [user_name_config_dev] = await config_dev.getData({ variable: "user_name", qty: 1, serie: user_id });
-    const [user_name_org_dev] = await config_dev.getData({ variable: "user_name", qty: 1, serie: user_id });
-    //deleting prev data
-    await config_dev.deleteData({ id: user_name_config_dev.id });
-    await org_dev.deleteData({ id: user_name_org_dev.id });
+    new_user_info.name = user_name;
+    await Resources.run.userEdit(user_id, new_user_info);
 
+    //fetching prev data
+    const [user_name_config_dev] = await Resources.devices.getDeviceData(config_id, { variables: "user_name", qty: 1, groups: user_id });
+    const [user_name_org_dev] = await Resources.devices.getDeviceData(org_id, { variables: "user_name", qty: 1, groups: user_id });
+    //deleting prev data
+    await Resources.devices.deleteDeviceData(org_id, { id: user_name_org_dev.id } as any);
+    await Resources.devices.deleteDeviceData(config_id, { id: user_name_org_dev.id } as any);
     //modifying json object
+    // @ts-expect-error
     delete user_name_config_dev.time;
+    // @ts-expect-error
     delete user_name_config_dev.id;
+    // @ts-expect-error
     delete user_name_org_dev.time;
+    // @ts-expect-error
     delete user_name_org_dev.id;
 
-    console.log(user_name_config_dev);
-
     //sending new data
-    await config_dev.sendData({ ...user_name_config_dev, value: user_name.value as string }).then((msg) => console.log(msg));
-    await org_dev.sendData({ ...user_name_org_dev, value: user_name.value as string });
+    await Resources.devices.sendDeviceData(config_id, { ...user_name_config_dev, value: user_name }).then((msg) => console.log(msg));
+    await Resources.devices.sendDeviceData(org_id, { ...user_name_org_dev, value: user_name });
 
-    new_user_info.name = user_name.value;
-    await account.run.userEdit(user_id, new_user_info);
+    new_user_info.name = user_name;
+    await Resources.run.userEdit(user_id, new_user_info);
   }
   if (user_phone) {
     //fetching prev data
-    const [user_phone_config_dev] = await config_dev.getData({ variable: "user_phone", qty: 1, serie: user_id });
-    const [user_phone_org_dev] = await config_dev.getData({ variable: "user_phone", qty: 1, serie: user_id });
+    const [user_phone_config_dev] = await Resources.devices.getDeviceData(config_id, { variables: "user_phone", qty: 1, groups: user_id });
+    const [user_phone_org_dev] = await Resources.devices.getDeviceData(org_id, { variables: "user_phone", qty: 1, groups: user_id });
     //deleting prev data
-    await config_dev.deleteData({ id: user_phone_config_dev.id });
-    await org_dev.deleteData({ id: user_phone_org_dev.id });
-
+    await Resources.devices.deleteDeviceData(config_id, { id: user_phone_config_dev.id } as any);
+    await Resources.devices.deleteDeviceData(org_id, { id: user_phone_org_dev.id } as any);
     //modifying json object
+    // @ts-expect-error
     delete user_phone_config_dev.time;
+    // @ts-expect-error
     delete user_phone_config_dev.id;
+    // @ts-expect-error
     delete user_phone_org_dev.time;
+    // @ts-expect-error
     delete user_phone_org_dev.id;
 
-    console.log(user_phone_config_dev);
-
     //sending new data
-    await config_dev.sendData({ ...user_phone_config_dev, value: user_phone.value as string }).then((msg) => console.log(msg));
-    await org_dev.sendData({ ...user_phone_org_dev, value: user_phone.value as string });
+    await Resources.devices.sendDeviceData(config_id, { ...user_phone_config_dev, value: user_phone }).then((msg) => console.log(msg));
+    await Resources.devices.sendDeviceData(org_id, { ...user_phone_org_dev, value: user_phone });
 
-    new_user_info.phone = user_phone.value;
-    await account.run.userEdit(user_id, new_user_info);
+    new_user_info.phone = user_phone;
+    await Resources.run.userEdit(user_id, new_user_info);
   }
   return;
-};
+}
+
+export { editUser, getUserVariables };

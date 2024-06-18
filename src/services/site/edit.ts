@@ -1,67 +1,121 @@
-import { Device, Account } from "@tago-io/sdk";
-import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
+import { queue } from "async";
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  const site_id = scope[0].serie;
+import { Resources } from "@tago-io/sdk";
 
-  const site_name = scope.find((x) => x.variable === "site_name");
-  const site_address = scope.find((x) => x.variable === "site_address");
+import { DataResolver } from "../../lib/edit.data";
+import { fetchDeviceList } from "../../lib/fetch-device-list";
+import { convertLocationParamToObj } from "../../lib/fix-address";
+import { getZodError } from "../../lib/get-zod-error";
+import { initializeValidation } from "../../lib/validation";
+import { ServiceParams } from "../../types";
+import { updateSiteModel } from "./model/site.model";
 
-  //getting previous id data
-  const [site_data] = await org_dev.getData({ variable: "site_id", qty: 1, serie: site_id });
+async function getSiteVariables(scope: any, validate: ReturnType<typeof initializeValidation>) {
+  const name = scope[0]?.name;
+  const address = scope[0]?.["tags.site_address"];
+  const new_address = convertLocationParamToObj(address);
+  const addressInfo = { value: new_address?.value, location: new_address?.location?.coordinates };
+
+  try {
+    return updateSiteModel.parse({
+      name,
+      address: address ? addressInfo : undefined,
+    });
+  } catch (error) {
+    const zodErrorMsg = getZodError(error);
+    await validate(zodErrorMsg, "danger");
+    throw error;
+  }
+}
+
+async function editSite({ environment, scope }: ServiceParams) {
+  // Collecting data
+  const config_id = environment.config_id;
+  const validate = initializeValidation("site_validation", config_id);
+
+  const { name: site_name, address: site_address } = await getSiteVariables(scope, validate);
+  // getting Organization device
+  const site_id = scope[0].device;
+
+  const site_info = await Resources.devices.info(site_id);
+  const org_id = site_info.tags.find((tag) => tag.key === "organization_id")?.value;
+  if (!org_id) {
+    throw new Error("Organization not found");
+  }
+
+  // getting previous id data
+  const [site_data] = await Resources.devices.getDeviceData(org_id, { variables: "site_id", qty: 1, groups: site_id });
+
+  async function editData(device: any) {
+    await DataResolver(site_id).setVariable({ variable: "dev_site", value: site_name }).apply(device.id);
+  }
 
   if (site_name) {
-    //deleting prev data in settings_device
-    await config_dev.deleteData({ id: site_data.id });
-    await org_dev.deleteData({ id: site_data.id });
-    //sending to settings new info
-    await config_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name.value }, time: null });
-    await org_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, label: site_name.value }, time: null });
-    console.log(await config_dev.getData({ variable: "site_id", qty: 1, serie: site_id }));
+    await DataResolver(config_id)
+      .setVariable({ variable: "site_id", metadata: { ...site_data.metadata, label: site_name } })
+      .apply(site_id);
 
-    //updating device name
-    await account.devices.edit(site_id, { name: site_name.value as string });
-    //editing bucket name
-    const bucket_id = (await account.devices.info(site_id)).bucket.id;
-    await account.buckets.edit(bucket_id, { name: site_name.value as string });
+    await DataResolver(org_id)
+      .setVariable({ variable: "site_id", metadata: { ...site_data.metadata, label: site_name } })
+      .apply(site_id);
 
-    //editing device site info
-    const device_list = await account.devices.list({
-      fields: ["id", "bucket", "tags", "name"],
-      filter: {
-        tags: [
-          { key: "site_id", value: site_id },
-          { key: "device_type", value: "device" },
-        ],
-      },
+    await DataResolver(site_id)
+      .setVariable({ variable: "site_id", metadata: { ...site_data.metadata, label: site_name } })
+      .apply(site_id);
+
+    // updating device name
+    await Resources.devices.edit(site_id, { name: site_name });
+
+    // editing device site info
+    const device_list = await fetchDeviceList({
+      tags: [
+        { key: "site_id", value: site_id },
+        { key: "device_type", value: "device" },
+      ],
     });
 
-    await Promise.all(
-      device_list.map(async (device) => {
-        //fetching dev_site data
-        const [data_to_edit] = await org_dev.getData({ serie: device.id, variable: "dev_site" });
-        //deleting prev data and updating the data to new dev_site name
-        await org_dev.deleteData({ id: data_to_edit.id });
-        await org_dev.sendData({ ...data_to_edit, value: site_name.value as string });
+    console.log(device_list);
 
-        const x = await org_dev.getData({ serie: device.id, variable: "dev_site" });
-      })
-    );
+    const editQueue = queue(editData, 5);
+    editQueue.error((error: any) => console.log(error));
 
-    // dev_site_data.value = site_name.value;
-    // dev_site_data.time = null;
-    // await config_dev.sendData(dev_site_data);
-    // await org_dev.sendData(dev_site_data);
-    // await site_dev.sendData(dev_site_data);
+    if (device_list) {
+      for (const device of device_list) {
+        void editQueue.push(device);
+      }
+    }
+
+    await editQueue.drain();
   }
 
   if (site_address) {
-    await config_dev.deleteData({ id: site_data.id });
-    await org_dev.deleteData({ id: site_data.id });
+    await DataResolver(config_id)
+      .setVariable({
+        variable: "site_address",
+        value: site_address.value,
+        location: { lat: site_address.location.lat, lng: site_address.location.lng },
+        group: site_id,
+      })
+      .apply(site_id);
 
-    await config_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, address: site_address.value }, time: null });
-    await org_dev.sendData({ ...site_data, metadata: { ...site_data.metadata, address: site_address.value }, time: null });
+    await DataResolver(org_id)
+      .setVariable({
+        variable: "site_address",
+        value: site_address.value,
+        location: { lat: site_address.location.lat, lng: site_address.location.lng },
+        group: site_id,
+      })
+      .apply();
+
+    await DataResolver(site_id)
+      .setVariable({
+        variable: "site_address",
+        value: site_address.value,
+        location: { lat: site_address.location.lat, lng: site_address.location.lng },
+        group: site_id,
+      })
+      .apply(site_id);
   }
+}
 
-  return console.log("Site edited!");
-};
+export { editSite, getSiteVariables };

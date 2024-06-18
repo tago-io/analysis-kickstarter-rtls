@@ -1,39 +1,45 @@
-import { Device, Account } from "@tago-io/sdk";
-import { parseTagoObject } from "../../lib/data.logic";
-import getDevice from "../../lib/getDevice";
-import { ServiceParams } from "../../types";
+import { Resources } from "@tago-io/sdk";
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  const equip_id = scope[0].serie;
+import { TagResolver } from "../../lib/edit.tag";
+import { sendNotificationFeedback } from "../../lib/send-notification";
+import { RouterConstructorCustomBtn } from "../../types";
 
-  //deleting on list
-  const equip_asset = scope.find((x) => x.variable === "equip_asset");
+async function updateAssetDevice(assetID: string) {
+  const { tags: asset_dev_tags } = await Resources.devices.info(assetID);
+  const tagResolver = TagResolver(asset_dev_tags);
+  tagResolver.setTag("equipment_id", "none");
+  tagResolver.setTag("has_equip", "false");
+  await tagResolver.apply(assetID);
+}
 
-  await org_dev.sendData(parseTagoObject({ asset_list: equip_asset.value }));
+async function deleteEquipment({ scope, environment }: RouterConstructorCustomBtn) {
+  const equip_id = scope[0].device;
 
-  const equip_info = await account.devices.info(equip_id);
-
-  //deleting data
-  const site_id = equip_info.tags.find((tag) => tag.key === "site_id").value;
-  const org_id = equip_info.tags.find((tag) => tag.key === "organization_id").value;
-
-  if (org_id) {
-    await org_dev.deleteData({ serie: equip_id, qty: 9999 });
-  }
-  if (site_id) {
-    const site_dev = await getDevice(account, site_id as string);
-    site_dev.deleteData({ serie: equip_id, qty: 9999 });
+  if (!equip_id) {
+    throw "Equipment not found!";
   }
 
-  //deleting device
-  await account.devices.delete(equip_id);
-  await account.buckets.delete(equip_info.bucket.id);
+  // geting equipment device organization tag
+  const { tags: equip_tags } = await Resources.devices.info(equip_id);
+  const file_url = equip_tags.find((x) => x.key === "equip_img")?.value;
 
-  //removing asset equipment tag
-  const asset_id = equip_info.tags.find((x) => x.key === "asset_id").value as string;
-  const asset_dev_tags = (await account.devices.info(asset_id)).tags.filter((x) => x.key !== "equipment_id");
+  if (file_url) {
+    await Resources.files.delete([file_url]);
+  }
 
-  await account.devices.edit(asset_id, { tags: [...asset_dev_tags] });
+  await Resources.devices.delete(equip_id);
 
-  return console.log("Equipment deleted!");
-};
+  const assetID = scope.find((x) => x.property === "tags.asset_id")?.value;
+  if (!assetID) {
+    throw "Asset ID not found";
+  }
+  await updateAssetDevice(assetID);
+
+  await sendNotificationFeedback({
+    environment,
+    message: `Equipment deleted`,
+    title: `Equipment deleted`,
+  });
+}
+
+export { deleteEquipment };

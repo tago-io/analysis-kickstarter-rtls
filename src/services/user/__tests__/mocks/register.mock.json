@@ -1,0 +1,49 @@
+[
+  {
+    "variable": "new_user_name",
+    "time": "2023-02-27T16:15:11.931Z",
+    "created_at": "2023-02-27T16:15:11.931Z",
+    "value": "username",
+    "id": "63fcd70fcdea1f0009a36311",
+    "group": "1677514511712",
+    "device": "63f799a619ed1e000905d795"
+  },
+  {
+    "variable": "new_user_email",
+    "time": "2023-02-27T16:15:11.936Z",
+    "created_at": "2023-02-27T16:15:11.937Z",
+    "value": "user@email.com",
+    "id": "63fcd70fcdea1f0009a36312",
+    "group": "1677514511712",
+    "device": "63f799a619ed1e000905d795"
+  },
+  {
+    "variable": "new_user_phone",
+    "time": "2023-02-27T16:15:11.938Z",
+    "created_at": "2023-02-27T16:15:11.938Z",
+    "value": "78978978789",
+    "id": "63fcd70fcdea1f0009a36313",
+    "group": "1677514511712",
+    "device": "63f799a619ed1e000905d795"
+  },
+  {
+    "variable": "new_user_access",
+    "time": "2023-02-27T16:15:11.939Z",
+    "created_at": "2023-02-27T16:15:11.939Z",
+    "value": "user",
+    "metadata": { "label": "End-User" },
+    "id": "63fcd70fcdea1f0009a36314",
+    "group": "1677514511712",
+    "device": "63f799a619ed1e000905d795"
+  },
+  {
+    "variable": "new_user_site",
+    "time": "2023-02-27T16:15:11.940Z",
+    "created_at": "2023-02-27T16:15:11.940Z",
+    "value": "63f7ea5954083c0009096414",
+    "metadata": { "label": "Site 5" },
+    "id": "63fcd70fcdea1f0009a36315",
+    "group": "1677514511712",
+    "device": "63f799a619ed1e000905d795"
+  }
+]

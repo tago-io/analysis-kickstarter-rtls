@@ -1,12 +1,27 @@
 {
   "compilerOptions": {
-    "outDir": "./out",
-    "noImplicitAny": true,
-    "module": "commonjs",
-    "target": "ES2019",
-    "lib": ["ES2019"],
+    "target": "ES2021",
+    "module": "CommonJS",
+    "lib": ["ES2021"],
     "allowJs": true,
-    "moduleResolution": "node",
-    "esModuleInterop": true
-  }
+    "outDir": "./build",
+    "noImplicitAny": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "removeComments": true,
+    "strictNullChecks": true,
+    "skipLibCheck": true,
+    "inlineSourceMap": true,
+    "strict": true
+  },
+  "include": ["src/**/*"],
+  "rules": {
+    "no-unused-declaration": true
+  },
+  "ts-node": {
+    "transpileOnly": true
+  },
 }

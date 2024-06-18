@@ -1,57 +1,67 @@
-import { Device, Account, Types } from "@tago-io/sdk";
-import validation from "../../lib/validation";
-import registerUser from "../../lib/registerUser";
-import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
-import getDevice from "../../lib/getDevice";
-import { parseTagoObject } from "../../lib/data.logic";
+import { Resources } from "@tago-io/sdk";
+
+import { parseObjectToTago } from "../../lib/parse-object-to-tagoio";
+import { ServiceParams } from "../../types";
 
 interface sentValue {
   label: string;
   value: string;
 }
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  await org_dev
-    .deleteData({ variables: ["asset_name", "asset_site", "asset_building", "asset_floor", "asset_room", "asset_link"], qty: 999 })
-    .then((msg) => console.log(msg));
+async function searchAsset({ scope, context }: ServiceParams) {
+  const org_id = scope[0].device;
 
-  await account.dashboards.edit("5fc91ac2a0e14a002654fe99", {});
+  await Resources.devices.deleteDeviceData(org_id, { variables: ["asset_name", "asset_site", "asset_floor", "asset_room", "asset_link"], qty: 9999 });
+  // get _dashboard_id key from enviroment
+  const dashboard = context.environment.find((x) => x.key === "_dashboard_id")?.value;
+  console.log("dashboard: ", dashboard);
 
-  //Collecting data
+  // Collecting data
   const find_asset = scope.find((x) => x.variable === "find_asset");
-
-  const metadata = find_asset.metadata as any;
-
+  const metadata = find_asset?.metadata;
   const sentValues = metadata.sentValues.map((x: sentValue) => x.value);
 
-  const active_asset_list = (await org_dev.getData({ variable: "asset_active_info" })).filter((x) => sentValues.includes(x.value));
+  // getting all the devices in this org.
+  const active_info_list = await Resources.devices.getDeviceData(org_id, { variables: "dev_id" });
+
+  // filtering the list for only the devices we are searching for.
+  const active_asset_list = active_info_list.filter((x) => sentValues.includes(x.value));
+  console.log("devices: ", active_asset_list);
 
   for (let i = 0; i < sentValues.length; i++) {
     const asset_info = active_asset_list.find((x) => x.value === sentValues[i]);
 
+    const device_info = await Resources.devices.info(asset_info?.value as string);
+    const tags = device_info.tags || [];
+
+    const site_id = tags.find((x) => x.key === "site_id")?.value;
+    const device_dashboard_link = `https://admin.tago.io/dashboards/info/${dashboard}?tab=3&org_dev=${org_id}&site_dev=${site_id}&asset=${asset_info?.value}`;
+
+    // getting equipement_idz
+    const equipment_id = tags.find((x) => x.key === "equipment_id")?.value;
+
+    // geting data from org device
+    const [info] = await Resources.devices.getDeviceData(org_id, { variables: "equipment_location", groups: equipment_id });
+    console.log("info: ", info);
+
+    console.log("asset_info: ", asset_info);
+
+    console.log("device_dashboard_link: ", device_dashboard_link);
     if (asset_info) {
-      await org_dev.sendData(
-        parseTagoObject({
-          asset_name: asset_info.value,
-          asset_site: (asset_info.metadata as any).asset_site,
-          asset_building: (asset_info.metadata as any).asset_building,
-          asset_floor: (asset_info.metadata as any).asset_floor,
-          asset_room: (asset_info.metadata as any).asset_room,
-          asset_link: (asset_info.metadata as any).asset_link,
-        })
-      );
-    } else {
-      await org_dev.sendData(
-        parseTagoObject({
-          asset_name: sentValues[i],
-          asset_site: "Not Tracked",
-          asset_building: "Not Tracked",
-          asset_floor: "Not Tracked",
-          asset_room: "Not Tracked",
+      await Resources.devices.sendDeviceData(
+        org_id,
+        parseObjectToTago({
+          asset_name: device_info.name,
+          asset_site: site_id,
+          asset_floor: info?.metadata?.floor_name ?? "Not Tracked",
+          asset_room: info?.metadata?.room_name ?? "Not Tracked",
+          asset_link: device_dashboard_link,
         })
       );
     }
   }
 
-  return console.log("Searched!");
-};
+  return;
+}
+
+export { searchAsset };

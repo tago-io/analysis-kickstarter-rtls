@@ -1,92 +1,73 @@
-import { Utils, Services, Account, Device, Types, Analysis } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-import { ConfigurationParams, DeviceListItem } from "@tago-io/sdk/out/modules/Account/devices.types";
-import moment from "moment-timezone";
-import { check } from "prettier";
-import { parseTagoObject } from "../lib/data.logic";
-import getDevice from "../lib/getDevice";
+import { queue } from "async";
+
+import { Analysis, Resources, Utils } from "@tago-io/sdk";
+
+import { ParamResolver } from "../lib/edit.params";
+import { fetchDeviceList } from "../lib/fetch-device-list";
 import { TagoContext } from "../types";
 
-async function resolveDevice(context: TagoContext, account: Account, dept_id: string, device_id: string) {
-  const device = await getDevice(account, device_id);
-  const org_dev = await getDevice(account, dept_id);
+interface IResolveDevice {
+  context: TagoContext;
 
-  const dataList = await device.getData({ variables: ["battery_status_life", "payload"], qty: 1 });
-  const payload = dataList.find((item) => item.variable === "payload");
-  const battery = dataList.find((item) => item.variable === "battery_status_life");
-  if (dataList.length === 0) return context.log("No data");
-
-  let checkin_date;
-
-  if (payload) {
-    checkin_date = moment(payload.time as Date)
-      .tz("America/New_York")
-      .format("MMMM Do YYYY, h:mm:ss a");
-  } else if (battery) {
-    checkin_date = moment(battery.time as Date)
-      .tz("America/New_York")
-      .format("MMMM Do YYYY, h:mm:ss a");
-  }
-
-  await org_dev.deleteData({
-    variables: ["dev_battery", "dev_lastcheckin"],
-    series: device_id,
-    qty: 99,
-  });
-
-  const data = parseTagoObject(
-    {
-      dev_battery: { value: battery?.value, unit: battery?.unit },
-      dev_lastcheckin: { value: checkin_date ? checkin_date : null },
-    },
-    device_id
-  );
-
-  context.log(data);
-
-  org_dev.sendData(data);
+  device_id: string;
 }
 
-async function handler(context: TagoContext, scope: Data[]): Promise<void> {
-  context.log("Running Analysis");
+async function resolveDevice({ context, device_id }: IResolveDevice) {
+  console.log("Device", device_id);
+  const dataList = await Resources.devices.getDeviceData(device_id, { variables: ["battery"], qty: 1 });
+  const battery = dataList.find((item) => item.variable === "battery");
+  if (dataList.length === 0) {
+    return context.log("No data");
+  }
+  // adding battery parameter
+  const paramList = await Resources.devices.paramList(device_id);
+  const paramResolver = ParamResolver(paramList);
+  await paramResolver.setParam("battery", String(battery?.value)).apply(device_id);
+}
+
+async function handler(context: TagoContext): Promise<void> {
+  console.log("Running Analysis");
 
   const environment = Utils.envToJson(context.environment);
   if (!environment) {
     return;
-  } else if (!environment.config_token) {
-    throw "Missing config_token environment var";
-  } else if (!environment.account_token) {
-    throw "Missing account_token environment var";
   }
 
-  const config_dev = new Device({ token: environment.config_token });
-  const account = new Account({ token: environment.account_token });
+  const sensorList = await fetchDeviceList({ tags: [{ key: "device_type", value: "device" }] });
+  console.log("Sensor List", sensorList);
+  const resolveQueue = queue(resolveDevice, 5);
 
-  const sensorList = await account.devices.list({
-    page: 1,
-    fields: ["id", "name", "tags", "last_input"],
-    filter: { tags: [{ key: "device_type", value: "device" }] },
-    amount: 10000,
+  resolveQueue.error((error) => {
+    console.error("Error", error);
   });
+  for (const device of sensorList) {
+    const orgID = device.tags.find((tag) => tag.key === "organization_id")?.value;
+    const deviceID = device.tags.find((tag) => tag.key === "device_id")?.value;
+    if (!orgID) {
+      throw "Device not assigned to an Organization";
+    }
+    if (!deviceID) {
+      throw "Device not assigned to a Site";
+    }
 
-  sensorList.map((device) =>
-    resolveDevice(
-      context,
-      account,
-      device.tags.find((tag) => tag.key === "organization_id")?.value as string,
-      device.tags.find((tag) => tag.key === "device_id")?.value as string
-    )
-  );
+    void resolveQueue.push({ context, device_id: deviceID }).catch(() => null);
+  }
+
+  await resolveQueue.drain();
 }
 
-async function startAnalysis(context: TagoContext, scope: any) {
+async function startAnalysis(context: TagoContext) {
   try {
-    await handler(context, scope);
+    await handler(context);
     context.log("Analysis finished");
-  } catch (error) {
-    console.log(error);
+  } catch (error: any) {
+    console.error(error);
     context.log(error.message || JSON.stringify(error));
   }
+}
+
+if (!process.env.T_TEST) {
+  Analysis.use(startAnalysis, { token: process.env.T_ANALYSIS_TOKEN });
 }
 
 export { startAnalysis };

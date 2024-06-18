@@ -1,56 +1,62 @@
-import { Device, Account, Types } from "@tago-io/sdk";
-import validation from "../../lib/validation";
-import registerUser from "../../lib/registerUser";
-import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
-import getDevice from "../../lib/getDevice";
-import { parseTagoObject } from "../../lib/data.logic";
+import { Resources } from "@tago-io/sdk";
+import { Data } from "@tago-io/sdk/lib/types";
 
-interface UserData {
-  name: string;
-  email: string;
-  phone?: string | number | boolean | void;
-  timezone: string;
-  tags?: Types.Common.TagsObj[];
-  password?: string;
-  id?: string;
-  site: string;
-}
+import { getZodError } from "../../lib/get-zod-error";
+import { parseObjectToTago } from "../../lib/parse-object-to-tagoio";
+import { inviteUser } from "../../lib/register-user";
+import { initializeValidation } from "../../lib/validation";
+import { ServiceParams } from "../../types";
+import { registerUserModel } from "./model/register.model";
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  //Collecting data
+async function getNewUserVariables(scope: Data[], validate: ReturnType<typeof initializeValidation>) {
   const new_user_name = scope.find((x) => x.variable === "new_user_name");
   const new_user_email = scope.find((x) => x.variable === "new_user_email");
-  const new_user_site = scope.find((x) => x.variable === "new_user_site");
-  const new_user_access = scope.find((x) => x.variable === "new_user_access");
   const new_user_phone = scope.find((x) => x.variable === "new_user_phone");
+  const new_user_access = scope.find((x) => x.variable === "new_user_access");
+  const new_user_site = scope.find((x) => x.variable === "new_user_site");
 
-  //validation
-  const org_id = scope[0].origin;
-  const validate = validation("user_validation", org_dev);
+  try {
+    return registerUserModel.parse({
+      new_user_name,
+      new_user_email,
+      new_user_phone,
+      new_user_access,
+      new_user_site,
+    });
+  } catch (error) {
+    const zodErrorMsg = getZodError(error);
+    await validate(zodErrorMsg, "danger");
+    throw error;
+  }
+}
 
-  if (!new_user_name.value) throw validate("Name field is empty", "danger");
-  if ((new_user_name.value as string).length < 3) throw validate("Name field is smaller than 3 character", "danger");
-  if (!new_user_email.value) throw validate("Email field is empty", "danger");
-  if (!new_user_site?.value && new_user_access.value === "user") throw validate("Department field is empty", "danger");
-  if (!new_user_access.value) throw validate("Access field is empty", "danger");
-  if (!new_user_phone.value) throw validate("Phone field is empty", "danger");
+async function createUser({ context, scope, environment }: ServiceParams) {
+  // Collecting data
+  const org_id = scope[0].device;
+  const config_id = environment.config_id;
 
-  const [user_exists] = await account.run.listUsers({
+  const validate = initializeValidation("user_validation", org_id);
+  await validate("Registering...", "warning");
+  const { new_user_name, new_user_email, new_user_site, new_user_access, new_user_phone } = await getNewUserVariables(scope, validate);
+
+  const [user_exists] = await Resources.run.listUsers({
     page: 1,
     amount: 1,
-    filter: { email: new_user_email.value as string },
+    filter: { email: new_user_email.value },
   });
 
-  if (user_exists) throw validate("User already exists!", "danger");
+  if (user_exists) {
+    return await validate("User already exists!", "danger");
+  }
 
-  //creating user
-  const { timezone } = await account.info();
+  // creating user
+  const { timezone } = await Resources.account.info();
 
-  const new_user_data: UserData = {
-    name: new_user_name.value as string,
-    email: new_user_email.value as string,
-    phone: new_user_phone.value as string,
-    site: new_user_site === undefined ? "" : (new_user_site?.metadata.label as string),
+  const new_user_data: any = {
+    name: new_user_name.value,
+    email: new_user_email.value,
+    phone: new_user_phone.value,
+    site: new_user_site === undefined ? "" : new_user_site?.metadata.label,
     timezone: timezone,
     tags: [
       {
@@ -59,35 +65,47 @@ export default async ({ config_dev, context, scope, account, environment }: Serv
       },
       {
         key: "department_id",
-        value: new_user_site === undefined ? "" : (new_user_site?.value as string),
+        value: new_user_site === undefined ? "" : new_user_site?.value,
       },
       {
         key: "access",
-        value: new_user_access.value as string,
+        value: new_user_access.value,
+      },
+      {
+        key: "phone",
+        value: new_user_phone.value,
+      },
+      {
+        key: "email",
+        value: new_user_email.value,
       },
     ],
   };
 
-  //registering user
-  const new_user_id = await registerUser(context, account, new_user_data, "https://tago.io/");
+  // registering user
+  const userNumber = await inviteUser(context, new_user_data, "rtls.tago.run/");
 
-  const user_data = parseTagoObject(
-    {
-      user_id: new_user_id as string,
-      user_name: new_user_name.value as string,
-      user_email: new_user_email.value as string,
-      user_phone: new_user_phone.value as string,
-      user_site: new_user_site === undefined ? "" : (new_user_site?.metadata.label as string),
-      user_access: new_user_access.value as string,
+  const user_data = {
+    user_name: {
+      value: new_user_name.value,
     },
-    new_user_id
-  );
+    user_email: {
+      value: new_user_email.value,
+    },
+    user_phone: {
+      value: new_user_phone.value,
+    },
+    user_site: {
+      value: new_user_site === undefined ? "" : new_user_site?.metadata.label,
+    },
+    user_access: {
+      value: new_user_access.value,
+    },
+  };
 
-  //sending to org device
-  org_dev.sendData(user_data);
+  await Resources.devices.sendDeviceData(org_id, parseObjectToTago(user_data, userNumber));
+  await Resources.devices.sendDeviceData(config_id, parseObjectToTago(user_data, userNumber));
+  return await validate("User successfully invited! An email will be sent with the credentials to the new user.", "success");
+}
 
-  //sending to admin device (settings_device)
-  config_dev.sendData(user_data);
-
-  return validate("User successfully invited! An email will be sent with the credentials to the new user.", "success");
-};
+export { createUser, getNewUserVariables };

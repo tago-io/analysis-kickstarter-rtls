@@ -1,64 +1,83 @@
-import { Device, Account } from "@tago-io/sdk";
-import getDevice from "../../lib/getDevice";
-import { ServiceParams, TagoContext, DeviceCreated } from "../../types";
+import { Resources } from "@tago-io/sdk";
 
-export default async ({ config_dev, context, scope, account, environment }: ServiceParams, org_dev: Device) => {
-  const dev_id = scope[0].serie;
+import { DataResolver } from "../../lib/edit.data";
+import { getZodError } from "../../lib/get-zod-error";
+import { initializeValidation } from "../../lib/validation";
+import { ServiceParams } from "../../types";
+import { editDeviceModel } from "./model/edit.model";
 
-  //getting site device
-  let { tags } = await account.devices.info(dev_id);
+async function getDeviceVariables(scope: any, validate: ReturnType<typeof initializeValidation>) {
+  const dev_name = scope[0]?.name;
+  const new_site_id_data = scope[0]?.["tags.site_id"];
+
+  try {
+    return editDeviceModel.parse({
+      dev_name,
+      new_site_id_data,
+    });
+  } catch (error) {
+    const zodErrorMsg = getZodError(error);
+    await validate(zodErrorMsg, "danger");
+    throw error;
+  }
+}
+
+async function editSensor({ scope, environment }: ServiceParams) {
+  const dev_id = scope[0].device;
+  const config_id = environment.config_id;
+  // fetching info
+  const validate = initializeValidation("org_validation", config_id);
+  const { dev_name, new_site_id_data } = await getDeviceVariables(scope, validate);
+
+  // get device tags
+  const { tags: dev_tags } = await Resources.devices.info(dev_id);
+  // get tag named device_id
+  const org_id = dev_tags.find((tag) => tag.key === "organization_id")?.value;
+
+  if (!org_id) {
+    throw new Error("Device has no organization_id tag");
+  }
+
+  // getting site device
+  let { tags } = await Resources.devices.info(dev_id);
+
   const site_id = tags.find((tag) => tag.key === "site_id")?.value;
-  const site_dev = await getDevice(account, site_id as string);
 
-  //fetching info
-  const dev_name = scope.find((x) => x.variable === "dev_name");
-  const new_site_id_data = scope.find((x) => x.variable === "dev_site");
+  if (!site_id) {
+    throw new Error("Device has no site_id tag");
+  }
 
-  //getting previous id data
-  const [dev_data] = await org_dev.getData({ variable: "dev_id", qty: 1, serie: dev_id });
-  const dev_data_site = await org_dev.getData({ variables: ["dev_site", "dev_type", "dev_eui", "dev_name", "dev_id"], qty: 1, serie: dev_id });
+  // getting previous id data
+  const [dev_data] = await Resources.devices.getDeviceData(org_id, { variables: "dev_name", qty: 1, groups: dev_id });
 
   if (dev_name) {
-    //deleting prev data in settings_device
-    await config_dev.deleteData({ id: dev_data.id, variable: "dev_name" });
-    await org_dev.deleteData({ id: dev_data.id, variable: "dev_name" });
-    await site_dev.deleteData({ id: dev_data.id, variable: "dev_name" });
+    await DataResolver(config_id)
+      .setVariable({ variable: "dev_name", value: dev_name, metadata: { ...dev_data.metadata, label: dev_name } })
+      .apply(dev_id);
 
-    //sending to settings new info
-    await config_dev.sendData({ ...dev_data, metadata: { ...dev_data.metadata, label: dev_name.value }, time: null });
-    await org_dev.sendData({ ...dev_data, metadata: { ...dev_data.metadata, label: dev_name.value }, time: null });
-    await site_dev.sendData({ ...dev_name, metadata: { ...dev_data.metadata, label: dev_name.value }, time: null });
+    await DataResolver(org_id)
+      .setVariable({ variable: "dev_name", value: dev_name, metadata: { ...dev_data.metadata, label: dev_name } })
+      .apply(dev_id);
 
-    //updating device name
-    await account.devices.edit(dev_id, { name: dev_name.value as string });
+    await DataResolver(site_id)
+      .setVariable({ variable: "dev_name", value: dev_name, metadata: { ...dev_data.metadata, label: dev_name } })
+      .apply(dev_id);
 
-    //editing bucket name
-    const bucket_id = (await account.devices.info(dev_id)).bucket.id;
-    await account.buckets.edit(bucket_id, { name: dev_name.value as string });
+    // updating device name
+    await Resources.devices.edit(dev_id, { name: dev_name });
 
-    //updating asset list
-    await org_dev.deleteData({ variables: "asset_list", series: dev_id });
-    await org_dev.sendData({ ...dev_name, serie: dev_id });
+    // updating asset list
+    await DataResolver(org_id).setVariable({ variable: "asset_list", value: dev_name }).apply(dev_id);
   }
 
   if (new_site_id_data) {
-    const new_site_dev = await getDevice(account, new_site_id_data.value as string);
-    //deleting prev info
-    // await config_dev.deleteData({ serie: dev_data.id });
-    // await org_dev.deleteData({ serie: dev_data.id });
-    await site_dev.deleteData({ serie: dev_data.id }); //prev site
-
-    //updating data
-    // await config_dev.sendData({ ...dev_data_site, value: new_site_id_data.metadata.label as string });
-    // await org_dev.sendData({ ...dev_data_site, value: new_site_id_data.metadata.label as string });
-    // await site_dev.sendData({ ...dev_data_site, value: new_site_id_data.metadata.label as string });
-    await new_site_dev.sendData(dev_data_site);
-
-    //updating tags array
+    // updating tags array
     tags = tags.filter((x) => !["site_id"].includes(x.key));
-    tags.push({ key: "site_id", value: new_site_id_data.value as string });
+    tags.push({ key: "site_id", value: new_site_id_data });
 
-    await account.devices.edit(dev_id, { tags });
+    await Resources.devices.edit(dev_id, { tags });
   }
   return;
-};
+}
+
+export { editSensor, getDeviceVariables };

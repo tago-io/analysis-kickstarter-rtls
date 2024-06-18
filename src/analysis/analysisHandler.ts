@@ -1,51 +1,112 @@
-import { Utils, Services, Account, Device, Types, Analysis } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-import { ServiceParams, TagoContext, ServicesAnalysis } from "../types";
+import { Analysis, Utils } from "@tago-io/sdk";
+import { Data, TagoContext } from "@tago-io/sdk/lib/types";
 
-const servicesCollection = Promise.all([
-  import("../services/user"),
-  import("../services/device"),
-  import("../services/organization"),
-  import("../services/site"),
-  import("../services/assetTracker"),
-  import("../services/equipment"),
-]) as Promise<ServicesAnalysis[]>;
+import { ackAlert } from "../services/alerts/acknowledge";
+import { ackAlertNotificationBtn } from "../services/alerts/acknowledge-from-notification";
+import { editAlert } from "../services/alerts/edit";
+import { registerAlert } from "../services/alerts/register";
+import { deleteAlert } from "../services/alerts/remove";
+import { searchAsset } from "../services/assetTracker/search";
+import { editSensor } from "../services/device/edit";
+import { createSensor } from "../services/device/register";
+import { deleteSensor } from "../services/device/remove";
+import { createEquipment } from "../services/equipment/register";
+import { deleteEquipment } from "../services/equipment/remove";
+import { editOrganization } from "../services/organization/edit";
+import { createOrganization } from "../services/organization/register";
+import { deleteOrganization } from "../services/organization/remove";
+import { sensorLevelReportCsv } from "../services/report/generateReport";
+import { editSite } from "../services/site/edit";
+import { createSite } from "../services/site/register";
+import { deleteSite } from "../services/site/remove";
+import { editUser } from "../services/user/edit";
+import { createUser } from "../services/user/register";
+import { deleteUser } from "../services/user/remove";
 
-async function handler(context: TagoContext, scope: Data[]): Promise<void> {
-  context.log(JSON.stringify(scope));
-  context.log("Running Analysis");
+function fixDashCustomBtnID(environment: { [key: string]: any }, scope: Data[]) {
+  const data = scope.find((x: any) => x["dynamic_table_button_id"]) as (Data & { dynamic_table_button_id: any }) | undefined;
 
+  if (data) {
+    environment._widget_exec = data.dynamic_table_button_id;
+  }
+
+  // notification btn routing
+  if (environment.button_id) {
+    // Hack, as there is no method to check the button ID in the router.
+    environment._widget_exec = "alert-ack-notification";
+  }
+}
+
+async function analysisHandler(context: TagoContext, scope: Data[]): Promise<void> {
+  // Convert environment variables to a JSON.
+  const environment = Utils.envToJson(context.environment);
+
+  // Just a hack to transform input_id from Device List edit to an environment variable,
+  environment._input_id = (scope as any).find((x: any) => x.device_list_button_id)?.device_list_button_id;
+
+  // Instance the router classs of Utils.router
+  const router = new Utils.AnalysisRouter({ scope, environment, context });
+
+  // Register routes based on variable, action or widget.
+
+  router.register(createOrganization as any).whenInputFormID("create-org");
+  router.register(deleteOrganization as any).whenDeviceListIdentifier("delete-org");
+  router.register(editOrganization as any).whenCustomBtnID("edit-org");
+
+  router.register(createSite as any).whenInputFormID("create-site");
+  router.register(deleteSite as any).whenDeviceListIdentifier("delete-site");
+  router.register(editSite as any).whenCustomBtnID("edit-site");
+
+  router.register(createEquipment as any).whenInputFormID("create-equip");
+  router.register(deleteEquipment as any).whenDeviceListIdentifier("delete-equip");
+
+  router.register(createSensor as any).whenInputFormID("create-dev");
+  router.register(deleteSensor as any).whenDeviceListIdentifier("delete-dev");
+  router.register(editSensor as any).whenCustomBtnID("edit-dev");
+
+  router.register(createUser as any).whenInputFormID("create-user");
+  router.register(deleteUser as any).whenUserListIdentifier("delete-user");
+  router.register(editUser as any).whenCustomBtnID("edit-user");
+
+  router.register(searchAsset as any).whenInputFormID("search-asset");
+
+  router.register(registerAlert).whenVariables(["alert"]).whenWidgetExec("insert");
+  router.register(editAlert).whenVariables(["alert"]).whenWidgetExec("edit");
+  router.register(deleteAlert).whenVariables(["alert"]).whenWidgetExec("delete");
+
+  fixDashCustomBtnID(environment, scope);
+  router.register(ackAlert).whenCustomBtnID("alert-ack");
+  router.register(ackAlertNotificationBtn).whenCustomBtnID("alert-ack-notification");
+  router.register(sensorLevelReportCsv as any).whenInputFormID("create-report");
+
+  const result = await router.exec();
+
+  console.log("Services found:", result.services);
+}
+
+/**
+ * Main function - handle the analysis initialization
+ */
+async function startAnalysis(context: TagoContext, scope: Data[]): Promise<void> {
+  console.log("SCOPE:", JSON.stringify(scope, null, 4));
+  console.log("CONTEXT:", JSON.stringify(context, null, 4));
+  console.log("Running Analysis");
+
+  // Convert the environment variables from [{ key, value }] to { key: value };
   const environment = Utils.envToJson(context.environment);
   if (!environment) {
     return;
   }
-
-  if (!environment.config_token) {
-    throw "Missing config_token environment var";
-  } else if (!environment.account_token) {
-    throw "Missing account_token environment var";
+  // Check if all tokens needed for the application were provided.
+  if (!environment.config_id) {
+    throw new Error("Config id not found, add it to the analysis environment variables");
   }
 
-  const config_dev = new Device({ token: environment.config_token });
-  const account = new Account({ token: environment.account_token });
-  const notification = new Services({ token: context.token }).Notification;
-
-  const serviceParams: ServiceParams = { context, account, config_dev, scope, notification, environment };
-
-  const service = (await servicesCollection).find((x) => x.checkType(scope, environment));
-  if (service) {
-    await service.controller(serviceParams);
-  }
+  await analysisHandler(context, scope);
 }
 
-async function startAnalysis(context: TagoContext, scope: any) {
-  try {
-    await handler(context, scope);
-    context.log("Analysis finished");
-  } catch (error) {
-    console.log(error);
-    context.log(error.message || JSON.stringify(error));
-  }
+if (!process.env.T_TEST) {
+  Analysis.use(startAnalysis, { token: process.env.T_ANALYSIS_TOKEN });
 }
 
 export { startAnalysis };

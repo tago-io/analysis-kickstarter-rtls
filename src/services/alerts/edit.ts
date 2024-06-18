@@ -73,6 +73,28 @@ async function editAlert({ environment, scope }: RouterConstructor & { scope: Da
     });
   }
 
+  const equipmentName = await Resources.devices.info(alertScope.device).then((x) => x.name);
+
+  await Resources.devices.deleteDeviceData(siteID, { variables: "geofence_events", groups: alertScope.group });
+  for (const trigger of actionStructure.triggers) {
+    if (trigger.trigger_id.includes("door-open-alert") && trigger.isActive) {
+      const { tags: deviceTags } = await Resources.devices.info(trigger.deviceIdList[0]);
+      void TagResolver(deviceTags).setTag("door-open", "true").apply(trigger.deviceIdList[0]);
+    } else if (trigger.trigger_id.includes("Geofence") && trigger.isActive) {
+      const { tags: deviceTags } = await Resources.devices.info(trigger.deviceIdList[0]);
+      void TagResolver(deviceTags).setTag("group_id_geofence", "true").apply(trigger.deviceIdList[0]);
+
+      // Adding the geofence to the widget event list so that the geofence event can be shown in the image marker
+      const type = trigger.trigger_value as string;
+      const color = type.includes("leave") ? "blue" : type.includes("enter") ? "green" : "pink";
+      await Resources.devices.sendDeviceData(siteID, {
+        variable: "geofence_events",
+        value: `${type} - ${equipmentName}`,
+        metadata: { color },
+        group: alertScope.group,
+      });
+    }
+  }
   // identify which actions are monitoring door variables, then add a tag to the device the action is monitoring
   for (const trigger of actionStructure.triggers) {
     const { tags: deviceTags } = await Resources.devices.info(trigger.deviceIdList[0]);

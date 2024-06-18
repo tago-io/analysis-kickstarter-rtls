@@ -143,6 +143,8 @@ async function registerAlert({ environment, scope }: RouterConstructor & { scope
       actionIDs.push(action);
     }
 
+    const equipmentName = await Resources.devices.info(alertScope.device).then((x) => x.name);
+
     // identify which actions are monitoring door variables, then add a tag to the device the action is monitoring
     for (const trigger of actionStructure.triggers) {
       if (trigger.trigger_id.includes("door-open-alert") && trigger.isActive) {
@@ -155,7 +157,12 @@ async function registerAlert({ environment, scope }: RouterConstructor & { scope
         // Adding the geofence to the widget event list so that the geofence event can be shown in the image marker
         const type = trigger.trigger_value as string;
         const color = type.includes("leave") ? "blue" : type.includes("enter") ? "green" : "pink";
-        await Resources.devices.sendDeviceData(siteID, { variable: "geofence_events", value: type, metadata: { color }, group: alertScope.group });
+        await Resources.devices.sendDeviceData(siteID, {
+          variable: "geofence_events",
+          value: `${type} - ${equipmentName}`,
+          metadata: { color },
+          group: alertScope.group,
+        });
       }
     }
   } catch (error: any) {

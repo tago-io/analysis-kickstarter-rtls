@@ -1,7 +1,6 @@
 import { Analysis, Resources, Utils } from "@tago-io/sdk";
 import { Data, TagoContext } from "@tago-io/sdk/lib/types";
 
-import { geofenceAlertTrigger, IGeofenceAlert } from "../services/alerts/GeofenceAlert";
 import { getIndoorPos } from "../services/equipment/tracking/indoor-tracking";
 import { outdoorData } from "../services/equipment/tracking/outdoor-tracking";
 
@@ -32,8 +31,9 @@ async function startAnalysis(context: TagoContext, scope: Data[]) {
     throw "Device not assigned to a Site";
   }
 
-  const locationData: IGeofenceAlert | undefined = await outdoorData(scope, siteID, equipmentID);
-  if (locationData) {
+  const locationIsOutdoors = await outdoorData(scope, siteID, equipmentID);
+
+  if (locationIsOutdoors) {
     return;
   }
 

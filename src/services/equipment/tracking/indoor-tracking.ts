@@ -45,7 +45,7 @@ function getAssetInfoInside(
           site_id,
           layer_id: layer.id,
           room_name: room.value,
-          url: `https://admin.tago.io/dashboards/info/${enviroment.dash_site}?site_dev=${site_id}&asset_dev=${scope[0].device}`,
+          // url: `https://admin.tago.io/dashboards/info/${enviroment.dash_site}?site_dev=${site_id}&asset_dev=${scope[0].device}`,
           temperature: " 24.3",
           light: " 22",
         },
@@ -95,8 +95,8 @@ async function getBeaconList(site_id: string, scope: Data[]) {
     return [];
   }
 
-  const beaconsReceived: Beacon[] = Object.keys(beaconFromScope).reduce((final: any, beaconKey) => {
-    const beacon_data = beaconListFromSite.find((y) => y.value == beaconKey || beaconKey == y.sliced);
+  const beaconsReceived: Beacon[] = Object.keys(beaconFromScope).reduce((final: Beacon[], beaconKey) => {
+    const beacon_data = beaconListFromSite.find((y) => y.value.toLowerCase() === beaconKey || beaconKey === y.sliced.toLowerCase());
     if (!beacon_data) {
       return final;
     }

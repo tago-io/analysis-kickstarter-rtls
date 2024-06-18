@@ -99,7 +99,7 @@ async function createSite({ scope, environment }: ServiceParams) {
   };
 
   const dashboard_info = await Resources.dashboards.list();
-  const site_dashboard = dashboard_info.find((dashboard) => dashboard.label === "Site");
+  const site_dashboard = dashboard_info.find((dashboard) => dashboard.label === "#GLOBAL.SITE#");
   const site_dashboard_id = site_dashboard?.id;
 
   const device_info = await site_dev.info();

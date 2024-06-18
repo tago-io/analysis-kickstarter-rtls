@@ -74,7 +74,7 @@ async function installDevice({ new_dev_name, org_id, site_id, asset_id, equip_se
   return { ...new_dev, device: new_org_dev } as DeviceCreated;
 }
 
-async function createEquipment({ scope, environment }: ServiceParams) {
+async function createEquipment({ scope }: ServiceParams) {
   const org_id = scope[0].device;
   const validate = initializeValidation("equip_validation", org_id);
   await validate("Registering...", "warning");
@@ -84,9 +84,6 @@ async function createEquipment({ scope, environment }: ServiceParams) {
   if (equipName.length < 3) {
     await validate("Equipment name must be at least 3 characters long", "danger");
   }
-
-  // deleteData
-  await Resources.dashboards.edit(environment.dash_org, {});
 
   console.log("assetID", assetID);
   const [asset_name] = await Resources.devices.getDeviceData(org_id, { variables: "dev_name", groups: assetID, qty: 1 });

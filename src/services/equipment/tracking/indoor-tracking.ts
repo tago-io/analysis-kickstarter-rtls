@@ -1,10 +1,9 @@
 import { Resources } from "@tago-io/sdk";
-import { Data, DeviceInfo } from "@tago-io/sdk/lib/types";
+import { Data, DeviceInfo, TagoContext } from "@tago-io/sdk/lib/types";
 
 import { parseObjectToTago } from "../../../lib/parse-object-to-tagoio";
-import { TagoContext } from "../../../types";
 import { verifyGeofenceAlarm } from "../../alerts/verifyGeofenceAlert";
-import { Geofence } from "../../device/is-inside-geofence";
+import { Geofence } from "../../device/is-inside-indoor-geofence";
 
 interface Beacon {
   id: string;
@@ -46,7 +45,7 @@ function getAssetInfoInside(
           site_id,
           layer_id: layer.id,
           room_name: room.value,
-          url: `https://admin.tago.io/dashboards/info/${enviroment.dash_site}?site_dev=${site_id}&asset_dev=${scope[0].device}`,
+          // url: `https://admin.tago.io/dashboards/info/${enviroment.dash_site}?site_dev=${site_id}&asset_dev=${scope[0].device}`,
           temperature: " 24.3",
           light: " 22",
         },
@@ -96,8 +95,8 @@ async function getBeaconList(site_id: string, scope: Data[]) {
     return [];
   }
 
-  const beaconsReceived: Beacon[] = Object.keys(beaconFromScope).reduce((final: any, beaconKey) => {
-    const beacon_data = beaconListFromSite.find((y) => y.value == beaconKey || beaconKey == y.sliced);
+  const beaconsReceived: Beacon[] = Object.keys(beaconFromScope).reduce((final: Beacon[], beaconKey) => {
+    const beacon_data = beaconListFromSite.find((y) => y.value.toLowerCase() === beaconKey || beaconKey === y.sliced.toLowerCase());
     if (!beacon_data) {
       return final;
     }
@@ -163,13 +162,17 @@ async function getIndoorPos(context: TagoContext, scope: Data[], enviroment: any
     id: x.group,
   })) as Geofence[];
 
-  await verifyGeofenceAlarm(context, siteID, {
-    deviceID: scope[0].device,
-    pos_x: Number(beaconPosition.x),
-    pos_y: Number(beaconPosition.y),
-    layerBeacon: layer.group as string,
-    geofence_list,
-  });
+  await verifyGeofenceAlarm(
+    siteID,
+    {
+      deviceID: scope[0].device,
+      pos_x: Number(beaconPosition.x),
+      pos_y: Number(beaconPosition.y),
+      layerBeacon: layer.group as string,
+      geofence_list,
+    },
+    scope
+  );
 }
 
 export { getIndoorPos, getAssetHistoryInside, getAssetInfoInside };

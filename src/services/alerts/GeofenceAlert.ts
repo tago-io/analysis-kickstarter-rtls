@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/restrict-plus-operands */
 import { isPointWithinRadius } from "geolib";
 
-import { Device, Resources } from "@tago-io/sdk";
+import { Resources } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/lib/types";
 
 import { ActionStructureParams } from "./register";
@@ -225,4 +225,4 @@ async function geofenceAlertEdit(devToStoreAlert: string, action_id: string, str
   await geofenceAlertCreate(devToStoreAlert, action_id, structure);
 }
 
-export { IGeofenceAlert, geofenceAlertEdit, geofenceAlertCreate, geofenceAlertTrigger };
+export { IGeofenceAlert, geofenceAlertEdit, geofenceAlertCreate, geofenceAlertTrigger, checkZones };

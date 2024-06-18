@@ -3,6 +3,8 @@ import { Data, DeviceInfo } from "@tago-io/sdk/lib/types";
 
 import { DataResolver } from "../../../lib/edit.data";
 import { parseObjectToTago } from "../../../lib/parse-object-to-tagoio";
+import { verifyGeofenceAlarm } from "../../alerts/verifyGeofenceAlert";
+import { Geofence } from "../../device/is-inside-indoor-geofence";
 
 function getAssetInfoOutside(equipment: DeviceInfo, outdoor_data: Data, equip_img?: string) {
   return parseObjectToTago(
@@ -29,7 +31,7 @@ async function outdoorData(scope: Data[], site_id: string, equipmentID: string) 
 
   // checking if device is outside
   if (!outdoor_data && !outdoor_data?.location?.coordinates[0]) {
-    return;
+    return false;
   }
 
   const equipmentInfo = await Resources.devices.info(equipmentID);
@@ -44,21 +46,31 @@ async function outdoorData(scope: Data[], site_id: string, equipmentID: string) 
     await Resources.devices.deleteDeviceData(site_id, { variables: ["equipment_location"], groups: equipmentID });
     await Resources.devices.sendDeviceData(site_id, assetInfo);
   } else {
-    await DataResolver(site_id)
-      .setVariable({
-        variable: "equipment_outside_location",
-        location: {
-          lat: outdoor_data?.location?.coordinates[1],
-          lng: outdoor_data?.location?.coordinates[0],
-        },
-      })
-      .apply(equipmentID);
+    await Resources.devices.sendDeviceData(site_id, {
+      variable: "equipment_outside_location",
+      value: equipmentInfo.name,
+      location: outdoor_data.location,
+      group: equipmentID,
+    });
   }
 
-  return {
-    coordinates: { lat: Number(outdoor_data?.location?.coordinates[1]), lng: Number(outdoor_data?.location?.coordinates[0]) },
-    device_id: scope[0].device,
-  };
+  const geofence_list = (await Resources.devices.getDeviceData(site_id, { variables: "geofence_outdoor", qty: 9999 })).map((x) => ({
+    ...x.metadata,
+    id: x.group,
+  })) as Geofence[];
+
+  await verifyGeofenceAlarm(
+    site_id,
+    {
+      deviceID: scope[0].device,
+      pos_x: Number(outdoor_data?.location?.coordinates[1]),
+      pos_y: Number(outdoor_data?.location?.coordinates[0]),
+      geofence_list,
+    },
+    scope
+  );
+
+  return true;
 }
 
 export { outdoorData, getAssetInfoOutside };

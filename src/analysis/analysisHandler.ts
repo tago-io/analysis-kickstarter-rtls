@@ -1,6 +1,11 @@
 import { Analysis, Utils } from "@tago-io/sdk";
 import { Data, TagoContext } from "@tago-io/sdk/lib/types";
 
+import { ackAlert } from "../services/alerts/acknowledge";
+import { ackAlertNotificationBtn } from "../services/alerts/acknowledge-from-notification";
+import { editAlert } from "../services/alerts/edit";
+import { registerAlert } from "../services/alerts/register";
+import { deleteAlert } from "../services/alerts/remove";
 import { searchAsset } from "../services/assetTracker/search";
 import { editSensor } from "../services/device/edit";
 import { createSensor } from "../services/device/register";
@@ -18,6 +23,20 @@ import { editUser } from "../services/user/edit";
 import { createUser } from "../services/user/register";
 import { deleteUser } from "../services/user/remove";
 
+function fixDashCustomBtnID(environment: { [key: string]: any }, scope: Data[]) {
+  const data = scope.find((x: any) => x["dynamic_table_button_id"]) as (Data & { dynamic_table_button_id: any }) | undefined;
+
+  if (data) {
+    environment._widget_exec = data.dynamic_table_button_id;
+  }
+
+  // notification btn routing
+  if (environment.button_id) {
+    // Hack, as there is no method to check the button ID in the router.
+    environment._widget_exec = "alert-ack-notification";
+  }
+}
+
 async function analysisHandler(context: TagoContext, scope: Data[]): Promise<void> {
   // Convert environment variables to a JSON.
   const environment = Utils.envToJson(context.environment);
@@ -30,7 +49,6 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
 
   // Register routes based on variable, action or widget.
 
-  // Organization Routing - Using Device List Widget
   router.register(createOrganization as any).whenInputFormID("create-org");
   router.register(deleteOrganization as any).whenDeviceListIdentifier("delete-org");
   router.register(editOrganization as any).whenCustomBtnID("edit-org");
@@ -52,6 +70,13 @@ async function analysisHandler(context: TagoContext, scope: Data[]): Promise<voi
 
   router.register(searchAsset as any).whenInputFormID("search-asset");
 
+  router.register(registerAlert).whenVariables(["alert"]).whenWidgetExec("insert");
+  router.register(editAlert).whenVariables(["alert"]).whenWidgetExec("edit");
+  router.register(deleteAlert).whenVariables(["alert"]).whenWidgetExec("delete");
+
+  fixDashCustomBtnID(environment, scope);
+  router.register(ackAlert).whenCustomBtnID("alert-ack");
+  router.register(ackAlertNotificationBtn).whenCustomBtnID("alert-ack-notification");
   router.register(sensorLevelReportCsv as any).whenInputFormID("create-report");
 
   const result = await router.exec();
@@ -73,8 +98,8 @@ async function startAnalysis(context: TagoContext, scope: Data[]): Promise<void>
     return;
   }
   // Check if all tokens needed for the application were provided.
-  if (!environment.config_token) {
-    throw new Error("Config token not found, add it to the analysis environment variables");
+  if (!environment.config_id) {
+    throw new Error("Config id not found, add it to the analysis environment variables");
   }
 
   await analysisHandler(context, scope);

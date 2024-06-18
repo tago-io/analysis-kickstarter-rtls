@@ -73,6 +73,10 @@ async function createOrganization({ scope, environment }: ServiceParams) {
     throw await validate("Organization name must be at least 3 characters long", "danger");
   }
 
+  const dashboard_info = await Resources.dashboards.list();
+  const organization_dashboard = dashboard_info.find((dashboard) => dashboard.label === "#GLOBAL.ORGANIZATION#");
+  const organization_dashboard_id = organization_dashboard?.id;
+
   // need device id to configure serie in parseTagoObject
   // creating new device
   const { device_id, device } = await installDevice({ new_org_name: new_org_name, new_org_address: new_org_address.value });
@@ -80,7 +84,7 @@ async function createOrganization({ scope, environment }: ServiceParams) {
     org_id: device_id,
     org_name: {
       value: new_org_name,
-      metadata: { url: `https://admin.tago.io/dashboards/info/${environment.dash_org}?settings=${config_dev_id}&org_dev=${device_id}` },
+      metadata: { url: `https://admin.tago.io/dashboards/info/${organization_dashboard_id}?settings=${config_dev_id}&org_dev=${device_id}` },
     }, // org_name.value widget?
     org_address: { value: new_org_address.value, location: new_org_address.location },
   };

@@ -11,8 +11,19 @@ interface Geofence {
   eventColor: string;
   layer: string;
   eventDescription: string;
-  id?: string; // added in this analysis
+  id: string; // added in this analysis
 }
+
+/* outdoor geofence example:
+{
+  event: 'ag1vt3k55ko',
+  geolocation: { coordinates: [Array], radius: 709.8317706563543, type: 'Point' },
+  id: 'g25W4fsvtIlXpsm2PHwBg',
+  color: '',
+  eventColor: 'green',
+  eventDescription: 'enter geofence'
+}
+*/
 
 // This function checks if our device is inside a polygon geofence
 function insidePolygon(point: [number, number], geofence: { x: number; y: number }[]) {
@@ -40,13 +51,14 @@ function checkRadius(point_x: number, point_y: number, circle_x: number, circle_
   return false;
 }
 
-// This function checks if our device is inside any geofence
-function getInsideGeofence(point: [number, number], geofence_list: Geofence[], layerBeacon?: string) {
+// This function checks if our device is inside any indoor geofence
+function getInsideIndoorGeofence(point: [number, number], geofence_list: Geofence[], layerBeacon?: string) {
   // The line below gets all Polygon geofences that we may have.
   const polygons = geofence_list.filter((x) => x.type === "polygon" && Array.isArray(x.coordinates));
   if (polygons.length > 0) {
     // Here we check if our device is inside any Polygon geofence using our function above.
     const pass_check = polygons.map((x) => insidePolygon(point, x.coordinates as GeofenceCoordinates[]));
+
     const index = pass_check.indexOf(true);
     if (index !== -1) {
       return polygons[index];
@@ -71,4 +83,4 @@ function getInsideGeofence(point: [number, number], geofence_list: Geofence[], l
   }
 }
 
-export { getInsideGeofence, Geofence, GeofenceCoordinates };
+export { getInsideIndoorGeofence, Geofence, GeofenceCoordinates };

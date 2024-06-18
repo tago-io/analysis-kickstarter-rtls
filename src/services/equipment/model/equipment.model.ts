@@ -1,13 +1,13 @@
 import z from "zod";
 
 const registerEquipModel = z.object({
-  name: z.string({ required_error: "Name field is empty" }),
-  serieNumber: z.string({ required_error: "Serie field is empty" }),
+  name: z.string({ required_error: "#ERR.MISSING_NAME_FIELD#" }),
+  serieNumber: z.string({ required_error: "#ERR.MISSING_SERIE_FIELD#" }),
   image: z.object({
-    fileName: z.string({ required_error: "Image field is empty" }),
-    url: z.string({ required_error: "Image field is empty" }).url(),
+    fileName: z.string({ required_error: "#ERR.MISSING_IMAGE_FIELD#" }),
+    url: z.string({ required_error: "#ERR.MISSING_IMAGE_FIELD#" }).url(),
   }),
-  assetID: z.string({ required_error: "Asset field is empty" }),
+  assetID: z.string({ required_error: "#ERR.MISSING_SENSOR_FIELD#" }),
 });
 
 type IEquipModel = z.infer<typeof registerEquipModel>;

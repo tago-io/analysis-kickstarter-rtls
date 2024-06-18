@@ -1,234 +1,178 @@
 import { Resources } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/lib/types";
+import { RouterConstructor } from "@tago-io/sdk/lib/modules/Utils/router/router.types";
+import { Data, DeviceInfo } from "@tago-io/sdk/lib/types";
 
-import { fetchDeviceList } from "../../lib/fetch-device-list";
+import { TagResolver } from "../../lib/edit.tag";
 import { getAnalysisByTagID } from "../../lib/find-resource";
-import { getZodError } from "../../lib/get-zod-error";
-import { parseObjectToTago } from "../../lib/parse-object-to-tagoio";
-import { initializeValidation } from "../../lib/validation";
-import { ServiceParams } from "../../types";
-import { geofenceAlertCreate } from "./GeofenceAlert";
-import { registerAlertModel } from "./models/alert.model";
+import { sendNotificationFeedback } from "../../lib/send-notification";
+import { ActionStructureParams, generateActionStructure } from "./_action-structure";
+import { getAlertSettings, IAlertSettings } from "./_get-alert-settings";
+import { alertModel } from "./alert.model";
 
-interface ActionStructureParams {
-  name: string;
-  site_id: string;
-  type: string;
-  group_id?: string;
-  trigger_value: string | number;
-  variable: string;
-  condition: string;
-  message: string;
-  script?: string;
-  device: string;
-  description?: string;
-  send_to: string;
+/**
+ * Parse the alert scope data to extract alert information.
+ * @param {Data[]} scope - The scope data containing the alert information.
+ * @returns {Promise<{
+ *   device: string,
+ *   triggers: {
+ *     trigger_value: string | number,
+ *     trigger_value2?: string | number,
+ *     variable: string,
+ *     condition: string
+ *   }[],
+ *   group: string,
+ *   dataID: string
+ * }>} - The parsed alert information.
+ */
+async function parseAlertScope(scope: Data[]) {
+  const alert = scope.find((x) => x.variable === "alert");
+  if (!alert) {
+    throw new Error("Add Alert: Missing alert variable");
+  }
+
+  // print the second element of the metadat array within the scope[0]
+  console.log(JSON.stringify(scope[0].metadata));
+
+  const result = await alertModel.parseAsync({ ...alert.metadata, device: alert.value });
+
+  return { ...result, group: alert.group, dataID: alert.id };
+}
+/**
+ * Register an alert for a specific environment and scope.
+ * @param {RouterConstructor & { scope: Data[] }} options - The options object containing the environment and scope.
+ * @returns {Promise<void>} - A promise that resolves when the alert is registered.
+ */
+async function _getOrgId(siteID: string) {
+  const site = await Resources.devices.info(siteID);
+
+  const orgID = site?.tags?.find((x) => x.key === "organization_id")?.value;
+
+  if (!orgID) {
+    throw new Error("Organization not found");
+  }
+  return orgID;
 }
 
-async function getGroupDevices(group_id: string, groupKey: string = "group_id") {
-  const list = await fetchDeviceList({
-    tags: [
-      { key: groupKey, value: group_id },
-      { key: "device_type", value: "device" },
-    ],
-  });
+/**
+ * Get the list of sensor IDs associated with a specific equipment.
+ * @param {string} equipmentID - The ID of the equipment for which to retrieve the sensor IDs.
+ * @returns {Promise<string[]>} - A promise that resolves with an array of sensor IDs associated with the equipment.
+ */
+async function _getEquipmentSensorList(equipmentID: string) {
+  const { tags } = await Resources.devices.info(equipmentID);
+  const sensorIDList = tags?.filter((x) => x.key === "sensor_id").map((x) => x.value);
 
-  return list.map((x) => x.id);
-}
-
-function generateActionStructure(structure: ActionStructureParams, device_ids: string[]) {
-  const action_structure: any = {
-    active: true,
-    name: structure.name,
-    tags: [
-      { key: "group_id", value: structure.group_id || "N/A" },
-      { key: "site_id", value: structure.site_id },
-      { key: "device", value: structure.device },
-      { key: "description", value: structure.description || "" },
-      { key: "send_to", value: structure.send_to.replaceAll(" ", "") },
-      { key: "action_type", value: structure.type.replaceAll(" ", "") },
-      { key: "type", value: structure.trigger_value },
-    ],
-    type: "condition",
-    trigger: [],
-    action: {
-      type: "script",
-      script: [structure.script],
-    },
-  };
-
-  action_structure.tags = action_structure.tags.concat(
-    device_ids.map((id) => {
-      return { key: "device_id", value: id };
-    })
-  );
-
-  const value_type = Number.isNaN(Number(structure.trigger_value)) ? "string" : "number";
-  const variables = structure.variable.split(",");
-  for (const device_id of device_ids) {
-    for (const variable of variables) {
-      action_structure.trigger.push({
-        is: structure.condition,
-        value: String(structure.trigger_value),
-        value_type,
-        variable,
-        device: device_id,
-        second_value: "",
-      });
-
-      if (structure.type !== "><") {
-        action_structure.trigger.push({
-          is: reverseCondition(structure.condition),
-          unlock: true,
-          value: String(structure.trigger_value),
-          value_type,
-          variable,
-          device: device_id,
-          second_value: "",
-        });
-      }
+  const sensorListInfo = [];
+  if (sensorIDList) {
+    for (const x of sensorIDList) {
+      const info = await Resources.devices.info(x);
+      sensorListInfo.push(info);
     }
   }
 
-  // Add a random trigger, so the API can accept it.
-  if (action_structure.trigger.length === 0) {
-    action_structure.trigger.push({
-      is: "=",
-      value: String(structure.trigger_value),
-      value_type: "number",
-      variable: "not_used_and_doesnt_exist",
-      tag_key: "tag_not_used_and_doesnt_exist",
-      tag_value: "temp_value",
-      second_value: "",
-    });
-  }
-
-  return action_structure;
+  return sensorListInfo;
 }
 
-function reverseCondition(condition: string) {
-  switch (condition) {
-    case "=":
-      return "!";
-    case "!":
-      return "=";
-    case ">":
-      return "<";
-    case "<":
-      return ">";
-    default:
-      break;
-  }
+function _formatTriggerList(alertScope: Awaited<ReturnType<typeof parseAlertScope>>, alertSettings: IAlertSettings[], equipmentSensorList: DeviceInfo[]) {
+  return alertScope.triggers.map((trigger) => {
+    const triggerSettings = alertSettings.find((x) => x.id === trigger.id);
+
+    const formula = triggerSettings?.formula;
+
+    const applyFormula = (value?: string | number | boolean) => {
+      if (formula && value !== undefined) {
+        return eval(formula.replace("$VALUE$", value.toString()));
+      }
+      return value;
+    };
+
+    const deviceIDs = equipmentSensorList.filter((x) => x.connector === triggerSettings?.connector).map((x) => x.id);
+
+    return {
+      trigger_value: applyFormula(trigger.value ?? trigger.values?.[0]),
+      trigger_value2: applyFormula(trigger.values?.[1]),
+      variable: triggerSettings?.variable as string,
+      condition: triggerSettings?.condition || "",
+      trigger_id: trigger.id,
+      isActive: trigger.alertActivation,
+      isRecurring: trigger.recurringAlarm,
+      deviceIdList: deviceIDs,
+    };
+  });
 }
 
-async function getNewAlertVariables(scope: Data[], validate: ReturnType<typeof initializeValidation>) {
-  const name = scope.find((x) => x.variable === "new_alert_name");
-  const condition = scope.find((x) => x.variable === "new_alert_condition"); // Battery or Geofence
-  const equipments = scope.find((x) => x.variable === "new_alert_equip" && x.metadata);
-  const condition_value = scope.find((x) => x.variable === "new_alert_value" && x.metadata); // Battery number or geofence leave/enter
-  const type = scope.find((x) => x.variable === "new_alert_type" && x.metadata);
-  const users = scope.find((x) => x.variable === "new_alert_send_to");
-  const message = scope.find((x) => x.variable === "new_alert_message");
+/**
+ * Register an alert for a specific environment and scope.
+ * @param {RouterConstructor & { scope: Data[] }} options - The options object containing the environment and scope.
+ * @returns {Promise<void>} - A promise that resolves when the alert is registered.
+ */
+async function registerAlert({ environment, scope }: RouterConstructor & { scope: Data[] }) {
+  const actionIDs: string[] = [];
+  const siteID = scope[0].device as string;
 
   try {
-    return registerAlertModel.parse({
-      name,
-      condition,
-      equipments,
-      condition_value,
-      type,
-      users,
-      message,
-    });
-  } catch (error) {
-    const zodErrorMsg = getZodError(error);
-    await validate(zodErrorMsg, "danger");
+    const analysisID = await getAnalysisByTagID("alert_trigger");
+    const alertScope = await parseAlertScope(scope);
+
+    // Equipment is not the device which received the readings
+    const equipmentSensorList = await _getEquipmentSensorList(alertScope.device);
+    if (equipmentSensorList.length === 0) {
+      throw new Error("No sensor found for the selected equipment");
+    }
+    const alertSettings = await getAlertSettings(environment.config_id, alertScope.device);
+    const orgID = await _getOrgId(siteID);
+
+    const triggers = _formatTriggerList(alertScope, alertSettings, equipmentSensorList);
+
+    const actionStructure: ActionStructureParams = {
+      org_id: orgID,
+      site_id: siteID,
+      group_id: alertScope.group,
+      script: analysisID,
+      send_to: alertScope.recipients.map((x) => x.value),
+      equipment_id: alertScope.device,
+      triggers,
+    };
+
+    const actionList = generateActionStructure(actionStructure);
+    for (const actionBody of actionList) {
+      const { action } = await Resources.actions.create(actionBody).catch((error) => {
+        throw error;
+      });
+
+      actionIDs.push(action);
+    }
+
+    const equipmentName = await Resources.devices.info(alertScope.device).then((x) => x.name);
+
+    // identify which actions are monitoring door variables, then add a tag to the device the action is monitoring
+    for (const trigger of actionStructure.triggers) {
+      if (trigger.trigger_id.includes("door-open-alert") && trigger.isActive) {
+        const { tags: deviceTags } = await Resources.devices.info(trigger.deviceIdList[0]);
+        void TagResolver(deviceTags).setTag("door-open", "true").apply(trigger.deviceIdList[0]);
+      } else if (trigger.trigger_id.includes("Geofence") && trigger.isActive) {
+        const { tags: deviceTags } = await Resources.devices.info(trigger.deviceIdList[0]);
+        void TagResolver(deviceTags).setTag("group_id_geofence", "true").apply(trigger.deviceIdList[0]);
+
+        // Adding the geofence to the widget event list so that the geofence event can be shown in the image marker
+        const type = trigger.trigger_value as string;
+        const color = type.includes("leave") ? "blue" : type.includes("enter") ? "green" : "pink";
+        await Resources.devices.sendDeviceData(siteID, {
+          variable: "geofence_events",
+          value: `${type} - ${equipmentName}`,
+          metadata: { color },
+          group: alertScope.group,
+        });
+      }
+    }
+  } catch (error: any) {
+    void Resources.devices.deleteDeviceData(siteID, { groups: scope[0].group });
+    void sendNotificationFeedback({ environment, message: error?.message || error, title: "Error creating alert" });
+    for (const actionID of actionIDs) {
+      await Resources.actions.delete(actionID);
+    }
     throw error;
   }
 }
 
-async function getDeviceIds(equipment_list: string[]) {
-  const device_list = [];
-  for (const equipment_id of equipment_list) {
-    const equipmentTags = Resources.devices.info(equipment_id);
-    const equipmentDeviceId = (await equipmentTags).tags.find((tag) => tag.key === "asset_id");
-    device_list.push(equipmentDeviceId?.value);
-  }
-  return device_list;
-}
-
-async function createAlert({ scope }: ServiceParams) {
-  const site_id = scope[0].device;
-  await Resources.devices.sendDeviceData(site_id, { variable: "action_validation", value: "#VAL.CREATING_ALERT#", metadata: { type: "warning" } });
-  const validate = initializeValidation("alert_validation", site_id);
-  await validate("Registering...", "warning");
-  const { name, condition, equipments, condition_value, type, users, message } = await getNewAlertVariables(scope, validate);
-
-  const equipment_list = equipments.metadata.sentValues.map((equipment) => equipment.value);
-  const device_list = await getDeviceIds(equipment_list);
-  const script_id = await getAnalysisByTagID("[TagoIO] - AlertTrigger");
-
-  const action_description = `Action checks ${condition?.value} condition for ${equipments?.value} equipments`;
-  let defaultCondition = "<";
-  if (condition?.value == "geofence") {
-    defaultCondition = "=";
-  }
-
-  const structure: ActionStructureParams = {
-    name: name?.value,
-    site_id: scope[0].device,
-    trigger_value: condition_value?.value,
-    condition: defaultCondition,
-    group_id: undefined,
-    type: type?.value,
-    variable: condition?.value,
-    device: scope[0].device,
-    message: message?.value,
-    description: action_description,
-    script: script_id,
-    send_to: users.value,
-  };
-
-  const action_structure = await generateActionStructure(structure, device_list as string[]);
-  const { action: action_id } = await Resources.actions.create(action_structure).catch((error) => {
-    void validate(error, "danger");
-    throw error;
-  });
-
-  // Store the data in the device, so we can see and edit it in the Dynamic Table.
-  // It's very important that the group is the action ID, so we can use it to edit/delete later.
-  const data_to_tago: { [key: string]: any } = {
-    alert_name: { value: name?.value },
-    alert_condition: condition?.value,
-    alert_value: `${condition_value?.value}`,
-    alert_equip: equipments?.value,
-    alert_type: { value: type?.value, metadata: type?.metadata },
-    alert_send_to: { value: users.value, metadata: users.metadata },
-    alert_message: message?.value,
-    alert_id: {
-      value: condition.value,
-      group: action_id,
-      metadata: structure,
-    },
-  };
-
-  if (condition.value === "geofence") {
-    const type = condition_value.value as string;
-    const color = type.includes("enter geofence") && type.includes("leave geofence") ? "blue" : type.includes("enter geofence") ? "green" : "pink";
-    data_to_tago.geofence_events = { value: name.value, metadata: { color } };
-  }
-
-  const to_tago = parseObjectToTago(data_to_tago, action_id);
-
-  const list_of_devices = JSON.stringify(device_list.map((device) => device));
-  to_tago.push({ variable: "alert_list_devices", value: list_of_devices, group: action_id });
-
-  await Resources.devices.sendDeviceData(site_id, to_tago);
-  await Resources.devices.sendDeviceData(site_id, { variable: "action_validation", value: "#ALC.CREATE_SUCCESS#", metadata: { type: "success" } });
-  if (structure.variable === "geofence") {
-    await geofenceAlertCreate(site_id, action_id, structure);
-  }
-  await validate("Alert created!", "success");
-}
-
-export { createAlert, generateActionStructure, ActionStructureParams, getGroupDevices };
+export { registerAlert, parseAlertScope, _getOrgId, _getEquipmentSensorList, _formatTriggerList, ActionStructureParams };

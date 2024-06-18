@@ -15,6 +15,7 @@ interface installDeviceParam {
   asset_id: string;
   equip_serie: string;
   equip_img: string;
+  sensor_connector: string;
 }
 
 async function getNewEquipVariables(scope: Data[], validate: ReturnType<typeof initializeValidation>) {
@@ -40,7 +41,7 @@ async function getNewEquipVariables(scope: Data[], validate: ReturnType<typeof i
   }
 }
 
-async function installDevice({ new_dev_name, org_id, site_id, asset_id, equip_serie, equip_img }: installDeviceParam) {
+async function installDevice({ new_dev_name, org_id, site_id, asset_id, equip_serie, equip_img, sensor_connector }: installDeviceParam) {
   // structuring data
   const device_data: DeviceCreateInfo = {
     name: new_dev_name,
@@ -55,13 +56,14 @@ async function installDevice({ new_dev_name, org_id, site_id, asset_id, equip_se
   // inserting device id -> so we can reference this later
   await Resources.devices.edit(new_dev.device_id, {
     tags: [
-      { key: "device_id", value: new_dev.device_id },
-      { key: "asset_id", value: asset_id },
+      { key: "equipment_id", value: new_dev.device_id },
+      { key: "sensor_id", value: asset_id },
       { key: "site_id", value: site_id },
       { key: "organization_id", value: org_id },
       { key: "device_type", value: "equipment" },
       { key: "equip_serie", value: equip_serie },
       { key: "equip_img", value: equip_img },
+      { key: "connector_id", value: sensor_connector },
     ],
   });
 
@@ -72,7 +74,7 @@ async function installDevice({ new_dev_name, org_id, site_id, asset_id, equip_se
   return { ...new_dev, device: new_org_dev } as DeviceCreated;
 }
 
-async function createEquipment({ scope, environment }: ServiceParams) {
+async function createEquipment({ scope }: ServiceParams) {
   const org_id = scope[0].device;
   const validate = initializeValidation("equip_validation", org_id);
   await validate("Registering...", "warning");
@@ -83,9 +85,6 @@ async function createEquipment({ scope, environment }: ServiceParams) {
     await validate("Equipment name must be at least 3 characters long", "danger");
   }
 
-  // deleteData
-  await Resources.dashboards.edit(environment.dash_org, {});
-
   console.log("assetID", assetID);
   const [asset_name] = await Resources.devices.getDeviceData(org_id, { variables: "dev_name", groups: assetID, qty: 1 });
   console.log("asset_name", asset_name);
@@ -95,7 +94,10 @@ async function createEquipment({ scope, environment }: ServiceParams) {
     throw "Asset id not found";
   }
 
-  const site_id = (await Resources.devices.info(asset_id)).tags.find((x) => x.key === "site_id")?.value;
+  const assetInfo = await Resources.devices.info(asset_id);
+
+  const site_id = assetInfo.tags.find((x) => x.key === "site_id")?.value;
+  const sensor_connector = assetInfo.connector;
 
   if (!site_id) {
     throw "Site id not found!";
@@ -108,6 +110,7 @@ async function createEquipment({ scope, environment }: ServiceParams) {
     asset_id,
     equip_serie: serieNumber,
     equip_img: image.url,
+    sensor_connector,
   });
 
   const equip_data = parseObjectToTago(

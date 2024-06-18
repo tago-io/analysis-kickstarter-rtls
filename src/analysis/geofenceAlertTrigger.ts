@@ -1,9 +1,8 @@
 import { Analysis, Resources, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/lib/types";
+import { Data, TagoContext } from "@tago-io/sdk/lib/types";
 
 import { verifyGeofenceAlarm } from "../services/alerts/verifyGeofenceAlert";
-import { Geofence } from "../services/device/is-inside-geofence";
-import { TagoContext } from "../types";
+import { Geofence } from "../services/device/is-inside-indoor-geofence";
 
 /**
  * Function that starts the analysis and handles the alert trigger
@@ -42,7 +41,7 @@ async function analysisAlert(context: TagoContext, scope: Data[]): Promise<void>
     id: x.group,
   })) as Geofence[];
 
-  await verifyGeofenceAlarm(context, siteID, { deviceID, pos_x, pos_y, geofence_list });
+  await verifyGeofenceAlarm(siteID, { deviceID, pos_x, pos_y, geofence_list }, scope);
 
   return console.debug("Analysis Finished!");
 }

@@ -59,11 +59,12 @@ async function installDevice({ new_dev_name, org_id, site_id, connector, new_dev
       { key: "device_id", value: new_dev.device_id },
       { key: "site_id", value: site_id },
       { key: "organization_id", value: org_id },
-      { key: "device_type", value: "device" },
+      { key: "device_type", value: "sensor" },
       { key: "device_eui", value: new_device_eui },
       { key: "device_network", value: new_device_network },
       { key: "equipment_id", value: "none" },
       { key: "has_equip", value: "false" },
+      { key: "connector_id", value: connector },
     ],
   });
 

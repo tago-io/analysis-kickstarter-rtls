@@ -1,6 +1,8 @@
-import { getAssetInfoOutside } from "../../services/equipment/tracking/outdoor-tracking";
+import { expect } from "vitest";
+
 import { getAssetHistoryInside, getAssetInfoInside } from "../../services/equipment/tracking/indoor-tracking";
-import { scope, strongest_beacon, enviroment, site_id, equipment, layer, site_name, equip_icon, equip_img } from "./mocks/getAssetInfoInside.mock";
+import { getAssetInfoOutside } from "../../services/equipment/tracking/outdoor-tracking";
+import { enviroment, equip_icon, equip_img, equipment, layer, scope, site_id, site_name, strongest_beacon } from "./mocks/getAssetInfoInside.mock";
 
 test("getAssetInfoInside", () => {
   const result = getAssetInfoInside(

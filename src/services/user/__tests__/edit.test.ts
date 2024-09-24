@@ -1,3 +1,5 @@
+import { describe, expect, test } from "vitest";
+
 import { getUserVariables } from "../edit";
 import scope from "./mocks/edit.mock.json";
 

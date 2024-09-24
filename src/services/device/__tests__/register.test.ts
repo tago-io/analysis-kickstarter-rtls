@@ -1,3 +1,5 @@
+import { describe, expect, test } from "vitest";
+
 import { getNewDeviceVariables } from "../register";
 import scope from "./mocks/register.mock.json";
 

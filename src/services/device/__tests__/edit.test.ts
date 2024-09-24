@@ -1,3 +1,5 @@
+import { describe, expect, test } from "vitest";
+
 import { getDeviceVariables } from "../edit";
 
 const scope = [

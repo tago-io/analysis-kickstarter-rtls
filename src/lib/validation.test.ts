@@ -1,12 +1,14 @@
+import { describe, expect, vi } from "vitest";
+
 import { initializeValidation } from "./validation";
 
 // Mock the TagoIO SDK Resources.devices.sendDeviceData function
-jest.mock("@tago-io/sdk", () => {
+vi.mock("@tago-io/sdk", () => {
   return {
     Resources: {
       devices: {
-        sendDeviceData: jest.fn(async () => {}),
-        deleteDeviceData: jest.fn(async () => {}),
+        sendDeviceData: vi.fn(async () => { }),
+        deleteDeviceData: vi.fn(async () => { }),
       },
     },
   };

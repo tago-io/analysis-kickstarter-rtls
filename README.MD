@@ -75,7 +75,6 @@ For additional informations on how to setup TagoIO with this code, and all the T
 ```mermaid
 graph LR
 subgraph TagoIO KickStarter User Permission Diagram V1.0.0
-subgraph Guilherme Costa - March 2nd, 2022
     subgraph Application
         subgraph Entities
         Organization(Organization)
@@ -149,7 +148,6 @@ subgraph Guilherme Costa - March 2nd, 2022
     linkStyle 20 stroke-width:2px,fill:none,stroke:green;
     linkStyle 21 stroke-width:2px,fill:none,stroke:green;
 
-end
 test[1* Only those related to the User's Company]
 end
 ```

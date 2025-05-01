@@ -1,3 +1,9 @@
+/**
+ * Geofence Alert Trigger Analysis
+ * This analysis is used to trigger alerts when a device enters or exits a geofence.
+ *
+ * This analysis is executed from a variable action.
+ */
 import { Analysis, Resources, Utils } from "@tago-io/sdk";
 import { Data, TagoContext } from "@tago-io/sdk/lib/types";
 

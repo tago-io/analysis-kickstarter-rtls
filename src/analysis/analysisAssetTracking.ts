@@ -1,3 +1,9 @@
+/**
+ * Asset Tracking Analysis
+ * This analysis is used to track the location of assets using TagoIO's device tracking features. It retrieves the equipment ID from the device tags and uses it to fetch the asset's location data.
+ *
+ * This analysis is executed from a variable action.
+ */
 import { Analysis, Resources, Utils } from "@tago-io/sdk";
 import { Data, TagoContext } from "@tago-io/sdk/lib/types";
 

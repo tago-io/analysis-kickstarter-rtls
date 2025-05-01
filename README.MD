@@ -63,7 +63,7 @@ The source code is organized in the following structure:
 
 Each service is related to specific functionality within the application. The analysis folder contains each analysis that must be present in your account, while the lib folder contains useful functions commonly used between the scripts.
 
-For additional information on how to set up TagoIO with this code, and all the TagoIO resources used, check the Kickstarter Guide documentation at [analysis-kickstarter-rtls/docs/Kickstarter-rtls-Guide]().
+For additional information on how to set up TagoIO with this code, and all the TagoIO resources used, check the Kickstarter Guide documentation at [analysis-kickstarter-rtls/docs/Kickstarter-rtls-Guide](https://drive.google.com/file/d/1lVDIEDPzpl5UhLTXDuoujuDOu7QHZjuJ/view?usp=sharing).
 
 ### User Permissions Diagram
 

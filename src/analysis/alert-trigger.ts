@@ -1,14 +1,10 @@
-import { DateTime } from "luxon";
-
-/*
- * Alert Trigger
+/**
+ * Alert Trigger Analysis
+ * This analysis is triggered whenever a device uplink matches an alert condition, prompting the system to send notifications via email, SMS, or push notifications.*
  *
- * The analysis runs everytime a device uplink matches an alert and must send an email, sms or notification.
- *
- * How to setup this analysis
- * Make sure you have the following enviroment variables:
- * - config_token: the value must be a token from a HTTPs device, that stores general information of the application.
+ * This analysis is executed from a variable action.
  */
+import { DateTime } from "luxon";
 import { Analysis, Resources, Utils } from "@tago-io/sdk";
 import { Data, TagoContext } from "@tago-io/sdk/lib/types";
 

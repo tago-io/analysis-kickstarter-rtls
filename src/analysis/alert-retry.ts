@@ -1,13 +1,9 @@
-/*
- * Alert Retry
- *
+/**
+ * Alert Retry Analysis
  * The analysis runs periodically to check if alerts had been acknowledged and if not, send a notification to the next group of users.
  *
- * How to setup this analysis
- * Make sure you have the following enviroment variables:
- * - config_token: the value must be a token from a HTTPs device, that stores general information of the application.
+ * This analysis is executed from a scheduled action.
  */
-
 import { queue } from "async";
 import { DateTime } from "luxon";
 

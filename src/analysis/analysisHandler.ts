@@ -1,3 +1,10 @@
+/**
+ * Analysis Handler
+ * This analysis is used to handle operations done from dashboards. It is used to create, edit, delete, and search for devices, organizations, sites, and users. It also handles the alert registration, editing, and deletion.
+ *
+ * This analysis is executed directly from dashboard widgets.
+ */
+
 import { Analysis, Utils } from "@tago-io/sdk";
 import { Data, TagoContext } from "@tago-io/sdk/lib/types";
 

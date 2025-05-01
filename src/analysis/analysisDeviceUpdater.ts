@@ -1,3 +1,9 @@
+/**
+ * Device Updater Analysis
+ * This analysis is used to update the device parameters with the latest data. It retrieves the battery level from the device and updates the battery parameter.
+ *
+ * This analysis is executed from a scheduled action.
+ */
 import { queue } from "async";
 
 import { Analysis, Resources, Utils } from "@tago-io/sdk";

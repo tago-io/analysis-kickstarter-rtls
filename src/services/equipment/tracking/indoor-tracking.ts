@@ -130,7 +130,7 @@ async function getIndoorPos(context: TagoContext, scope: Data[], enviroment: any
       "minbeaconsfortrilateration",
       "mindistanceunits"
     ], 
-    qty: 9999 
+    qty: 1 
   });
 
   let finalPosition: { x: string; y: string; value: string; color: string; icon: string } | undefined;
@@ -181,13 +181,7 @@ async function getIndoorPos(context: TagoContext, scope: Data[], enviroment: any
       minDistanceUnits: getVariableValue('mindistanceunits', 0.01)
     };
 
-    console.log("DEBUG triangulationOptions:", triangulationOptions);
-    console.log("DEBUG triangulationBeacons:", triangulationBeacons);
-    console.log("DEBUG deviceData:", deviceData);
-
     const triangulationResult = estimateDevicePosition(deviceData, triangulationBeacons, triangulationOptions);
-
-    console.log("DEBUG Result:", triangulationResult);
 
     if (triangulationResult) {
       // Use triangulation result

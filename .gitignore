@@ -54,3 +54,4 @@ yarn.lock
 .tago-lock.dev.lock
 .tagoio
 exportBackup
+.tago-lock.prod.lock

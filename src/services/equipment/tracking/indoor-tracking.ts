@@ -4,6 +4,7 @@ import { Data, DeviceInfo, TagoContext } from "@tago-io/sdk/lib/types";
 import { parseObjectToTago } from "../../../lib/parse-object-to-tagoio";
 import { verifyGeofenceAlarm } from "../../alerts/verifyGeofenceAlert";
 import { Geofence } from "../../device/is-inside-indoor-geofence";
+import { estimateDevicePosition, Beacon as TriangulationBeacon, DeviceData, TrilaterationOptions } from "./triangulation";
 
 interface Beacon {
   id: string;
@@ -117,33 +118,133 @@ async function getIndoorPos(context: TagoContext, scope: Data[], enviroment: any
 
   const layers_list = await Resources.devices.getDeviceData(siteID, { variables: "layers", qty: 9999 });
   const room_list = await Resources.devices.getDeviceData(siteID, { variables: "beacon_room", qty: 9999 });
+  
+  // Fetch individual triangulation configuration variables
+  const triangulation_variables = await Resources.devices.getDeviceData(siteID, { 
+    variables: [
+      "defaulttxpowerat1m",
+      "defaultpathlossexponent", 
+      "metersperunit",
+      "outputscale",
+      "clamptounitsquare",
+      "minbeaconsfortrilateration",
+      "mindistanceunits"
+    ], 
+    qty: 9999 
+  });
 
-  // Find layer with the most strongest beacon
-  const fixed_position_key = `${siteID}${strongest_beacon.group}`;
-  const layer = layers_list.find((x) => x?.metadata?.fixed_position?.[fixed_position_key]);
-  const room = room_list.find((x) => x.group == strongest_beacon.group);
+  let finalPosition: { x: string; y: string; value: string; color: string; icon: string } | undefined;
+  let layer: Data | undefined;
+  let room: Data | undefined;
 
-  if (!room) {
-    throw console.error("No beacon found in the room!");
+  // Try triangulation first
+  try {
+    const triangulationBeacons: TriangulationBeacon[] = [];
+    
+    // Build beacon positions from layers data
+    for (const layerItem of layers_list) {
+      if (layerItem.metadata?.fixed_position) {
+        const positions = layerItem.metadata.fixed_position;
+        Object.keys(positions).forEach(key => {
+          const beacon = beaconsReceived.find(b => key === `${siteID}${b.group}`);
+          if (beacon) {
+            const position = positions[key];
+            triangulationBeacons.push({
+              id: beacon.id,
+              x: parseFloat(position.x) / 100, // Convert to normalized coordinates
+              y: parseFloat(position.y) / 100,
+              room: 'all' // Use same room for all beacons to enable cross-room triangulation
+            });
+          }
+        });
+      }
+    }
+
+    const deviceData: DeviceData = {
+      beacons: beaconsReceived.map(b => ({ id: b.id, rssi: b.rssi }))
+    };
+
+    // Helper function to get variable value by name
+    const getVariableValue = (varName: string, defaultValue: any) => {
+      const variable = triangulation_variables.find(v => v.variable === varName);
+      return variable?.value !== undefined ? variable.value : defaultValue;
+    };
+
+    // Build triangulation options from individual site variables
+    const triangulationOptions: TrilaterationOptions = {
+      defaultTxPowerAt1m: getVariableValue('defaulttxpowerat1m', -59),
+      defaultPathLossExponent: getVariableValue('defaultpathlossexponent', 2.0),
+      metersPerUnit: getVariableValue('metersperunit', 1),
+      outputScale: getVariableValue('outputscale', 'percent') as 'normalized' | 'percent',
+      clampToUnitSquare: getVariableValue('clamptounitsquare', true),
+      minBeaconsForTrilateration: getVariableValue('minbeaconsfortrilateration', 3),
+      minDistanceUnits: getVariableValue('mindistanceunits', 0.01)
+    };
+
+    console.log("DEBUG triangulationOptions:", triangulationOptions);
+    console.log("DEBUG triangulationBeacons:", triangulationBeacons);
+    console.log("DEBUG deviceData:", deviceData);
+
+    const triangulationResult = estimateDevicePosition(deviceData, triangulationBeacons, triangulationOptions);
+
+    console.log("DEBUG Result:", triangulationResult);
+
+    if (triangulationResult) {
+      // Use triangulation result
+      finalPosition = {
+        x: triangulationResult.x.toString(),
+        y: triangulationResult.y.toString(),
+        value: `Triangulated position`,
+        color: '#4CAF50',
+        icon: 'location'
+      };
+      
+      // Find corresponding layer and room for the triangulated position
+      const usedBeaconId = triangulationResult.usedBeacons[0];
+      const usedBeacon = beaconsReceived.find(b => b.id === usedBeaconId);
+      if (usedBeacon) {
+        const fixed_position_key = `${siteID}${usedBeacon.group}`;
+        layer = layers_list.find((x) => x?.metadata?.fixed_position?.[fixed_position_key]);
+        room = room_list.find((x) => x.group == usedBeacon.group);
+      }
+    }
+  } catch (error) {
+    console.warn("Triangulation failed, falling back to strongest beacon:", error);
   }
 
-  if (!layer) {
-    throw console.error("No beacon found in the layer!");
+  // Fall back to strongest beacon if triangulation failed
+  if (!finalPosition) {
+    const fixed_position_key = `${siteID}${strongest_beacon.group}`;
+    layer = layers_list.find((x) => x?.metadata?.fixed_position?.[fixed_position_key]);
+    room = room_list.find((x) => x.group == strongest_beacon.group);
+
+    if (!room) {
+      throw console.error("No beacon found in the room!");
+    }
+
+    if (!layer) {
+      throw console.error("No beacon found in the layer!");
+    }
+
+    const beaconPosition = layer?.metadata?.fixed_position?.[fixed_position_key];
+
+    if (!beaconPosition) {
+      throw console.error("No beacon found in the layer!");
+    }
+
+    finalPosition = beaconPosition;
   }
 
-  const beaconPosition = layer?.metadata?.fixed_position?.[fixed_position_key];
-
-  if (!beaconPosition) {
-    throw console.error("No beacon found in the layer!");
+  // Ensure we have layer and room data
+  if (!layer || !room) {
+    throw console.error("Could not determine layer or room for position!");
   }
 
   const equipmentInfo = await Resources.devices.info(equipmentID);
-  // const equip_img = equipmentInfo.tags.find((x) => x.key === "equip_img")?.value;
-
   const { name: site_name } = await Resources.devices.info(siteID);
 
-  const assetInfo = getAssetInfoInside(scope, beaconPosition, enviroment, siteID, equipmentInfo, layer, room, site_name);
-  const assetHistory = getAssetHistoryInside(beaconPosition, equipmentInfo, layer, room, site_name);
+  const assetInfo = getAssetInfoInside(scope, finalPosition, enviroment, siteID, equipmentInfo, layer, room, site_name);
+  const assetHistory = getAssetHistoryInside(finalPosition, equipmentInfo, layer, room, site_name);
 
   // remove previous outside location data, add new inside location data
   await Resources.devices.deleteDeviceData(siteID, { variables: ["equipment_outside_location"], groups: equipmentID, qty: 1 });
@@ -166,8 +267,8 @@ async function getIndoorPos(context: TagoContext, scope: Data[], enviroment: any
     siteID,
     {
       deviceID: scope[0].device,
-      pos_x: Number(beaconPosition.x),
-      pos_y: Number(beaconPosition.y),
+      pos_x: Number(finalPosition.x),
+      pos_y: Number(finalPosition.y),
       layerBeacon: layer.group as string,
       geofence_list,
     },

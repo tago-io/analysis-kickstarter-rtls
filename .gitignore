@@ -54,3 +54,15 @@ yarn.lock
 .tago-lock.dev.lock
 .tagoio
 exportBackup
+
+# Midscene run output (cache, logs, reports) — all generated, kept local
+midscene_run/
+
+# Playwright saved auth sessions (personal tokens — never commit), but keep the
+# committed template that documents the session file's shape.
+e2e/.auth/*
+!e2e/.auth/session.example.json
+
+# Playwright test output (traces, screenshots, last-run) — regenerated each run
+test-results/
+playwright-report/

@@ -15,9 +15,10 @@
     "strictNullChecks": true,
     "skipLibCheck": true,
     "inlineSourceMap": true,
-    "strict": true
+    "strict": true,
+    "types": ["node"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "e2e/**/*"],
   "rules": {
     "no-unused-declaration": true
   },

@@ -1,0 +1,34 @@
+{
+  "cookies": [
+    {
+      "name": "__cf_bm",
+      "value": "generated-at-login-do-not-commit",
+      "domain": ".hcaptcha.com",
+      "path": "/",
+      "expires": 1999999999,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "hmt_id",
+      "value": "generated-at-login-do-not-commit",
+      "domain": "api.hcaptcha.com",
+      "path": "/",
+      "expires": 1999999999,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "https://xxxx.tago.run",
+      "localStorage": [
+        { "name": "runData", "value": "generated-at-login-holds-the-session" },
+        { "name": "runUser", "value": "generated-at-login" },
+        { "name": "api-region", "value": "your-api-region" }
+      ]
+    }
+  ]
+}
